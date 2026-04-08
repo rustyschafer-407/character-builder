@@ -1,0 +1,40 @@
+import type { GenreDefinition } from "../../types/gameData";
+
+export const fantasyGenre: GenreDefinition = {
+  id: "fantasy",
+  name: "Fantasy",
+  description: "Classic fantasy adventuring.",
+  labels: {
+    attributes: "Attributes",
+    skills: "Skills",
+    attacks: "Attacks",
+    powers: "Powers",
+    inventory: "Inventory",
+    className: "Class",
+    level: "Level",
+    hp: "HP",
+  },
+  availableClassIds: ["fighter", "rogue"],
+  availableSkillIds: [
+    "athletics",
+    "acrobatics",
+    "stealth",
+    "lore",
+    "investigation",
+    "perception",
+    "survival",
+    "presence",
+  ],
+  availablePowerIds: ["second-wind", "backstab", "arcane-bolt"],
+  availableItemIds: ["rope", "rations", "torch", "healing-potion"],
+  availableAttackTemplateIds: ["sword", "bow"],
+  attributeRules: {
+    generationMethods: ["pointBuy", "randomRoll", "manual"],
+    pointBuyTotal: 27,
+    randomRollFormula: "4d6 drop lowest",
+    randomRollCount: 6,
+    randomRollDropLowest: 1,
+    minimumScore: 3,
+    maximumScore: 18,
+  },
+};
