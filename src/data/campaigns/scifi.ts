@@ -1,6 +1,6 @@
-import type { GenreDefinition } from "../../types/gameData";
+import type { CampaignDefinition } from "../../types/gameData";
 
-export const scifiGenre: GenreDefinition = {
+export const scifiCampaign: CampaignDefinition = {
   id: "scifi",
   name: "Sci-Fi",
   description: "Spacefaring heroes and future tech.",

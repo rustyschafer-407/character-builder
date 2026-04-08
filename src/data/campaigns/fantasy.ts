@@ -1,6 +1,6 @@
-import type { GenreDefinition } from "../../types/gameData";
+import type { CampaignDefinition } from "../../types/gameData";
 
-export const fantasyGenre: GenreDefinition = {
+export const fantasyCampaign: CampaignDefinition = {
   id: "fantasy",
   name: "Fantasy",
   description: "Classic fantasy adventuring.",

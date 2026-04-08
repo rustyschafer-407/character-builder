@@ -1,76 +1,13 @@
+import { campaigns } from "./campaigns";
 import type { GameData } from "../types/gameData";
 
 export const gameData: GameData = {
-  genres: [
-    {
-      id: "fantasy",
-      name: "Fantasy",
-      labels: {
-        attributes: "Attributes",
-        skills: "Skills",
-        attacks: "Weapons",
-        powers: "Spells",
-        inventory: "Gear",
-        className: "Class",
-        level: "Level",
-        hp: "HP",
-      },
-      availableClassIds: ["fighter", "wizard"],
-      availableSkillIds: [
-        "athletics",
-        "acrobatics",
-        "stealth",
-        "lore",
-        "investigation",
-        "perception",
-        "survival",
-        "presence",
-      ],
-      availablePowerIds: ["fireball", "heal"],
-      availableItemIds: ["rope", "torch"],
-      availableAttackTemplateIds: ["sword", "bow"],
-      attributeRules: {
-        generationMethods: ["pointBuy", "randomRoll"],
-        pointBuyTotal: 27,
-      },
-    },
-    {
-      id: "scifi",
-      name: "Sci-Fi",
-      labels: {
-        attributes: "Stats",
-        skills: "Disciplines",
-        attacks: "Weapons",
-        powers: "Abilities",
-        inventory: "Equipment",
-        className: "Role",
-        level: "Rank",
-        hp: "Vitality",
-      },
-      availableClassIds: ["soldier", "engineer"],
-      availableSkillIds: [
-        "piloting",
-        "engineering",
-        "hacking",
-        "perception",
-        "survival",
-        "command",
-        "intimidation",
-      ],
-      availablePowerIds: ["overcharge", "shield"],
-      availableItemIds: ["medkit", "scanner"],
-      availableAttackTemplateIds: ["blaster", "laser_rifle"],
-      attributeRules: {
-        generationMethods: ["pointBuy"],
-        pointBuyTotal: 30,
-      },
-    },
-  ],
+  campaigns: campaigns,
 
   classes: [
     {
       id: "fighter",
-      genreId: "fantasy",
+      campaignId: "fantasy",
       name: "Fighter",
       attributeBonuses: [{ attribute: "STR", amount: 2 }],
       hpRule: {
@@ -86,7 +23,7 @@ export const gameData: GameData = {
     },
     {
       id: "wizard",
-      genreId: "fantasy",
+      campaignId: "fantasy",
       name: "Wizard",
       attributeBonuses: [{ attribute: "INT", amount: 2 }],
       hpRule: {
@@ -102,7 +39,7 @@ export const gameData: GameData = {
     },
     {
       id: "soldier",
-      genreId: "scifi",
+      campaignId: "scifi",
       name: "Soldier",
       attributeBonuses: [{ attribute: "STR", amount: 1 }],
       hpRule: {
@@ -118,7 +55,7 @@ export const gameData: GameData = {
     },
     {
       id: "engineer",
-      genreId: "scifi",
+      campaignId: "scifi",
       name: "Engineer",
       attributeBonuses: [{ attribute: "INT", amount: 2 }],
       hpRule: {

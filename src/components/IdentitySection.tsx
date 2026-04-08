@@ -3,7 +3,7 @@ import { buttonStyle, inputStyle, labelTextStyle, panelStyle, sectionTitleStyle 
 
 interface Props {
   character: CharacterRecord;
-  genreName: string;
+  campaignName: string;
   classLabel: string;
   className: string;
   levelLabel: string;
@@ -14,7 +14,7 @@ interface Props {
 
 export default function IdentitySection({
   character,
-  genreName,
+  campaignName,
   classLabel,
   className,
   levelLabel,
@@ -49,7 +49,7 @@ export default function IdentitySection({
         </label>
 
         <div style={{ color: "#374151" }}>
-          <strong>Genre:</strong> {genreName}
+          <strong>Campaign:</strong> {campaignName}
         </div>
 
         <div style={{ color: "#374151" }}>

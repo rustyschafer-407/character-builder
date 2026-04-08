@@ -10,9 +10,9 @@ import type {
 } from "../types/character";
 import type {
   AttributeKey,
+  CampaignDefinition,
   ClassDefinition,
   GameData,
-  GenreDefinition,
 } from "../types/gameData";
 
 export function generateId() {
@@ -23,8 +23,8 @@ export function getAttributeModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
-export function getClassesForGenre(gameData: GameData, genreId: string) {
-  return gameData.classes.filter((cls) => cls.genreId === genreId);
+export function getClassesForCampaign(gameData: GameData, campaignId: string) {
+  return gameData.classes.filter((cls) => cls.campaignId === campaignId);
 }
 
 export function getClassById(gameData: GameData, classId: string) {
@@ -66,14 +66,14 @@ function makeIdentity(name: string): CharacterIdentity {
 }
 
 function makeAttributeGeneration(
-  genre: GenreDefinition
+  campaign: CampaignDefinition
 ): CharacterAttributeGeneration | undefined {
-  const defaultMethod = genre.attributeRules.generationMethods[0];
+  const defaultMethod = campaign.attributeRules.generationMethods[0];
   if (!defaultMethod) return undefined;
 
   return {
     method: defaultMethod,
-    pointBuyTotal: genre.attributeRules.pointBuyTotal,
+    pointBuyTotal: campaign.attributeRules.pointBuyTotal,
     rolls: [],
     notes: "",
   };
@@ -130,12 +130,12 @@ function makeSheetDefaults(): CharacterRecord["sheet"] {
   };
 }
 
-function makeSkills(genre: GenreDefinition): CharacterSkillSelection[] {
-  return genre.availableSkillIds.map((skillId) => ({
+function makeSkills(campaign: CampaignDefinition): CharacterSkillSelection[] {
+  return campaign.availableSkillIds.map((skillId) => ({
     skillId,
     proficient: false,
     bonus: 0,
-    source: "genre",
+    source: "campaign",
   }));
 }
 
@@ -183,9 +183,9 @@ function makeAttacks(gameData: GameData, cls: ClassDefinition): CharacterAttack[
     }));
 }
 
-export function createCharacterFromGenreAndClass(
+export function createCharacterFromCampaignAndClass(
   gameData: GameData,
-  genre: GenreDefinition,
+  campaign: CampaignDefinition,
   cls: ClassDefinition,
   name: string
 ): CharacterRecord {
@@ -197,15 +197,15 @@ export function createCharacterFromGenreAndClass(
   return {
     id: generateId(),
     identity: makeIdentity(name),
-    genreId: genre.id,
+    campaignId: campaign.id,
     classId: cls.id,
     level: 1,
     proficiencyBonus: 2,
     attributes,
-    attributeGeneration: makeAttributeGeneration(genre),
+    attributeGeneration: makeAttributeGeneration(campaign),
     hp: makeHp(cls, attributes.CON),
     sheet: makeSheetDefaults(),
-    skills: makeSkills(genre),
+    skills: makeSkills(campaign),
     powers: makePowers(gameData, cls),
     inventory: makeItems(gameData, cls),
     attacks: makeAttacks(gameData, cls),

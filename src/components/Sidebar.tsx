@@ -1,5 +1,5 @@
 import type { CharacterRecord } from "../types/character";
-import type { ClassDefinition, GenreDefinition } from "../types/gameData";
+import type { ClassDefinition, CampaignDefinition } from "../types/gameData";
 import {
   dangerButtonStyle,
   inputStyle,
@@ -10,36 +10,36 @@ import {
 } from "./uiStyles";
 
 interface Props {
-  genres: GenreDefinition[];
-  classesForSelectedGenre: ClassDefinition[];
+  campaigns: CampaignDefinition[];
+  classesForSelectedCampaign: ClassDefinition[];
   characters: CharacterRecord[];
   selectedId: string;
-  newGenreId: string;
+  newCampaignId: string;
   newClassId: string;
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
   onImport: (file: File) => void;
-  onGenreChange: (id: string) => void;
+  onCampaignChange: (id: string) => void;
   onClassChange: (id: string) => void;
-  getGenreName: (genreId: string) => string;
+  getCampaignName: (campaignId: string) => string;
   getClassName: (classId: string) => string;
 }
 
 export default function Sidebar({
-  genres,
-  classesForSelectedGenre,
+  campaigns,
+  classesForSelectedCampaign,
   characters,
   selectedId,
-  newGenreId,
+  newCampaignId,
   newClassId,
   onSelect,
   onCreate,
   onDelete,
   onImport,
-  onGenreChange,
+  onCampaignChange,
   onClassChange,
-  getGenreName,
+  getCampaignName,
   getClassName,
 }: Props) {
   return (
@@ -53,9 +53,9 @@ export default function Sidebar({
 
       <div style={{ display: "grid", gap: 8 }}>
         <label style={labelTextStyle}>
-          Genre
-          <select value={newGenreId} onChange={(e) => onGenreChange(e.target.value)} style={inputStyle}>
-            {genres.map((g) => (
+          Campaign
+          <select value={newCampaignId} onChange={(e) => onCampaignChange(e.target.value)} style={inputStyle}>
+            {campaigns.map((g) => (
               <option key={g.id} value={g.id}>
                 {g.name}
               </option>
@@ -66,7 +66,7 @@ export default function Sidebar({
         <label style={labelTextStyle}>
           Class
           <select value={newClassId} onChange={(e) => onClassChange(e.target.value)} style={inputStyle}>
-            {classesForSelectedGenre.map((cls) => (
+            {classesForSelectedCampaign.map((cls) => (
               <option key={cls.id} value={cls.id}>
                 {cls.name}
               </option>
@@ -125,7 +125,7 @@ export default function Sidebar({
               >
                 <strong style={{ display: "block", color: "#111827" }}>{displayName}</strong>
                 <div style={{ fontSize: 12, color: "#4b5563", marginTop: 2 }}>
-                  {getGenreName(c.genreId)} • {getClassName(c.classId)}
+                  {getCampaignName(c.campaignId)} • {getClassName(c.classId)}
                 </div>
               </button>
 

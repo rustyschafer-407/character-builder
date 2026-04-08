@@ -34,8 +34,8 @@ function getAttrModRef(attribute: AttributeKey) {
   }
 }
 
-function getThemeValue(genreId: string) {
-  const normalized = genreId.toLowerCase();
+function getThemeValue(campaignId: string) {
+  const normalized = campaignId.toLowerCase();
   if (normalized.includes("scifi") || normalized.includes("sci-fi")) return "scifi";
   if (normalized.includes("horror")) return "horror";
   if (normalized.includes("modern")) return "modern";
@@ -62,7 +62,7 @@ export function buildRoll20AttributeMap(
   // Header / top section
   result["attr_character_name"] = clean(character.identity.name);
   result["attr_class_race"] = clean(cls?.name ?? character.classId);
-  result["attr_sheet_theme"] = clean(getThemeValue(character.genreId));
+  result["attr_sheet_theme"] = clean(getThemeValue(character.campaignId));
 
   // Core stats
   result["attr_level"] = clean(character.level);

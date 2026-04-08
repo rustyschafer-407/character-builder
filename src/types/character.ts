@@ -27,7 +27,7 @@ export interface CharacterSkillSelection {
   skillId: string;
   proficient: boolean;
   bonus: number;
-  source: "genre" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
+  source: "campaign" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
 }
 
 export interface CharacterAttack {
@@ -45,7 +45,7 @@ export interface CharacterPowerSelection {
   powerId?: string;
   name: string;
   notes?: string;
-  source: "genre" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
+  source: "campaign" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
 }
 
 export interface CharacterItem {
@@ -54,7 +54,7 @@ export interface CharacterItem {
   quantity: number;
   notes?: string;
   equipped?: boolean;
-  source: "genre" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
+  source: "campaign" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
 }
 
 export interface CharacterSheetFields {
@@ -70,7 +70,7 @@ export interface CharacterSheetFields {
 export interface CharacterRecord {
   id: string;
   identity: CharacterIdentity;
-  genreId: string;
+  campaignId: string;
   classId: string;
   level: number;
   proficiencyBonus: number;

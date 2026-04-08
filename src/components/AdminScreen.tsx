@@ -5,7 +5,7 @@ import type {
   AttributeKey,
   ClassDefinition,
   GameData,
-  GenreDefinition,
+  CampaignDefinition,
   ItemDefinition,
   PowerDefinition,
   SkillDefinition,
@@ -26,7 +26,7 @@ interface Props {
   onClose: () => void;
 }
 
-type AdminTab = "genres" | "classes" | "skills" | "powers" | "items" | "attacks";
+type AdminTab = "campaigns" | "classes" | "skills" | "powers" | "items" | "attacks";
 
 function isAttributeKey(value: string): value is AttributeKey {
   return (
@@ -39,10 +39,10 @@ function isAttributeKey(value: string): value is AttributeKey {
   );
 }
 
-function makeBlankGenre(): GenreDefinition {
+function makeBlankCampaign(): CampaignDefinition {
   return {
-    id: `genre-${Date.now()}`,
-    name: "New Genre",
+    id: `campaign-${Date.now()}`,
+    name: "New Campaign",
     description: "",
     labels: {
       attributes: "Attributes",
@@ -71,10 +71,10 @@ function makeBlankGenre(): GenreDefinition {
   };
 }
 
-function makeBlankClass(genreId: string): ClassDefinition {
+function makeBlankClass(campaignId: string): ClassDefinition {
   return {
     id: `class-${Date.now()}`,
-    genreId,
+    campaignId,
     name: "New Class",
     description: "",
     attributeBonuses: [],
@@ -528,8 +528,8 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
 
 export default function AdminScreen({ gameData, onSave, onClose }: Props) {
   const [workingData, setWorkingData] = useState<GameData>(gameData);
-  const [tab, setTab] = useState<AdminTab>("genres");
-  const [selectedGenreId, setSelectedGenreId] = useState<string>(gameData.genres[0]?.id ?? "");
+  const [tab, setTab] = useState<AdminTab>("campaigns");
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(gameData.campaigns[0]?.id ?? "");
   const [selectedClassId, setSelectedClassId] = useState<string>(gameData.classes[0]?.id ?? "");
   const [selectedSkillId, setSelectedSkillId] = useState<string>(gameData.skills[0]?.id ?? "");
   const [selectedPowerId, setSelectedPowerId] = useState<string>(gameData.powers[0]?.id ?? "");
@@ -538,14 +538,14 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     gameData.attackTemplates[0]?.id ?? ""
   );
 
-  const selectedGenre = useMemo(
-    () => workingData.genres.find((genre) => genre.id === selectedGenreId) ?? null,
-    [workingData.genres, selectedGenreId]
+  const selectedCampaign = useMemo(
+    () => workingData.campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null,
+    [workingData.campaigns, selectedCampaignId]
   );
 
   const visibleClasses = useMemo(
-    () => workingData.classes.filter((cls) => cls.genreId === selectedGenreId),
-    [workingData.classes, selectedGenreId]
+    () => workingData.classes.filter((cls) => cls.campaignId === selectedCampaignId),
+    [workingData.classes, selectedCampaignId]
   );
 
   const selectedClass = useMemo(() => {
@@ -573,41 +573,41 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     [workingData.attackTemplates, selectedAttackId]
   );
 
-  function updateGenre(updatedGenre: GenreDefinition) {
+  function updateCampaign(updatedCampaign: CampaignDefinition) {
     setWorkingData((prev) => ({
       ...prev,
-      genres: prev.genres.map((genre) =>
-        genre.id === updatedGenre.id ? updatedGenre : genre
+      campaigns: prev.campaigns.map((campaign) =>
+        campaign.id === updatedCampaign.id ? updatedCampaign : campaign
       ),
     }));
   }
 
-  function addGenre() {
-    const newGenre = makeBlankGenre();
+  function addCampaign() {
+    const newCampaign = makeBlankCampaign();
     setWorkingData((prev) => ({
       ...prev,
-      genres: [...prev.genres, newGenre],
+      campaigns: [...prev.campaigns, newCampaign],
     }));
-    setSelectedGenreId(newGenre.id);
-    setTab("genres");
+    setSelectedCampaignId(newCampaign.id);
+    setTab("campaigns");
   }
 
-  function deleteGenre(id: string) {
-    const genre = workingData.genres.find((g) => g.id === id);
-    const displayName = genre?.name || "this genre";
+  function deleteCampaign(id: string) {
+    const campaign = workingData.campaigns.find((g) => g.id === id);
+    const displayName = campaign?.name || "this campaign";
     if (!window.confirm(`Delete ${displayName}?`)) return;
 
-    const remainingGenres = workingData.genres.filter((g) => g.id !== id);
-    const remainingClasses = workingData.classes.filter((cls) => cls.genreId !== id);
+    const remainingCampaigns = workingData.campaigns.filter((g) => g.id !== id);
+    const remainingClasses = workingData.classes.filter((cls) => cls.campaignId !== id);
 
     setWorkingData((prev) => ({
       ...prev,
-      genres: remainingGenres,
+      campaigns: remainingCampaigns,
       classes: remainingClasses,
     }));
 
-    setSelectedGenreId(remainingGenres[0]?.id ?? "");
-    setSelectedClassId(remainingClasses.find((cls) => cls.genreId === remainingGenres[0]?.id)?.id ?? "");
+    setSelectedCampaignId(remainingCampaigns[0]?.id ?? "");
+    setSelectedClassId(remainingClasses.find((cls) => cls.campaignId === remainingCampaigns[0]?.id)?.id ?? "");
   }
 
   function updateClass(updatedClass: ClassDefinition) {
@@ -620,13 +620,13 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
   }
 
   function addClass() {
-    const genreIdForNewClass = selectedGenreId || workingData.genres[0]?.id || "";
-    if (!genreIdForNewClass) {
-      alert("Create or select a genre first.");
+    const campaignIdForNewClass = selectedCampaignId || workingData.campaigns[0]?.id || "";
+    if (!campaignIdForNewClass) {
+      alert("Create or select a campaign first.");
       return;
     }
 
-    const newClass = makeBlankClass(genreIdForNewClass);
+    const newClass = makeBlankClass(campaignIdForNewClass);
 
     setWorkingData((prev) => ({
       ...prev,
@@ -642,14 +642,14 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     if (!window.confirm(`Delete ${displayName}?`)) return;
 
     const remaining = workingData.classes.filter((c) => c.id !== id);
-    const nextVisible = remaining.filter((c) => c.genreId === selectedGenreId);
+    const nextVisible = remaining.filter((c) => c.campaignId === selectedCampaignId);
 
     setWorkingData((prev) => ({
       ...prev,
       classes: remaining,
-      genres: prev.genres.map((genre) => ({
-        ...genre,
-        availableClassIds: genre.availableClassIds.filter((classId) => classId !== id),
+      campaigns: prev.campaigns.map((campaign) => ({
+        ...campaign,
+        availableClassIds: campaign.availableClassIds.filter((classId) => classId !== id),
       })),
     }));
     setSelectedClassId(nextVisible[0]?.id ?? "");
@@ -684,9 +684,9 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     setWorkingData((prev) => ({
       ...prev,
       skills: remainingSkills,
-      genres: prev.genres.map((genre) => ({
-        ...genre,
-        availableSkillIds: genre.availableSkillIds.filter((skillId) => skillId !== id),
+      campaigns: prev.campaigns.map((campaign) => ({
+        ...campaign,
+        availableSkillIds: campaign.availableSkillIds.filter((skillId) => skillId !== id),
       })),
       classes: prev.classes.map((cls) => ({
         ...cls,
@@ -733,9 +733,9 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     setWorkingData((prev) => ({
       ...prev,
       powers: remainingPowers,
-      genres: prev.genres.map((genre) => ({
-        ...genre,
-        availablePowerIds: genre.availablePowerIds.filter((powerId) => powerId !== id),
+      campaigns: prev.campaigns.map((campaign) => ({
+        ...campaign,
+        availablePowerIds: campaign.availablePowerIds.filter((powerId) => powerId !== id),
       })),
       classes: prev.classes.map((cls) => ({
         ...cls,
@@ -783,9 +783,9 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     setWorkingData((prev) => ({
       ...prev,
       items: remainingItems,
-      genres: prev.genres.map((genre) => ({
-        ...genre,
-        availableItemIds: genre.availableItemIds.filter((itemId) => itemId !== id),
+      campaigns: prev.campaigns.map((campaign) => ({
+        ...campaign,
+        availableItemIds: campaign.availableItemIds.filter((itemId) => itemId !== id),
       })),
       classes: prev.classes.map((cls) => ({
         ...cls,
@@ -833,9 +833,9 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     setWorkingData((prev) => ({
       ...prev,
       attackTemplates: remainingAttacks,
-      genres: prev.genres.map((genre) => ({
-        ...genre,
-        availableAttackTemplateIds: genre.availableAttackTemplateIds.filter(
+      campaigns: prev.campaigns.map((campaign) => ({
+        ...campaign,
+        availableAttackTemplateIds: campaign.availableAttackTemplateIds.filter(
           (attackId) => attackId !== id
         ),
       })),
@@ -850,27 +850,27 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     setSelectedAttackId(remainingAttacks[0]?.id ?? "");
   }
 
-  const classSkillOptions = selectedGenre
+  const classSkillOptions = selectedCampaign
     ? workingData.skills
-        .filter((skill) => selectedGenre.availableSkillIds.includes(skill.id))
+        .filter((skill) => selectedCampaign.availableSkillIds.includes(skill.id))
         .map((skill) => ({ id: skill.id, name: skill.name }))
     : [];
 
-  const classPowerOptions = selectedGenre
+  const classPowerOptions = selectedCampaign
     ? workingData.powers
-        .filter((power) => selectedGenre.availablePowerIds.includes(power.id))
+        .filter((power) => selectedCampaign.availablePowerIds.includes(power.id))
         .map((power) => ({ id: power.id, name: power.name }))
     : [];
 
-  const classItemOptions = selectedGenre
+  const classItemOptions = selectedCampaign
     ? workingData.items
-        .filter((item) => selectedGenre.availableItemIds.includes(item.id))
+        .filter((item) => selectedCampaign.availableItemIds.includes(item.id))
         .map((item) => ({ id: item.id, name: item.name }))
     : [];
 
-  const classAttackOptions = selectedGenre
+  const classAttackOptions = selectedCampaign
     ? workingData.attackTemplates
-        .filter((attack) => selectedGenre.availableAttackTemplateIds.includes(attack.id))
+        .filter((attack) => selectedCampaign.availableAttackTemplateIds.includes(attack.id))
         .map((attack) => ({ id: attack.id, name: attack.name }))
     : [];
 
@@ -896,8 +896,8 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-        <button onClick={() => setTab("genres")} style={pillButton(tab === "genres")}>
-          Genres
+        <button onClick={() => setTab("campaigns")} style={pillButton(tab === "campaigns")}>
+          Campaigns
         </button>
         <button onClick={() => setTab("classes")} style={pillButton(tab === "classes")}>
           Classes
@@ -916,7 +916,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         </button>
       </div>
 
-      {tab === "genres" && (
+      {tab === "campaigns" && (
         <div
           style={{
             display: "grid",
@@ -926,20 +926,20 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
           }}
         >
           <EntityListEditor
-            title="Genres"
-            helper="A genre defines the pool of classes, skills, powers, items, and attacks available."
-            items={workingData.genres}
-            selectedId={selectedGenreId}
-            onSelect={setSelectedGenreId}
-            onAdd={addGenre}
-            onDelete={deleteGenre}
-            subtitle={(genre) => genre.id}
+            title="Campaigns"
+            helper="A campaign defines the pool of classes, skills, powers, items, and attacks available."
+            items={workingData.campaigns}
+            selectedId={selectedCampaignId}
+            onSelect={setSelectedCampaignId}
+            onAdd={addCampaign}
+            onDelete={deleteCampaign}
+            subtitle={(campaign) => campaign.id}
           />
 
           <main>
-            {!selectedGenre ? (
+            {!selectedCampaign ? (
               <div style={cardStyle()}>
-                <p style={{ margin: 0, ...mutedTextStyle }}>Select a genre to edit.</p>
+                <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign to edit.</p>
               </div>
             ) : (
               <div style={{ display: "grid", gap: 16 }}>
@@ -949,16 +949,16 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Internal ID
                       <input
-                        value={selectedGenre.id}
-                        onChange={(e) => updateGenre({ ...selectedGenre, id: e.target.value })}
+                        value={selectedCampaign.id}
+                        onChange={(e) => updateCampaign({ ...selectedCampaign, id: e.target.value })}
                         style={inputStyle}
                       />
                     </label>
                     <label style={labelTextStyle}>
                       Display Name
                       <input
-                        value={selectedGenre.name}
-                        onChange={(e) => updateGenre({ ...selectedGenre, name: e.target.value })}
+                        value={selectedCampaign.name}
+                        onChange={(e) => updateCampaign({ ...selectedCampaign, name: e.target.value })}
                         style={inputStyle}
                       />
                     </label>
@@ -967,9 +967,9 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                   <label style={{ ...labelTextStyle, marginTop: 12 }}>
                     Description
                     <input
-                      value={selectedGenre.description ?? ""}
+                      value={selectedCampaign.description ?? ""}
                       onChange={(e) =>
-                        updateGenre({ ...selectedGenre, description: e.target.value })
+                        updateCampaign({ ...selectedCampaign, description: e.target.value })
                       }
                       style={inputStyle}
                     />
@@ -977,17 +977,17 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                 </section>
 
                 <section style={cardStyle()}>
-                  <h3 style={{ marginTop: 0, color: "#111827" }}>Genre Labels</h3>
+                  <h3 style={{ marginTop: 0, color: "#111827" }}>Campaign Labels</h3>
                   {helperText("These labels control the words shown to players throughout the builder.")}
                   <div style={{ ...grid2(), marginTop: 12 }}>
                     <label style={labelTextStyle}>
                       Attributes Label
                       <input
-                        value={selectedGenre.labels.attributes}
+                        value={selectedCampaign.labels.attributes}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, attributes: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, attributes: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -996,11 +996,11 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Skills Label
                       <input
-                        value={selectedGenre.labels.skills}
+                        value={selectedCampaign.labels.skills}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, skills: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, skills: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -1009,11 +1009,11 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Attacks Label
                       <input
-                        value={selectedGenre.labels.attacks}
+                        value={selectedCampaign.labels.attacks}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, attacks: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, attacks: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -1022,11 +1022,11 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Powers Label
                       <input
-                        value={selectedGenre.labels.powers}
+                        value={selectedCampaign.labels.powers}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, powers: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, powers: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -1035,11 +1035,11 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Inventory Label
                       <input
-                        value={selectedGenre.labels.inventory}
+                        value={selectedCampaign.labels.inventory}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, inventory: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, inventory: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -1048,11 +1048,11 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Class Label
                       <input
-                        value={selectedGenre.labels.className}
+                        value={selectedCampaign.labels.className}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, className: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, className: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -1061,11 +1061,11 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Level Label
                       <input
-                        value={selectedGenre.labels.level}
+                        value={selectedCampaign.labels.level}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, level: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, level: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -1074,11 +1074,11 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       HP Label
                       <input
-                        value={selectedGenre.labels.hp}
+                        value={selectedCampaign.labels.hp}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
-                            labels: { ...selectedGenre.labels, hp: e.target.value },
+                          updateCampaign({
+                            ...selectedCampaign,
+                            labels: { ...selectedCampaign.labels, hp: e.target.value },
                           })
                         }
                         style={inputStyle}
@@ -1089,65 +1089,65 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
 
                 <ToggleIdListEditor
                   title="Available Classes"
-                  helper="These classes can be chosen when this genre is selected."
+                  helper="These classes can be chosen when this campaign is selected."
                   options={workingData.classes
-                    .filter((cls) => cls.genreId === selectedGenre.id)
+                    .filter((cls) => cls.campaignId === selectedCampaign.id)
                     .map((cls) => ({ id: cls.id, name: cls.name }))}
-                  selectedIds={selectedGenre.availableClassIds}
+                  selectedIds={selectedCampaign.availableClassIds}
                   onChange={(ids) =>
-                    updateGenre({ ...selectedGenre, availableClassIds: ids })
+                    updateCampaign({ ...selectedCampaign, availableClassIds: ids })
                   }
                 />
 
                 <ToggleIdListEditor
                   title="Available Skills"
-                  helper="These skills appear for this genre and can be used by classes in it."
+                  helper="These skills appear for this campaign and can be used by classes in it."
                   options={workingData.skills.map((skill) => ({ id: skill.id, name: skill.name }))}
-                  selectedIds={selectedGenre.availableSkillIds}
+                  selectedIds={selectedCampaign.availableSkillIds}
                   onChange={(ids) =>
-                    updateGenre({ ...selectedGenre, availableSkillIds: ids })
+                    updateCampaign({ ...selectedCampaign, availableSkillIds: ids })
                   }
                 />
 
                 <ToggleIdListEditor
                   title="Available Powers"
-                  helper="These powers can be granted or chosen by classes in this genre."
+                  helper="These powers can be granted or chosen by classes in this campaign."
                   options={workingData.powers.map((power) => ({ id: power.id, name: power.name }))}
-                  selectedIds={selectedGenre.availablePowerIds}
+                  selectedIds={selectedCampaign.availablePowerIds}
                   onChange={(ids) =>
-                    updateGenre({ ...selectedGenre, availablePowerIds: ids })
+                    updateCampaign({ ...selectedCampaign, availablePowerIds: ids })
                   }
                 />
 
                 <ToggleIdListEditor
                   title="Available Items"
-                  helper="These items can be granted or chosen by classes in this genre."
+                  helper="These items can be granted or chosen by classes in this campaign."
                   options={workingData.items.map((item) => ({ id: item.id, name: item.name }))}
-                  selectedIds={selectedGenre.availableItemIds}
+                  selectedIds={selectedCampaign.availableItemIds}
                   onChange={(ids) =>
-                    updateGenre({ ...selectedGenre, availableItemIds: ids })
+                    updateCampaign({ ...selectedCampaign, availableItemIds: ids })
                   }
                 />
 
                 <ToggleIdListEditor
                   title="Available Attack Templates"
-                  helper="These starting attacks can be assigned to classes in this genre."
+                  helper="These starting attacks can be assigned to classes in this campaign."
                   options={workingData.attackTemplates.map((attack) => ({
                     id: attack.id,
                     name: attack.name,
                   }))}
-                  selectedIds={selectedGenre.availableAttackTemplateIds}
+                  selectedIds={selectedCampaign.availableAttackTemplateIds}
                   onChange={(ids) =>
-                    updateGenre({ ...selectedGenre, availableAttackTemplateIds: ids })
+                    updateCampaign({ ...selectedCampaign, availableAttackTemplateIds: ids })
                   }
                 />
 
                 <section style={cardStyle()}>
                   <h3 style={{ marginTop: 0, color: "#111827" }}>Attribute Generation</h3>
-                  {helperText("Choose how players generate attributes for this genre.")}
+                  {helperText("Choose how players generate attributes for this campaign.")}
                   <div style={{ ...rowWrap(), marginTop: 10 }}>
                     {["manual", "pointBuy", "randomRoll"].map((method) => {
-                      const active = selectedGenre.attributeRules.generationMethods.includes(
+                      const active = selectedCampaign.attributeRules.generationMethods.includes(
                         method as "manual" | "pointBuy" | "randomRoll"
                       );
                       return (
@@ -1155,14 +1155,14 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                           key={method}
                           type="button"
                           onClick={() => {
-                            const current = selectedGenre.attributeRules.generationMethods;
+                            const current = selectedCampaign.attributeRules.generationMethods;
                             const next = active
                               ? current.filter((value) => value !== method)
                               : [...current, method as "manual" | "pointBuy" | "randomRoll"];
-                            updateGenre({
-                              ...selectedGenre,
+                            updateCampaign({
+                              ...selectedCampaign,
                               attributeRules: {
-                                ...selectedGenre.attributeRules,
+                                ...selectedCampaign.attributeRules,
                                 generationMethods: next.length ? next : ["manual"],
                               },
                             });
@@ -1185,12 +1185,12 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                       Point Buy Total
                       <input
                         type="number"
-                        value={selectedGenre.attributeRules.pointBuyTotal ?? 27}
+                        value={selectedCampaign.attributeRules.pointBuyTotal ?? 27}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
+                          updateCampaign({
+                            ...selectedCampaign,
                             attributeRules: {
-                              ...selectedGenre.attributeRules,
+                              ...selectedCampaign.attributeRules,
                               pointBuyTotal: Number(e.target.value) || 0,
                             },
                           })
@@ -1202,12 +1202,12 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <label style={labelTextStyle}>
                       Random Roll Formula
                       <input
-                        value={selectedGenre.attributeRules.randomRollFormula ?? ""}
+                        value={selectedCampaign.attributeRules.randomRollFormula ?? ""}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
+                          updateCampaign({
+                            ...selectedCampaign,
                             attributeRules: {
-                              ...selectedGenre.attributeRules,
+                              ...selectedCampaign.attributeRules,
                               randomRollFormula: e.target.value,
                             },
                           })
@@ -1220,12 +1220,12 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                       Number of Rolls
                       <input
                         type="number"
-                        value={selectedGenre.attributeRules.randomRollCount ?? 6}
+                        value={selectedCampaign.attributeRules.randomRollCount ?? 6}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
+                          updateCampaign({
+                            ...selectedCampaign,
                             attributeRules: {
-                              ...selectedGenre.attributeRules,
+                              ...selectedCampaign.attributeRules,
                               randomRollCount: Number(e.target.value) || 0,
                             },
                           })
@@ -1238,12 +1238,12 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                       Drop Lowest Dice
                       <input
                         type="number"
-                        value={selectedGenre.attributeRules.randomRollDropLowest ?? 1}
+                        value={selectedCampaign.attributeRules.randomRollDropLowest ?? 1}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
+                          updateCampaign({
+                            ...selectedCampaign,
                             attributeRules: {
-                              ...selectedGenre.attributeRules,
+                              ...selectedCampaign.attributeRules,
                               randomRollDropLowest: Number(e.target.value) || 0,
                             },
                           })
@@ -1256,12 +1256,12 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                       Minimum Score
                       <input
                         type="number"
-                        value={selectedGenre.attributeRules.minimumScore ?? 3}
+                        value={selectedCampaign.attributeRules.minimumScore ?? 3}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
+                          updateCampaign({
+                            ...selectedCampaign,
                             attributeRules: {
-                              ...selectedGenre.attributeRules,
+                              ...selectedCampaign.attributeRules,
                               minimumScore: Number(e.target.value) || 0,
                             },
                           })
@@ -1274,12 +1274,12 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                       Maximum Score
                       <input
                         type="number"
-                        value={selectedGenre.attributeRules.maximumScore ?? 18}
+                        value={selectedCampaign.attributeRules.maximumScore ?? 18}
                         onChange={(e) =>
-                          updateGenre({
-                            ...selectedGenre,
+                          updateCampaign({
+                            ...selectedCampaign,
                             attributeRules: {
-                              ...selectedGenre.attributeRules,
+                              ...selectedCampaign.attributeRules,
                               maximumScore: Number(e.target.value) || 0,
                             },
                           })
@@ -1306,36 +1306,36 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         >
           <EntityListEditor
             title="Classes"
-            helper="Classes are filtered to the selected genre so they are easier to manage."
+            helper="Classes are filtered to the selected campaign so they are easier to manage."
             items={visibleClasses}
             selectedId={selectedClass?.id ?? ""}
             onSelect={setSelectedClassId}
             onAdd={addClass}
             onDelete={deleteClass}
-            subtitle={(cls) => `${cls.genreId} • ${cls.id}`}
+            subtitle={(cls) => `${cls.campaignId} • ${cls.id}`}
           />
 
           <main>
             <section style={{ ...cardStyle(), marginBottom: 16 }}>
               <h3 style={{ marginTop: 0, color: "#111827" }}>Class Filter</h3>
-              {helperText("Choose a genre to view and create only that genre’s classes.")}
+              {helperText("Choose a campaign to view and create only that campaign’s classes.")}
               <label style={{ ...labelTextStyle, marginTop: 12, maxWidth: 320 }}>
-                Genre
+                Campaign
                 <select
-                  value={selectedGenreId}
+                  value={selectedCampaignId}
                   onChange={(e) => {
-                    const nextGenreId = e.target.value;
-                    setSelectedGenreId(nextGenreId);
+                    const nextCampaignId = e.target.value;
+                    setSelectedCampaignId(nextCampaignId);
                     const nextVisible = workingData.classes.filter(
-                      (cls) => cls.genreId === nextGenreId
+                      (cls) => cls.campaignId === nextCampaignId
                     );
                     setSelectedClassId(nextVisible[0]?.id ?? "");
                   }}
                   style={inputStyle}
                 >
-                  {workingData.genres.map((genre) => (
-                    <option key={genre.id} value={genre.id}>
-                      {genre.name}
+                  {workingData.campaigns.map((campaign) => (
+                    <option key={campaign.id} value={campaign.id}>
+                      {campaign.name}
                     </option>
                   ))}
                 </select>
@@ -1345,7 +1345,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
             {!selectedClass ? (
               <div style={cardStyle()}>
                 <p style={{ margin: 0, ...mutedTextStyle }}>
-                  No class selected for this genre. Add one or choose a different genre.
+                  No class selected for this campaign. Add one or choose a different campaign.
                 </p>
               </div>
             ) : (
@@ -1353,7 +1353,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                 <section style={cardStyle()}>
                   <h3 style={{ marginTop: 0, color: "#111827" }}>Basic Info</h3>
                   <div style={{ color: "#6b7280", marginBottom: 12 }}>
-                    Genre: {selectedGenre?.name ?? selectedClass.genreId}
+                    Campaign: {selectedCampaign?.name ?? selectedClass.campaignId}
                   </div>
 
                   <div style={grid2()}>
@@ -1376,21 +1376,21 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     </label>
 
                     <label style={labelTextStyle}>
-                      Genre
+                      Campaign
                       <select
-                        value={selectedClass.genreId}
+                        value={selectedClass.campaignId}
                         onChange={(e) => {
-                          const nextGenreId = e.target.value;
-                          const updated = { ...selectedClass, genreId: nextGenreId };
+                          const nextCampaignId = e.target.value;
+                          const updated = { ...selectedClass, campaignId: nextCampaignId };
                           updateClass(updated);
-                          setSelectedGenreId(nextGenreId);
+                          setSelectedCampaignId(nextCampaignId);
                           setSelectedClassId(updated.id);
                         }}
                         style={inputStyle}
                       >
-                        {workingData.genres.map((genre) => (
-                          <option key={genre.id} value={genre.id}>
-                            {genre.name}
+                        {workingData.campaigns.map((campaign) => (
+                          <option key={campaign.id} value={campaign.id}>
+                            {campaign.name}
                           </option>
                         ))}
                       </select>

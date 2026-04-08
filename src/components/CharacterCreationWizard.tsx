@@ -13,8 +13,8 @@ import type {
   ClassItemChoiceRule,
   ClassPowerChoiceRule,
   ClassSkillChoiceRule,
-  GenreDefinition,
-  GenreLabels,
+  CampaignDefinition,
+  CampaignLabels,
   ItemDefinition,
   PowerDefinition,
   SkillDefinition,
@@ -23,7 +23,7 @@ import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyl
 
 export interface CharacterCreationDraft {
   identity: CharacterIdentity;
-  genreId: string;
+  campaignId: string;
   classId: string;
   level: number;
   proficiencyBonus: number;
@@ -39,9 +39,9 @@ export interface CharacterCreationDraft {
 interface Props {
   step: number;
   draft: CharacterCreationDraft;
-  genres: GenreDefinition[];
-  classesForGenre: ClassDefinition[];
-  selectedGenre: GenreDefinition | null;
+  campaigns: CampaignDefinition[];
+  classesForCampaign: ClassDefinition[];
+  selectedCampaign: CampaignDefinition | null;
   selectedClass: ClassDefinition | null;
   skills: SkillDefinition[];
   powers: PowerDefinition[];
@@ -51,9 +51,9 @@ interface Props {
   itemChoiceRules: ClassItemChoiceRule[];
   pointBuyTotal: number;
   pointBuyRemaining: number;
-  labels: GenreLabels;
+  labels: CampaignLabels;
   onNameChange: (name: string) => void;
-  onGenreChange: (genreId: string) => void;
+  onCampaignChange: (campaignId: string) => void;
   onClassChange: (classId: string) => void;
   onAttributeGenerationChange: (method: "pointBuy" | "randomRoll" | "manual") => void;
   onAttributeChange: (key: AttributeKey, value: number) => void;
@@ -69,9 +69,9 @@ interface Props {
 
 const ATTRS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 
-function getStepTitles(labels: GenreLabels) {
+function getStepTitles(labels: CampaignLabels) {
   return [
-    "Genre",
+    "Campaign",
     labels.className,
     labels.attributes,
     labels.skills,
@@ -129,9 +129,9 @@ function getStepStatus(index: number, currentStep: number) {
 export default function CharacterCreationWizard({
   step,
   draft,
-  genres,
-  classesForGenre,
-  selectedGenre,
+  campaigns,
+  classesForCampaign,
+  selectedCampaign,
   selectedClass,
   skills,
   powers,
@@ -143,7 +143,7 @@ export default function CharacterCreationWizard({
   pointBuyRemaining,
   labels,
   onNameChange,
-  onGenreChange,
+  onCampaignChange,
   onClassChange,
   onAttributeGenerationChange,
   onAttributeChange,
@@ -226,21 +226,21 @@ export default function CharacterCreationWizard({
           </label>
 
           <label style={{ fontWeight: 600, color: "#374151" }}>
-            Genre
+            Campaign
             <select
-              value={draft.genreId}
-              onChange={(e) => onGenreChange(e.target.value)}
+              value={draft.campaignId}
+              onChange={(e) => onCampaignChange(e.target.value)}
               style={inputStyle}
             >
-              {genres.map((genre) => (
-                <option key={genre.id} value={genre.id}>
-                  {genre.name}
+              {campaigns.map((campaign) => (
+                <option key={campaign.id} value={campaign.id}>
+                  {campaign.name}
                 </option>
               ))}
             </select>
           </label>
 
-          {selectedGenre && (
+          {selectedCampaign && (
             <div
               style={{
                 padding: 12,
@@ -250,7 +250,7 @@ export default function CharacterCreationWizard({
                 color: "#374151",
               }}
             >
-              {selectedGenre.description || "No description."}
+              {selectedCampaign.description || "No description."}
             </div>
           )}
         </div>
@@ -265,7 +265,7 @@ export default function CharacterCreationWizard({
               onChange={(e) => onClassChange(e.target.value)}
               style={inputStyle}
             >
-              {classesForGenre.map((cls) => (
+              {classesForCampaign.map((cls) => (
                 <option key={cls.id} value={cls.id}>
                   {cls.name}
                 </option>
@@ -584,7 +584,7 @@ export default function CharacterCreationWizard({
             <strong>Name:</strong> {draft.identity.name}
           </div>
           <div style={{ color: "#374151" }}>
-            <strong>Genre:</strong> {selectedGenre?.name}
+            <strong>Campaign:</strong> {selectedCampaign?.name}
           </div>
           <div style={{ color: "#374151" }}>
             <strong>{labels.className}:</strong> {selectedClass?.name}

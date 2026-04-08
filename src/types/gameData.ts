@@ -5,7 +5,7 @@ export interface AttributeBonusRule {
   amount: number;
 }
 
-export interface GenreLabels {
+export interface CampaignLabels {
   attributes: string;
   skills: string;
   attacks: string;
@@ -26,11 +26,11 @@ export interface AttributeRules {
   maximumScore?: number;
 }
 
-export interface GenreDefinition {
+export interface CampaignDefinition {
   id: string;
   name: string;
   description?: string;
-  labels: GenreLabels;
+  labels: CampaignLabels;
   availableClassIds: string[];
   availableSkillIds: string[];
   availablePowerIds: string[];
@@ -64,7 +64,7 @@ export interface HpRule {
 
 export interface ClassDefinition {
   id: string;
-  genreId: string;
+  campaignId: string;
   name: string;
   description?: string;
   attributeBonuses: AttributeBonusRule[];
@@ -118,7 +118,7 @@ export interface AttackTemplateDefinition {
 }
 
 export interface GameData {
-  genres: GenreDefinition[];
+  campaigns: CampaignDefinition[];
   classes: ClassDefinition[];
   skills: SkillDefinition[];
   powers: PowerDefinition[];

@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { gameData as seedGameData } from "./data/gameData";
 import {
-  createCharacterFromGenreAndClass,
+  createCharacterFromCampaignAndClass,
   generateId,
   getClassById,
-  getClassesForGenre,
+  getClassesForCampaign,
   touchCharacter,
 } from "./lib/character";
 import {
@@ -43,7 +43,7 @@ const characterSkillSchema = z.object({
   skillId: z.string().min(1),
   proficient: z.boolean(),
   bonus: z.number(),
-  source: z.enum(["genre", "class", "background", "wizard-choice", "level-up", "manual"]),
+  source: z.enum(["campaign", "class", "background", "wizard-choice", "level-up", "manual"]),
 });
 
 const characterAttackSchema = z.object({
@@ -61,7 +61,7 @@ const characterPowerSchema = z.object({
   powerId: z.string().optional(),
   name: z.string(),
   notes: z.string().optional(),
-  source: z.enum(["genre", "class", "background", "wizard-choice", "level-up", "manual"]),
+  source: z.enum(["campaign", "class", "background", "wizard-choice", "level-up", "manual"]),
 });
 
 const characterItemSchema = z.object({
@@ -70,7 +70,7 @@ const characterItemSchema = z.object({
   quantity: z.number(),
   notes: z.string().optional(),
   equipped: z.boolean().optional(),
-  source: z.enum(["genre", "class", "background", "wizard-choice", "level-up", "manual"]),
+  source: z.enum(["campaign", "class", "background", "wizard-choice", "level-up", "manual"]),
 });
 
 const characterRecordSchema = z.object({
@@ -82,7 +82,7 @@ const characterRecordSchema = z.object({
     ancestry: z.string().optional(),
     background: z.string().optional(),
   }),
-  genreId: z.string().min(1),
+  campaignId: z.string().min(1),
   classId: z.string(),
   level: z.number(),
   proficiencyBonus: z.number(),
@@ -206,7 +206,7 @@ function formatModifier(score: number) {
 }
 
 function buildRoll20TransferText(character: CharacterRecord, gameData: GameData) {
-  const genre = gameData.genres.find((g) => g.id === character.genreId);
+  const campaign = gameData.campaigns.find((g) => g.id === character.campaignId);
   const cls = gameData.classes.find((c) => c.id === character.classId);
 
   const skillMap = new Map(gameData.skills.map((skill) => [skill.id, skill]));
@@ -220,7 +220,7 @@ function buildRoll20TransferText(character: CharacterRecord, gameData: GameData)
     "====================",
     "",
     `Name: ${character.identity.name || ""}`,
-    `Genre: ${genre?.name ?? character.genreId}`,
+    `Campaign: ${campaign?.name ?? character.campaignId}`,
     `Class: ${cls?.name ?? character.classId}`,
     `Level: ${character.level}`,
     `Proficiency Bonus: ${character.proficiencyBonus >= 0 ? "+" : ""}${character.proficiencyBonus}`,
@@ -293,21 +293,21 @@ function buildRoll20TransferText(character: CharacterRecord, gameData: GameData)
   return lines.join("\n");
 }
 
-function makeDraftFromGenreAndClass(
+function makeDraftFromCampaignAndClass(
   gameData: GameData,
-  genreId: string,
+  campaignId: string,
   classId: string,
   name: string
 ) {
-  const genre = gameData.genres.find((g) => g.id === genreId);
+  const campaign = gameData.campaigns.find((g) => g.id === campaignId);
   const cls = gameData.classes.find((c) => c.id === classId);
-  if (!genre || !cls) return null;
+  if (!campaign || !cls) return null;
 
-  const base = createCharacterFromGenreAndClass(gameData, genre, cls, name);
+  const base = createCharacterFromCampaignAndClass(gameData, campaign, cls, name);
 
   const draft: CharacterCreationDraft = {
     identity: base.identity,
-    genreId: base.genreId,
+    campaignId: base.campaignId,
     classId: base.classId,
     level: base.level,
     proficiencyBonus: base.proficiencyBonus,
@@ -323,11 +323,43 @@ function makeDraftFromGenreAndClass(
   return draft;
 }
 
+function makeDefaultSheet(): CharacterRecord["sheet"] {
+  return {
+    speed: "",
+    acBase: 10,
+    acBonus: 0,
+    acUseDex: true,
+    initMisc: 0,
+    saveProf: {
+      STR: false,
+      DEX: false,
+      CON: false,
+      INT: false,
+      WIS: false,
+      CHA: false,
+    },
+    saveBonus: {
+      STR: 0,
+      DEX: 0,
+      CON: 0,
+      INT: 0,
+      WIS: 0,
+      CHA: 0,
+    },
+  };
+}
+
+function loadCharactersWithDefaultSheets(): CharacterRecord[] {
+  return loadCharacters().map((character) =>
+    character.sheet ? character : { ...character, sheet: makeDefaultSheet() }
+  );
+}
+
 export default function App() {
   const [gameData, setGameData] = useState<GameData>(() => loadGameData(seedGameData));
-  const [characters, setCharacters] = useState<CharacterRecord[]>(() => loadCharacters());
-  const [selectedId, setSelectedId] = useState(() => loadCharacters()[0]?.id ?? "");
-  const [genreId, setGenreId] = useState(() => loadGameData(seedGameData).genres[0]?.id ?? "");
+  const [characters, setCharacters] = useState<CharacterRecord[]>(() => loadCharactersWithDefaultSheets());
+  const [selectedId, setSelectedId] = useState(() => characters[0]?.id ?? "");
+  const [campaignId, setCampaignId] = useState(() => loadGameData(seedGameData).campaigns[0]?.id ?? "");
   const [classId, setClassId] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
@@ -344,94 +376,54 @@ export default function App() {
     saveGameData(gameData);
   }, [gameData]);
 
-  useEffect(() => {
-    const classes = getClassesForGenre(gameData, genreId);
-    if (classes.length === 0) {
-      setClassId("");
-      return;
-    }
+  function handleCampaignChange(nextCampaignId: string) {
+    setCampaignId(nextCampaignId);
+    const nextClassId = getClassesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
+    setClassId(nextClassId);
+  }
 
-    const exists = classes.some((cls) => cls.id === classId);
-    if (!exists) {
-      setClassId(classes[0].id);
-    }
-  }, [gameData, genreId, classId]);
+  function handleAdminSave(nextGameData: GameData) {
+    const nextCampaignId = nextGameData.campaigns.some((campaign) => campaign.id === campaignId)
+      ? campaignId
+      : nextGameData.campaigns[0]?.id ?? "";
+    const nextClassId = getClassesForCampaign(nextGameData, nextCampaignId)[0]?.id ?? "";
 
-  useEffect(() => {
-    if (characters.length === 0) {
-      if (selectedId !== "") setSelectedId("");
-      return;
-    }
+    setGameData(nextGameData);
+    setCampaignId(nextCampaignId);
+    setClassId(nextClassId);
+    setAdminOpen(false);
+  }
 
-    const stillExists = characters.some((c) => c.id === selectedId);
-    if (!stillExists) {
-      setSelectedId(characters[0].id);
-    }
-  }, [characters, selectedId]);
-useEffect(() => {
-  setCharacters((prev) =>
-    prev.map((c) =>
-      c.sheet
-        ? c
-        : {
-            ...c,
-            sheet: {
-              speed: "",
-              acBase: 10,
-              acBonus: 0,
-              acUseDex: true,
-              initMisc: 0,
-              saveProf: {
-                STR: false,
-                DEX: false,
-                CON: false,
-                INT: false,
-                WIS: false,
-                CHA: false,
-              },
-              saveBonus: {
-                STR: 0,
-                DEX: 0,
-                CON: 0,
-                INT: 0,
-                WIS: 0,
-                CHA: 0,
-              },
-            },
-          }
-    )
-  );
-}, []);
   const selected = useMemo(
     () => characters.find((c) => c.id === selectedId) ?? null,
     [characters, selectedId]
   );
 
-  const selectedGenre = selected
-    ? gameData.genres.find((g) => g.id === selected.genreId) ?? null
+  const selectedCampaign = selected
+    ? gameData.campaigns.find((g) => g.id === selected.campaignId) ?? null
     : null;
 
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
 
-  const classesForSelectedGenre = getClassesForGenre(gameData, genreId);
+  const classesForSelectedCampaign = getClassesForCampaign(gameData, campaignId);
 
-  const selectedSkills = selectedGenre
-    ? gameData.skills.filter((skill) => selectedGenre.availableSkillIds.includes(skill.id))
+  const selectedSkills = selectedCampaign
+    ? gameData.skills.filter((skill) => selectedCampaign.availableSkillIds.includes(skill.id))
     : [];
 
-  const selectedPowers = selectedGenre
-    ? gameData.powers.filter((power) => selectedGenre.availablePowerIds.includes(power.id))
+  const selectedPowers = selectedCampaign
+    ? gameData.powers.filter((power) => selectedCampaign.availablePowerIds.includes(power.id))
     : [];
 
-  const selectedItems = selectedGenre
-    ? gameData.items.filter((item) => selectedGenre.availableItemIds.includes(item.id))
+  const selectedItems = selectedCampaign
+    ? gameData.items.filter((item) => selectedCampaign.availableItemIds.includes(item.id))
     : [];
 
   const skillChoiceRules = selectedClass?.skillChoiceRules ?? [];
   const powerChoiceRules = selectedClass?.powerChoiceRules ?? [];
   const itemChoiceRules = selectedClass?.itemChoiceRules ?? [];
 
-  const labels = selectedGenre?.labels ?? {
+  const labels = selectedCampaign?.labels ?? {
     attributes: "Attributes",
     skills: "Skills",
     attacks: "Attacks",
@@ -444,34 +436,34 @@ useEffect(() => {
 
   const pointBuyTotal =
     selected?.attributeGeneration?.pointBuyTotal ??
-    selectedGenre?.attributeRules.pointBuyTotal ??
+    selectedCampaign?.attributeRules.pointBuyTotal ??
     27;
 
   const pointBuySpent = selected ? getPointBuySpent(selected.attributes) : 0;
   const pointBuyRemaining = pointBuyTotal - pointBuySpent;
 
-  const wizardGenre = creationDraft
-    ? gameData.genres.find((g) => g.id === creationDraft.genreId) ?? null
+  const wizardCampaign = creationDraft
+    ? gameData.campaigns.find((g) => g.id === creationDraft.campaignId) ?? null
     : null;
 
   const wizardClass = creationDraft
     ? getClassById(gameData, creationDraft.classId) ?? null
     : null;
 
-  const wizardClassesForGenre = creationDraft
-    ? getClassesForGenre(gameData, creationDraft.genreId)
+  const wizardClassesForCampaign = creationDraft
+    ? getClassesForCampaign(gameData, creationDraft.campaignId)
     : [];
 
-  const wizardSkills = wizardGenre
-    ? gameData.skills.filter((skill) => wizardGenre.availableSkillIds.includes(skill.id))
+  const wizardSkills = wizardCampaign
+    ? gameData.skills.filter((skill) => wizardCampaign.availableSkillIds.includes(skill.id))
     : [];
 
-  const wizardPowers = wizardGenre
-    ? gameData.powers.filter((power) => wizardGenre.availablePowerIds.includes(power.id))
+  const wizardPowers = wizardCampaign
+    ? gameData.powers.filter((power) => wizardCampaign.availablePowerIds.includes(power.id))
     : [];
 
-  const wizardItems = wizardGenre
-    ? gameData.items.filter((item) => wizardGenre.availableItemIds.includes(item.id))
+  const wizardItems = wizardCampaign
+    ? gameData.items.filter((item) => wizardCampaign.availableItemIds.includes(item.id))
     : [];
 
   const wizardSkillChoiceRules = wizardClass?.skillChoiceRules ?? [];
@@ -480,7 +472,7 @@ useEffect(() => {
 
   const wizardPointBuyTotal =
     creationDraft?.attributeGeneration?.pointBuyTotal ??
-    wizardGenre?.attributeRules.pointBuyTotal ??
+    wizardCampaign?.attributeRules.pointBuyTotal ??
     27;
 
   const wizardPointBuySpent = creationDraft ? getPointBuySpent(creationDraft.attributes) : 0;
@@ -489,8 +481,8 @@ useEffect(() => {
   const roll20PreviewText = selected ? buildRoll20AttributeMapText(selected, gameData) : "";
   const roll20PreviewJson = selected ? buildRoll20AttributeMapJson(selected, gameData) : "";
 
-  function getGenreName(id: string) {
-    return gameData.genres.find((g) => g.id === id)?.name ?? id;
+  function getCampaignName(id: string) {
+    return gameData.campaigns.find((g) => g.id === id)?.name ?? id;
   }
 
   function getClassName(id: string) {
@@ -498,14 +490,14 @@ useEffect(() => {
   }
 
   function openWizard() {
-    const defaultGenreId = genreId || gameData.genres[0]?.id || "";
-    const defaultClassId = getClassesForGenre(gameData, defaultGenreId)[0]?.id ?? "";
+    const defaultCampaignId = campaignId || gameData.campaigns[0]?.id || "";
+    const defaultClassId = getClassesForCampaign(gameData, defaultCampaignId)[0]?.id ?? "";
 
-    const draft = makeDraftFromGenreAndClass(
+    const draft = makeDraftFromCampaignAndClass(
       gameData,
-      defaultGenreId,
+      defaultCampaignId,
       defaultClassId,
-      `${getClassName(defaultClassId)} ${getGenreName(defaultGenreId)} Character`
+      `${getClassName(defaultClassId)} ${getCampaignName(defaultCampaignId)} Character`
     );
 
     if (!draft) return;
@@ -527,7 +519,7 @@ useEffect(() => {
     const character: CharacterRecord = {
       id: generateId(),
       identity: creationDraft.identity,
-      genreId: creationDraft.genreId,
+      campaignId: creationDraft.campaignId,
       classId: creationDraft.classId,
       level: creationDraft.level,
       proficiencyBonus: creationDraft.proficiencyBonus,
@@ -574,7 +566,7 @@ useEffect(() => {
     if (!creationDraft) return false;
 
     if (wizardStep === 0) {
-      return Boolean(creationDraft.genreId && creationDraft.identity.name.trim());
+      return Boolean(creationDraft.campaignId && creationDraft.identity.name.trim());
     }
 
     if (wizardStep === 1) {
@@ -1113,9 +1105,9 @@ useEffect(() => {
         const raw = JSON.parse(reader.result as string);
         const parsed = characterRecordSchema.parse(raw);
 
-        const genreExists = gameData.genres.some((g) => g.id === parsed.genreId);
-        if (!genreExists) {
-          alert(`Import failed: unknown genre "${parsed.genreId}".`);
+        const campaignExists = gameData.campaigns.some((g) => g.id === parsed.campaignId);
+        if (!campaignExists) {
+          alert(`Import failed: unknown campaign "${parsed.campaignId}".`);
           return;
         }
 
@@ -1196,28 +1188,25 @@ useEffect(() => {
       {adminOpen ? (
         <AdminScreen
           gameData={gameData}
-          onSave={(nextGameData) => {
-            setGameData(nextGameData);
-            setAdminOpen(false);
-          }}
+          onSave={handleAdminSave}
           onClose={() => setAdminOpen(false)}
         />
       ) : (
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           <Sidebar
-            genres={gameData.genres}
-            classesForSelectedGenre={classesForSelectedGenre}
+            campaigns={gameData.campaigns}
+            classesForSelectedCampaign={classesForSelectedCampaign}
             characters={characters}
             selectedId={selectedId}
-            newGenreId={genreId}
+            newCampaignId={campaignId}
             newClassId={classId}
             onSelect={setSelectedId}
             onCreate={openWizard}
             onDelete={deleteCharacter}
             onImport={importCharacter}
-            onGenreChange={setGenreId}
+            onCampaignChange={handleCampaignChange}
             onClassChange={setClassId}
-            getGenreName={getGenreName}
+            getCampaignName={getCampaignName}
             getClassName={getClassName}
           />
 
@@ -1226,9 +1215,9 @@ useEffect(() => {
               <CharacterCreationWizard
                 step={wizardStep}
                 draft={creationDraft}
-                genres={gameData.genres}
-                classesForGenre={wizardClassesForGenre}
-                selectedGenre={wizardGenre}
+                campaigns={gameData.campaigns}
+                classesForCampaign={wizardClassesForCampaign}
+                selectedCampaign={wizardCampaign}
                 selectedClass={wizardClass}
                 skills={wizardSkills}
                 powers={wizardPowers}
@@ -1239,7 +1228,7 @@ useEffect(() => {
                 pointBuyTotal={wizardPointBuyTotal}
                 pointBuyRemaining={wizardPointBuyRemaining}
                 labels={
-                  wizardGenre?.labels ?? {
+                  wizardCampaign?.labels ?? {
                     attributes: "Attributes",
                     skills: "Skills",
                     attacks: "Attacks",
@@ -1259,11 +1248,11 @@ useEffect(() => {
                     },
                   })
                 }
-                onGenreChange={(nextGenreId) => {
-                  const nextClassId = getClassesForGenre(gameData, nextGenreId)[0]?.id ?? "";
-                  const nextDraft = makeDraftFromGenreAndClass(
+                onCampaignChange={(nextCampaignId) => {
+                  const nextClassId = getClassesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
+                  const nextDraft = makeDraftFromCampaignAndClass(
                     gameData,
-                    nextGenreId,
+                    nextCampaignId,
                     nextClassId,
                     creationDraft.identity.name
                   );
@@ -1272,9 +1261,9 @@ useEffect(() => {
                   }
                 }}
                 onClassChange={(nextClassId) => {
-                  const nextDraft = makeDraftFromGenreAndClass(
+                  const nextDraft = makeDraftFromCampaignAndClass(
                     gameData,
-                    creationDraft.genreId,
+                    creationDraft.campaignId,
                     nextClassId,
                     creationDraft.identity.name
                   );
@@ -1327,7 +1316,7 @@ useEffect(() => {
                 onFinish={finishWizard}
               />
             </div>
-          ) : !selected || !selectedGenre ? (
+          ) : !selected || !selectedCampaign ? (
             <div
               style={{
                 ...panelStyle,
@@ -1383,7 +1372,7 @@ useEffect(() => {
 
               <IdentitySection
                 character={selected}
-                genreName={selectedGenre.name}
+                campaignName={selectedCampaign.name}
                 classLabel={labels.className}
                 className={selectedClass?.name ?? "Unassigned"}
                 levelLabel={labels.level}
@@ -1416,7 +1405,7 @@ useEffect(() => {
                       method,
                       pointBuyTotal:
                         selected.attributeGeneration?.pointBuyTotal ??
-                        selectedGenre.attributeRules.pointBuyTotal ??
+                        selectedCampaign.attributeRules.pointBuyTotal ??
                         27,
                     },
                   })
