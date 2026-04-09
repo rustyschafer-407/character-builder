@@ -15,6 +15,25 @@ function getModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
+function getAttrModRef(attribute: AttributeKey) {
+  switch (attribute) {
+    case "STR":
+      return "@{str_mod}";
+    case "DEX":
+      return "@{dex_mod}";
+    case "CON":
+      return "@{con_mod}";
+    case "INT":
+      return "@{int_mod}";
+    case "WIS":
+      return "@{wis_mod}";
+    case "CHA":
+      return "@{cha_mod}";
+    default:
+      return "@{str_mod}";
+  }
+}
+
 function getThemeValue(campaignId: string) {
   const normalized = campaignId.toLowerCase();
   if (normalized.includes("scifi") || normalized.includes("sci-fi")) return "scifi";
@@ -74,17 +93,18 @@ export function buildRoll20AttributeMap(
   // These are not modeled yet in your builder, so export safe defaults/blanks
   result["attr_ac_base"] = "10";
   result["attr_ac_bonus"] = "0";
-  setAttrAliases(
-    ["ac_use_dex", "use_dex_for_ac", "ac_dex", "dex_to_ac", "ac_dex_toggle"],
-    "on"
-  );
-  setAttrAliases(["ac_use_dex_flag", "ac_use_dex_value"], "1");
+  // This sheet's worker uses parseInt(ac_use_dex), so it must be numeric.
+  result["attr_ac_use_dex"] = "1";
+  setAttrAliases(["ac_use_dex_flag", "ac_use_dex_value", "use_dex_for_ac"], "1");
   result["attr_speed"] = "";
 
   // HP
   const maxHp = clean(character.hp.max);
   const currentHp = clean(character.hp.current);
-  setAttrAliases(["hp", "hp_max", "max_hp", "hit_points_max", "health_max"], maxHp);
+  // Keep explicit keys first for this sheet.
+  result["attr_hp_max"] = maxHp;
+  result["attr_hp_current"] = currentHp;
+  setAttrAliases(["hp", "max_hp", "hit_points_max", "health_max"], maxHp);
   setAttrAliases(["hp_current", "current_hp", "hit_points", "health"], currentHp);
 
   // Attributes
@@ -130,8 +150,8 @@ export function buildRoll20AttributeMap(
     const sections = ["skills", "skill"];
 
     const skillName = clean(definition?.name ?? skill.skillId);
-    const skillAttr = clean(getModifier(character.attributes[attr]));
-    const skillProf = clean(character.proficiencyBonus);
+    const skillAttr = clean(getAttrModRef(attr));
+    const skillProf = "@{pb}";
     const skillBonus = clean(skill.bonus ?? 0);
 
     setRepeatingValue(sections, rowKeys, ["skillname", "name"], skillName);
@@ -149,8 +169,8 @@ export function buildRoll20AttributeMap(
     const sections = ["attacks", "attack"];
 
     const attackName = clean(attack.name);
-    const attackAttr = clean(getModifier(character.attributes[attack.attribute]));
-    const attackProf = clean(character.proficiencyBonus);
+    const attackAttr = clean(getAttrModRef(attack.attribute));
+    const attackProf = "@{pb}";
     const attackBonus = clean(attack.bonus ?? 0);
     const damageDice = clean(attack.damage);
 
@@ -233,10 +253,12 @@ export function buildChatSetAttrCommand(
       const attrName = key.startsWith("attr_") ? key.slice(5) : key;
       // Escape characters that can break ChatSetAttr parsing
       const safeValue = String(value)
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"')
         .replace(/\|/g, "&#124;")
         .replace(/--/g, "&#45;&#45;")
         .replace(/\n/g, " ");
-      return `--${attrName}|${safeValue}`;
+      return `--${attrName}|"${safeValue}"`;
     });
 
   return `!setattr --sel ${pairs.join(" ")}`;
