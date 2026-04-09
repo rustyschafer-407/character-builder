@@ -195,6 +195,7 @@ export function buildChatSetAttrCommand(
 ): string {
   const map = buildRoll20AttributeMap(character, gameData);
   const commandPrefix = "!setattr --replace --sel";
+  const maxCommandLength = 1700;
 
   const inlineRefValues: Record<string, string> = {
     pb: clean(character.proficiencyBonus),
@@ -244,11 +245,24 @@ export function buildChatSetAttrCommand(
   basePairsByName.set("hp_max", makePair("hp_max", clean(character.hp.max)));
   basePairsByName.set("hp_current", makePair("hp_current", clean(character.hp.current)));
 
+  const baseCommands: string[] = [];
+  if (basePairsByName.size > 0) {
+    let current = commandPrefix;
+    for (const pair of basePairsByName.values()) {
+      const next = `${current} ${pair}`;
+      if (next.length > maxCommandLength && current !== commandPrefix) {
+        baseCommands.push(current);
+        current = `${commandPrefix} ${pair}`;
+      } else {
+        current = next;
+      }
+    }
+    if (current !== commandPrefix) {
+      baseCommands.push(current);
+    }
+  }
+
   const commands: string[] = [];
-  const baseCommand =
-    basePairsByName.size > 0
-      ? `${commandPrefix} ${[...basePairsByName.values()].join(" ")}`
-      : "";
 
   // Repeating skills.
   const proficientSkills = character.skills
@@ -300,9 +314,7 @@ export function buildChatSetAttrCommand(
     );
   }
 
-  if (baseCommand) {
-    commands.push(baseCommand);
-  }
+  commands.push(...baseCommands);
 
   // Final touch can help the sheet UI repaint consistently after repeating updates.
   commands.push(
