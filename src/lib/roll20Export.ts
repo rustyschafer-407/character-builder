@@ -193,6 +193,13 @@ export function buildChatSetAttrCommand(
   character: CharacterRecord,
   gameData: GameData
 ): string {
+  return buildChatSetAttrPhases(character, gameData).combined;
+}
+
+export function buildChatSetAttrPhases(
+  character: CharacterRecord,
+  gameData: GameData
+): { phase1: string; phase2: string; combined: string } {
   const map = buildRoll20AttributeMap(character, gameData);
   const setPrefix = "!setattr --replace --sel";
   const delPrefix = "!delattr --mute --sel";
@@ -269,7 +276,7 @@ export function buildChatSetAttrCommand(
   basePairsByName.set("hp_current", makePair("hp_current", clean(character.hp.current)));
 
   const baseCommands = chunkCommands(setPrefix, [...basePairsByName.values()]);
-  const commands: string[] = [...baseCommands];
+  const repeatingCommands: string[] = [];
 
   // Clear existing repeating rows first so reruns are idempotent and do not duplicate entries.
   const repeatingDeleteParts: string[] = [];
@@ -285,7 +292,7 @@ export function buildChatSetAttrCommand(
   for (let i = 0; i < MAX_INVENTORY_ROWS; i++) {
     repeatingDeleteParts.push(`--repeating_inventory_$${i}`);
   }
-  commands.push(...chunkCommands(delPrefix, repeatingDeleteParts));
+  repeatingCommands.push(...chunkCommands(delPrefix, repeatingDeleteParts));
 
   // Repeating skills.
   const proficientSkills = character.skills
@@ -294,7 +301,7 @@ export function buildChatSetAttrCommand(
   for (const skill of proficientSkills) {
     const def = skillMap.get(skill.skillId);
     const attr = def?.attribute ?? "STR";
-    commands.push(
+    repeatingCommands.push(
       `${setPrefix} ${[
         makePair("repeating_skills_-CREATE_skillname", clean(def?.name ?? skill.skillId)),
         makePair("repeating_skills_-CREATE_skillattr", clean(getModifier(character.attributes[attr]))),
@@ -306,7 +313,7 @@ export function buildChatSetAttrCommand(
 
   // Repeating attacks.
   for (const attack of character.attacks.slice(0, MAX_ATTACK_ROWS)) {
-    commands.push(
+    repeatingCommands.push(
       `${setPrefix} ${[
         makePair("repeating_attacks_-CREATE_attackname", clean(attack.name)),
         makePair("repeating_attacks_-CREATE_attackattr", clean(getModifier(character.attributes[attack.attribute]))),
@@ -321,14 +328,14 @@ export function buildChatSetAttrCommand(
   // Repeating powers.
   for (const power of character.powers.slice(0, MAX_POWER_ROWS)) {
     const text = power.notes?.trim() ? `${power.name} - ${power.notes}` : power.name;
-    commands.push(
+    repeatingCommands.push(
       `${setPrefix} ${makePair("repeating_powers_-CREATE_powertext", clean(text))}`
     );
   }
 
   // Repeating inventory.
   for (const item of character.inventory.slice(0, MAX_INVENTORY_ROWS)) {
-    commands.push(
+    repeatingCommands.push(
       `${setPrefix} ${[
         makePair("repeating_inventory_-CREATE_itemname", clean(item.name)),
         makePair("repeating_inventory_-CREATE_itemqty", clean(item.quantity)),
@@ -338,9 +345,15 @@ export function buildChatSetAttrCommand(
   }
 
   // Final touch can help the sheet UI repaint consistently after repeating updates.
-  commands.push(
+  const finalHpCommand =
     `${setPrefix} ${makePair("hp_max", clean(character.hp.max))} ${makePair("hp_current", clean(character.hp.current))}`
-  );
+  ;
 
-  return commands.join("\n");
+  const phase1Commands = [...baseCommands, finalHpCommand];
+  const phase2Commands = repeatingCommands;
+  const phase1 = phase1Commands.join("\n");
+  const phase2 = phase2Commands.join("\n");
+  const combined = [...phase1Commands, ...phase2Commands].join("\n");
+
+  return { phase1, phase2, combined };
 }

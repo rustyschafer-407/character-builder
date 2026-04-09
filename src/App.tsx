@@ -7,7 +7,7 @@ import {
   getClassesForCampaign,
   touchCharacter,
 } from "./lib/character";
-import { buildChatSetAttrCommand } from "./lib/roll20Export";
+import { buildChatSetAttrPhases } from "./lib/roll20Export";
 import { loadCharacters, saveCharacters } from "./storage/characterStorage";
 import { loadGameData, saveGameData } from "./storage/gameDataStorage";
 import type { CharacterRecord } from "./types/character";
@@ -259,7 +259,10 @@ export default function App() {
   const wizardPointBuySpent = creationDraft ? getPointBuySpent(creationDraft.attributes) : 0;
   const wizardPointBuyRemaining = wizardPointBuyTotal - wizardPointBuySpent;
 
-  const chatSetAttrCommand = selected ? buildChatSetAttrCommand(selected, gameData) : "";
+  const roll20Commands = selected
+    ? buildChatSetAttrPhases(selected, gameData)
+    : { phase1: "", phase2: "", combined: "" };
+  const chatSetAttrCommand = roll20Commands.combined;
 
   function getCampaignName(id: string) {
     return gameData.campaigns.find((g) => g.id === id)?.name ?? id;
@@ -806,7 +809,27 @@ export default function App() {
     if (!selected) return;
     try {
       await navigator.clipboard.writeText(chatSetAttrCommand);
-      alert("Roll20 import command copied to clipboard. Paste it into the Roll20 chat.");
+      alert("Roll20 import commands copied. Paste Phase 1 first, then Phase 2.");
+    } catch {
+      alert("Could not copy to clipboard on this device/browser.");
+    }
+  }
+
+  async function copyChatSetAttrPhase1() {
+    if (!selected) return;
+    try {
+      await navigator.clipboard.writeText(roll20Commands.phase1);
+      alert("Roll20 Phase 1 command copied to clipboard.");
+    } catch {
+      alert("Could not copy to clipboard on this device/browser.");
+    }
+  }
+
+  async function copyChatSetAttrPhase2() {
+    if (!selected) return;
+    try {
+      await navigator.clipboard.writeText(roll20Commands.phase2);
+      alert("Roll20 Phase 2 commands copied to clipboard.");
     } catch {
       alert("Could not copy to clipboard on this device/browser.");
     }
@@ -1184,11 +1207,17 @@ export default function App() {
                   >
                     ChatSetAttr
                   </a>{" "}
-                  API script (Roll20 Pro). <strong>Select your character's token</strong> in Roll20, then paste the command into chat.
+                  API script (Roll20 Pro). <strong>Select your character's token</strong> in Roll20, then paste <strong>Phase 1</strong> and then <strong>Phase 2</strong>.
                 </p>
-                <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button onClick={copyChatSetAttrPhase1} style={buttonStyle}>
+                    Copy Phase 1
+                  </button>
+                  <button onClick={copyChatSetAttrPhase2} style={buttonStyle}>
+                    Copy Phase 2
+                  </button>
                   <button onClick={copyChatSetAttr} style={primaryButtonStyle}>
-                    Copy !setattr Command
+                    Copy Both Phases
                   </button>
                   <button onClick={() => setRoll20PreviewOpen(true)} style={buttonStyle}>
                     Preview Command
@@ -1238,9 +1267,9 @@ export default function App() {
               }}
             >
               <div>
-                <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Roll20 Import Command</h2>
+                <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Roll20 Import Commands</h2>
                 <div style={{ color: "var(--text-secondary)", marginTop: 4 }}>
-                  {selected.identity.name || "Unnamed Character"} — paste into Roll20 chat
+                  {selected.identity.name || "Unnamed Character"} — paste Phase 1, then Phase 2
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
