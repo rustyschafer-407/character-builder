@@ -269,5 +269,5 @@ export function buildChatSetAttrCommand(
     .replace(/\|/g, "&#124;")
     .replace(/\n/g, " ");
 
-  return `!setattr --name|"${safeCharacterName}" ${pairs.join(" ")}`;
+  return `!setattr --name "${safeCharacterName}" ${pairs.join(" ")}`;
 }
