@@ -216,19 +216,22 @@ export function buildChatSetAttrCommand(
       .trim();
   }
 
+  function escapeForChatSetAttr(value: string) {
+    return value
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/\|/g, "&#124;")
+      .replace(/--/g, "&#45;&#45;")
+      .replace(/\n/g, " ");
+  }
+
   const pairs = Object.entries(map)
     .filter(([, value]) => value !== "")
     .map(([key, value]) => {
       // Regular attributes are stored as "attr_foo" in the map but Roll20 uses "foo"
       const attrName = key.startsWith("attr_") ? key.slice(5) : key;
       const resolvedValue = resolveInlineRefs(String(value));
-      // Escape characters that can break ChatSetAttr parsing
-      const safeValue = resolvedValue
-        .replace(/\\/g, "\\\\")
-        .replace(/'/g, "\\'")
-        .replace(/\|/g, "&#124;")
-        .replace(/--/g, "&#45;&#45;")
-        .replace(/\n/g, " ");
+      const safeValue = escapeForChatSetAttr(resolvedValue);
       return `--${attrName}|'${safeValue}'`;
     });
 
@@ -284,6 +287,22 @@ export function buildChatSetAttrCommand(
     const rowPairs = repeatingGroups.get(key) ?? [];
     if (rowPairs.length === 0) continue;
     commands.push(`${commandPrefix} ${rowPairs.join(" ")}`);
+  }
+
+  // Ensure current HP always gets a direct update command.
+  const hpCurrent = escapeForChatSetAttr(clean(character.hp.current));
+  commands.unshift(`${commandPrefix} --hp_current|'${hpCurrent}'`);
+
+  // Emit explicit power row create commands to avoid missing powers in some ChatSetAttr runs.
+  const campaign = gameData.campaigns.find((value) => value.id === character.campaignId);
+  const powerMap = new Map((campaign?.powers ?? []).map((power) => [power.id, power]));
+  for (const power of character.powers.slice(0, MAX_POWER_ROWS)) {
+    const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
+    const notes = clean(power.notes ?? definition?.description ?? "");
+    const text = notes ? `${power.name} - ${notes}` : power.name;
+    const resolved = resolveInlineRefs(text);
+    const safeText = escapeForChatSetAttr(resolved);
+    commands.push(`${commandPrefix} --repeating_powers_-CREATE_powertext|'${safeText}'`);
   }
 
   return commands.join("\n");
