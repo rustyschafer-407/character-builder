@@ -29,6 +29,7 @@ interface Props {
 }
 
 type AdminTab = "campaigns" | "classes" | "skills" | "powers" | "items" | "attacks";
+const HIT_DIE_OPTIONS = [4, 6, 8, 10, 12, 20] as const;
 
 function makeBlankCampaign(): CampaignDefinition {
   return {
@@ -651,6 +652,28 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                           onChange={(e) => updateClass({ ...selectedClass, description: e.target.value })}
                           style={inputStyle}
                         />
+                      </label>
+                      <label style={labelTextStyle}>
+                        Hit Die
+                        <select
+                          value={selectedClass.hpRule.hitDie}
+                          onChange={(e) =>
+                            updateClass({
+                              ...selectedClass,
+                              hpRule: {
+                                ...selectedClass.hpRule,
+                                hitDie: Number(e.target.value),
+                              },
+                            })
+                          }
+                          style={inputStyle}
+                        >
+                          {HIT_DIE_OPTIONS.map((die) => (
+                            <option key={die} value={die}>
+                              d{die}
+                            </option>
+                          ))}
+                        </select>
                       </label>
                     </div>
                   </section>
