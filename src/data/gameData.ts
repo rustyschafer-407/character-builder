@@ -9,6 +9,7 @@ function makeDefaultLevelProgression(cls: ClassDefinition) {
     {
       level: 1,
       hitDiceGained: 1,
+      hpGainMode: "half",
       newSkillChoices: skillChoices,
       newPowerChoices: powerChoices,
       attributeBonuses: cls.attributeBonuses ?? [],

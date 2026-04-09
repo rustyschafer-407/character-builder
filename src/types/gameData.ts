@@ -67,9 +67,12 @@ export interface HpRule {
   levelUpFixedValue?: number;
 }
 
+export type LevelProgressionHpGainMode = "full" | "random" | "half";
+
 export interface ClassLevelProgressionRow {
   level: number;
   hitDiceGained: number;
+  hpGainMode?: LevelProgressionHpGainMode;
   newSkillChoices: number;
   newPowerChoices: number;
   attributeBonuses: AttributeBonusRule[];

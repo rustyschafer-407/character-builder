@@ -67,6 +67,14 @@ export interface CharacterSheetFields {
   saveBonus: Record<AttributeKey, number>;
 }
 
+export interface CharacterLevelProgressionState {
+  totalHitDice: number;
+  gainedSkillIds: string[];
+  gainedPowerIds: string[];
+  appliedLevels: number[];
+  appliedAttributeIncreases: Record<AttributeKey, number>;
+}
+
 export interface CharacterRecord {
   id: string;
   identity: CharacterIdentity;
@@ -82,6 +90,7 @@ export interface CharacterRecord {
   powers: CharacterPowerSelection[];
   inventory: CharacterItem[];
   attacks: CharacterAttack[];
+  levelProgression: CharacterLevelProgressionState;
   createdAt: string;
   updatedAt: string;
 }

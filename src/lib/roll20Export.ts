@@ -6,6 +6,31 @@ const MAX_ATTACK_ROWS = 8;
 const MAX_POWER_ROWS = 12;
 const MAX_INVENTORY_ROWS = 20;
 
+function getExportedSkills(character: CharacterRecord) {
+  const gainedSkillIds = new Set(character.levelProgression?.gainedSkillIds ?? []);
+  return character.skills.filter(
+    (skill) => skill.proficient || gainedSkillIds.has(skill.skillId)
+  );
+}
+
+function getExportedPowers(character: CharacterRecord, gamePowerIds: Set<string>) {
+  const existingPowerIds = new Set(character.powers.map((power) => power.powerId).filter(Boolean));
+  const gainedPowerIds = (character.levelProgression?.gainedPowerIds ?? []).filter(
+    (powerId) => gamePowerIds.has(powerId)
+  );
+
+  const missingGainedPowers = gainedPowerIds
+    .filter((powerId) => !existingPowerIds.has(powerId))
+    .map((powerId) => ({
+      powerId,
+      name: powerId,
+      notes: "",
+      source: "level-up" as const,
+    }));
+
+  return [...character.powers, ...missingGainedPowers];
+}
+
 function clean(value: string | number | boolean | undefined | null) {
   if (value === undefined || value === null) return "";
   return String(value).replace(/\r?\n/g, " ").trim();
@@ -63,6 +88,9 @@ export function buildRoll20AttributeMap(
   // Keep explicit keys first for this sheet.
   result["attr_hp_max"] = maxHp;
   result["attr_hp_current"] = currentHp;
+  result["attr_hp_temp"] = clean(character.hp.temp ?? 0);
+  result["attr_hit_die"] = clean(character.hp.hitDie ?? cls?.hpRule.hitDie ?? 0);
+  result["attr_hit_dice_total"] = clean(character.levelProgression?.totalHitDice ?? character.level);
 
   // Attributes
   result["attr_str"] = clean(character.attributes.STR);
@@ -95,13 +123,11 @@ export function buildRoll20AttributeMap(
   result["attr_initiative"] = clean(getModifier(character.attributes.DEX));
 
   // Repeating skills
-  const proficientSkills = character.skills
-    .filter((skill) => skill.proficient)
-    .slice(0, MAX_SKILL_ROWS);
+  const exportedSkills = getExportedSkills(character).slice(0, MAX_SKILL_ROWS);
 
-  for (let i = 0; i < proficientSkills.length; i++) {
+  for (let i = 0; i < exportedSkills.length; i++) {
     const rowId = `$${i}`;
-    const skill = proficientSkills[i];
+    const skill = exportedSkills[i];
     const definition = skillMap.get(skill.skillId);
     const attr = definition?.attribute ?? "STR";
 
@@ -138,7 +164,10 @@ export function buildRoll20AttributeMap(
   }
 
   // Repeating powers
-  const exportedPowers = character.powers.slice(0, MAX_POWER_ROWS);
+  const exportedPowers = getExportedPowers(
+    character,
+    new Set((campaign?.powers ?? []).map((power) => power.id))
+  ).slice(0, MAX_POWER_ROWS);
 
   for (let i = 0; i < exportedPowers.length; i++) {
     const rowId = `$${i}`;
@@ -263,6 +292,7 @@ export function buildChatSetAttrPhases(
 
   const campaign = gameData.campaigns.find((value) => value.id === character.campaignId);
   const skillMap = new Map((campaign?.skills ?? []).map((skill) => [skill.id, skill]));
+  const powerMap = new Map((campaign?.powers ?? []).map((power) => [power.id, power]));
 
   // Base non-repeating attributes.
   const basePairsByName = new Map<string, string>();
@@ -274,6 +304,12 @@ export function buildChatSetAttrPhases(
   // Guarantee explicit HP values are present.
   basePairsByName.set("hp_max", makePair("hp_max", clean(character.hp.max)));
   basePairsByName.set("hp_current", makePair("hp_current", clean(character.hp.current)));
+  basePairsByName.set("hp_temp", makePair("hp_temp", clean(character.hp.temp ?? 0)));
+  basePairsByName.set("hit_die", makePair("hit_die", clean(character.hp.hitDie ?? 0)));
+  basePairsByName.set(
+    "hit_dice_total",
+    makePair("hit_dice_total", clean(character.levelProgression?.totalHitDice ?? character.level))
+  );
 
   const baseCommands = chunkCommands(setPrefix, [...basePairsByName.values()]);
   const repeatingCommands: string[] = [];
@@ -295,10 +331,8 @@ export function buildChatSetAttrPhases(
   repeatingCommands.push(...chunkCommands(delPrefix, repeatingDeleteParts));
 
   // Repeating skills.
-  const proficientSkills = character.skills
-    .filter((skill) => skill.proficient)
-    .slice(0, MAX_SKILL_ROWS);
-  for (const skill of proficientSkills) {
+  const exportedSkills = getExportedSkills(character).slice(0, MAX_SKILL_ROWS);
+  for (const skill of exportedSkills) {
     const def = skillMap.get(skill.skillId);
     const attr = def?.attribute ?? "STR";
     repeatingCommands.push(
@@ -326,8 +360,14 @@ export function buildChatSetAttrPhases(
   }
 
   // Repeating powers.
-  for (const power of character.powers.slice(0, MAX_POWER_ROWS)) {
-    const text = power.notes?.trim() ? `${power.name} - ${power.notes}` : power.name;
+  const exportedPowers = getExportedPowers(
+    character,
+    new Set((campaign?.powers ?? []).map((power) => power.id))
+  ).slice(0, MAX_POWER_ROWS);
+  for (const power of exportedPowers) {
+    const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
+    const notes = clean(power.notes ?? definition?.description ?? "");
+    const text = notes ? `${power.name} - ${notes}` : power.name;
     repeatingCommands.push(
       `${setPrefix} ${makePair("repeating_powers_-CREATE_powertext", clean(text))}`
     );

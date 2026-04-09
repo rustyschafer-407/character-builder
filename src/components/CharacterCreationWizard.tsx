@@ -4,6 +4,7 @@ import type {
   CharacterHp,
   CharacterIdentity,
   CharacterItem,
+  CharacterLevelProgressionState,
   CharacterPowerSelection,
   CharacterSkillSelection,
 } from "../types/character";
@@ -34,6 +35,7 @@ export interface CharacterCreationDraft {
   powers: CharacterPowerSelection[];
   inventory: CharacterItem[];
   attacks: CharacterAttack[];
+  levelProgression: CharacterLevelProgressionState;
 }
 
 interface Props {

@@ -5,6 +5,8 @@ import type {
   AttributeKey,
   ClassDefinition,
   ClassItemChoiceRule,
+  LevelProgressionHpGainMode,
+  ClassLevelProgressionRow,
   ClassPowerChoiceRule,
   ClassSkillChoiceRule,
   GameData,
@@ -32,6 +34,19 @@ interface Props {
 type AdminTab = "campaigns" | "classes" | "skills" | "powers" | "items" | "attacks";
 const HIT_DIE_OPTIONS = [4, 6, 8, 10, 12, 20] as const;
 const ATTRIBUTE_KEYS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
+const compactNumberInputStyle = {
+  ...inputStyle,
+  maxWidth: 132,
+};
+const compactChoiceCountInputStyle = {
+  ...inputStyle,
+  maxWidth: 120,
+};
+const HP_GAIN_MODE_OPTIONS: Array<{ value: LevelProgressionHpGainMode; label: string }> = [
+  { value: "full", label: "Full Die" },
+  { value: "random", label: "Random Roll" },
+  { value: "half", label: "Half / Average" },
+];
 
 function makeBlankCampaign(): CampaignDefinition {
   return {
@@ -87,6 +102,7 @@ function makeBlankClass(campaignId: string): ClassDefinition {
       {
         level: 1,
         hitDiceGained: 1,
+        hpGainMode: "half",
         newSkillChoices: 0,
         newPowerChoices: 0,
         attributeBonuses: [],
@@ -161,6 +177,17 @@ function gridCols(cols: number) {
     gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
     gap: 12,
   };
+}
+
+function sortLevelProgression(rows: ClassLevelProgressionRow[]) {
+  return [...rows].sort((a, b) => a.level - b.level);
+}
+
+function formatBonusSummary(bonuses: AttributeBonusRule[]) {
+  if (bonuses.length === 0) return "None";
+  return bonuses
+    .map((bonus) => `${bonus.attribute} ${bonus.amount >= 0 ? `+${bonus.amount}` : bonus.amount}`)
+    .join(", ");
 }
 
 function EntityListEditor<T extends { id: string; name: string }>(props: {
@@ -531,6 +558,83 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     });
   }
 
+  function getClassLevelProgressionRows() {
+    if (!selectedClass) return [] as ClassLevelProgressionRow[];
+    return sortLevelProgression(selectedClass.levelProgression ?? []);
+  }
+
+  function updateClassLevelProgression(rows: ClassLevelProgressionRow[]) {
+    if (!selectedClass) return;
+    updateClass({
+      ...selectedClass,
+      levelProgression: sortLevelProgression(rows),
+    });
+  }
+
+  function addClassLevelProgressionRow() {
+    if (!selectedClass) return;
+    const rows = getClassLevelProgressionRows();
+    const nextLevel = Math.max(0, ...rows.map((row) => row.level)) + 1;
+    updateClassLevelProgression([
+      ...rows,
+      {
+        level: nextLevel,
+        hitDiceGained: 1,
+        hpGainMode: "half",
+        newSkillChoices: 0,
+        newPowerChoices: 0,
+        attributeBonuses: [],
+      },
+    ]);
+  }
+
+  function removeClassLevelProgressionRow(index: number) {
+    const rows = getClassLevelProgressionRows();
+    updateClassLevelProgression(rows.filter((_, i) => i !== index));
+  }
+
+  function updateClassLevelProgressionRow(
+    index: number,
+    patch: Partial<ClassLevelProgressionRow>
+  ) {
+    const rows = getClassLevelProgressionRows();
+    const row = rows[index];
+    if (!row) return;
+    const next = rows.map((value, i) => (i === index ? { ...value, ...patch } : value));
+    updateClassLevelProgression(next);
+  }
+
+  function addClassLevelRowBonus(index: number) {
+    const rows = getClassLevelProgressionRows();
+    const row = rows[index];
+    if (!row) return;
+    updateClassLevelProgressionRow(index, {
+      attributeBonuses: [...row.attributeBonuses, { attribute: "STR", amount: 1 }],
+    });
+  }
+
+  function updateClassLevelRowBonus(
+    index: number,
+    bonusIndex: number,
+    patch: Partial<AttributeBonusRule>
+  ) {
+    const rows = getClassLevelProgressionRows();
+    const row = rows[index];
+    if (!row) return;
+    const nextBonuses = row.attributeBonuses.map((bonus, i) =>
+      i === bonusIndex ? { ...bonus, ...patch } : bonus
+    );
+    updateClassLevelProgressionRow(index, { attributeBonuses: nextBonuses });
+  }
+
+  function removeClassLevelRowBonus(index: number, bonusIndex: number) {
+    const rows = getClassLevelProgressionRows();
+    const row = rows[index];
+    if (!row) return;
+    const nextBonuses = row.attributeBonuses.filter((_, i) => i !== bonusIndex);
+    updateClassLevelProgressionRow(index, { attributeBonuses: nextBonuses });
+  }
+
   function getRuleFor<T extends ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule>(
     field: "skillChoiceRules" | "powerChoiceRules" | "itemChoiceRules"
   ): T | null {
@@ -714,15 +818,15 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     </p>
                     <div style={gridCols(3)}>
                       {ATTRIBUTE_KEYS.map((attribute) => (
-                        <label key={attribute} style={labelTextStyle}>
-                          {attribute}
+                        <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 6 }}>
+                          <span>{attribute}</span>
                           <input
                             type="number"
                             value={getClassAttributeBonusAmount(attribute)}
                             onChange={(e) =>
                               setClassAttributeBonusAmount(attribute, Number(e.target.value) || 0)
                             }
-                            style={inputStyle}
+                            style={compactNumberInputStyle}
                           />
                         </label>
                       ))}
@@ -747,7 +851,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                                 skillIds: rule?.skillIds ?? [],
                               });
                             }}
-                            style={inputStyle}
+                            style={compactChoiceCountInputStyle}
                           />
                         </label>
                         <label style={labelTextStyle}>
@@ -764,7 +868,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                                 powerIds: rule?.powerIds ?? [],
                               });
                             }}
-                            style={inputStyle}
+                            style={compactChoiceCountInputStyle}
                           />
                         </label>
                         <label style={labelTextStyle}>
@@ -785,7 +889,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                                 updateClassRule("itemChoiceRules", null);
                               }
                             }}
-                            style={inputStyle}
+                            style={compactChoiceCountInputStyle}
                           />
                         </label>
                       </div>
@@ -1019,6 +1123,189 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                         )}
                       </div>
                     </div>
+                  </section>
+
+                  <section style={cardStyle()}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <h3 style={{ marginTop: 0, marginBottom: 0, color: "var(--text-primary)" }}>Level Progression</h3>
+                      <button
+                        type="button"
+                        style={{ ...buttonStyle, padding: "8px 12px", minWidth: 132 }}
+                        onClick={addClassLevelProgressionRow}
+                      >
+                        Add Level Row
+                      </button>
+                    </div>
+                    <p style={{ marginTop: 8, ...mutedTextStyle }}>
+                      Define what this class gains per level.
+                    </p>
+
+                    {getClassLevelProgressionRows().length === 0 ? (
+                      <div style={{ ...panelStyle, padding: 12 }}>
+                        <p style={{ margin: 0, ...mutedTextStyle }}>
+                          No progression rows yet. Add a level row to define class progression.
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gap: 10 }}>
+                        {getClassLevelProgressionRows().map((row, index) => (
+                          <div key={`${row.level}-${index}`} style={{ ...panelStyle, padding: 10 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
+                              <strong style={{ color: "var(--text-primary)" }}>Level {row.level}</strong>
+                              <button
+                                type="button"
+                                style={{ ...buttonStyle, padding: "6px 10px" }}
+                                onClick={() => removeClassLevelProgressionRow(index)}
+                              >
+                                Remove
+                              </button>
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 10, alignItems: "end" }}>
+                              <label style={labelTextStyle}>
+                                Level
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={row.level}
+                                  onChange={(e) =>
+                                    updateClassLevelProgressionRow(index, {
+                                      level: Math.max(1, Number(e.target.value) || 1),
+                                    })
+                                  }
+                                  style={inputStyle}
+                                />
+                              </label>
+                              <label style={labelTextStyle}>
+                                Hit Dice Gained
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={row.hitDiceGained}
+                                  onChange={(e) =>
+                                    updateClassLevelProgressionRow(index, {
+                                      hitDiceGained: Math.max(0, Number(e.target.value) || 0),
+                                    })
+                                  }
+                                  style={inputStyle}
+                                />
+                              </label>
+                              <label style={labelTextStyle}>
+                                HP Gain Mode
+                                <select
+                                  value={row.hpGainMode ?? "half"}
+                                  onChange={(e) =>
+                                    updateClassLevelProgressionRow(index, {
+                                      hpGainMode: e.target.value as LevelProgressionHpGainMode,
+                                    })
+                                  }
+                                  style={inputStyle}
+                                >
+                                  {HP_GAIN_MODE_OPTIONS.map((mode) => (
+                                    <option key={mode.value} value={mode.value}>
+                                      {mode.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label style={labelTextStyle}>
+                                New Skill Choices
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={row.newSkillChoices}
+                                  onChange={(e) =>
+                                    updateClassLevelProgressionRow(index, {
+                                      newSkillChoices: Math.max(0, Number(e.target.value) || 0),
+                                    })
+                                  }
+                                  style={inputStyle}
+                                />
+                              </label>
+                              <label style={labelTextStyle}>
+                                New Power Choices
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={row.newPowerChoices}
+                                  onChange={(e) =>
+                                    updateClassLevelProgressionRow(index, {
+                                      newPowerChoices: Math.max(0, Number(e.target.value) || 0),
+                                    })
+                                  }
+                                  style={inputStyle}
+                                />
+                              </label>
+                            </div>
+
+                            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 200px 112px", gap: 8, alignItems: "end" }}>
+                                <div style={{ color: "var(--text-secondary)", fontSize: 13, gridColumn: "1 / span 2" }}>
+                                  Attribute Bonuses: {formatBonusSummary(row.attributeBonuses)}
+                                </div>
+                                <button
+                                  type="button"
+                                  style={{ ...buttonStyle, padding: "6px 10px", width: "100%" }}
+                                  onClick={() => addClassLevelRowBonus(index)}
+                                >
+                                  Add Bonus
+                                </button>
+                              </div>
+
+                              {row.attributeBonuses.length > 0 && (
+                                <div style={{ display: "grid", gap: 8 }}>
+                                  {row.attributeBonuses.map((bonus, bonusIndex) => (
+                                    <div
+                                      key={`${row.level}-bonus-${bonusIndex}`}
+                                      style={{ display: "grid", gridTemplateColumns: "1fr 200px 112px", gap: 8, alignItems: "end" }}
+                                    >
+                                      <label style={labelTextStyle}>
+                                        Attribute
+                                        <select
+                                          value={bonus.attribute}
+                                          onChange={(e) =>
+                                            updateClassLevelRowBonus(index, bonusIndex, {
+                                              attribute: e.target.value as AttributeKey,
+                                            })
+                                          }
+                                          style={inputStyle}
+                                        >
+                                          {ATTRIBUTE_KEYS.map((attribute) => (
+                                            <option key={attribute} value={attribute}>
+                                              {attribute}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                      <label style={labelTextStyle}>
+                                        Amount
+                                        <input
+                                          type="number"
+                                          value={bonus.amount}
+                                          onChange={(e) =>
+                                            updateClassLevelRowBonus(index, bonusIndex, {
+                                              amount: Number(e.target.value) || 0,
+                                            })
+                                          }
+                                          style={inputStyle}
+                                        />
+                                      </label>
+                                      <button
+                                        type="button"
+                                        style={{ ...buttonStyle, padding: "6px 10px", width: "100%" }}
+                                        onClick={() => removeClassLevelRowBonus(index, bonusIndex)}
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </section>
                 </div>
               )}

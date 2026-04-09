@@ -136,6 +136,23 @@ function makeSheetDefaults(): CharacterRecord["sheet"] {
   };
 }
 
+function makeLevelProgressionDefaults(level: number): CharacterRecord["levelProgression"] {
+  return {
+    totalHitDice: Math.max(1, level),
+    gainedSkillIds: [],
+    gainedPowerIds: [],
+    appliedLevels: Array.from({ length: Math.max(1, level) }, (_value, index) => index + 1),
+    appliedAttributeIncreases: {
+      STR: 0,
+      DEX: 0,
+      CON: 0,
+      INT: 0,
+      WIS: 0,
+      CHA: 0,
+    },
+  };
+}
+
 function makeSkills(campaign: CampaignDefinition): CharacterSkillSelection[] {
   return campaign.skills.map((skill) => ({
     skillId: skill.id,
@@ -203,6 +220,7 @@ export function createCharacterFromCampaignAndClass(
     powers: makePowers(campaign, cls),
     inventory: makeItems(),
     attacks: makeAttacks(campaign, cls),
+    levelProgression: makeLevelProgressionDefaults(1),
     createdAt,
     updatedAt: createdAt,
   };
