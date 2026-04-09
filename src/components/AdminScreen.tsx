@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   AttackTemplateDefinition,
   AttributeBonusRule,
@@ -21,17 +21,21 @@ import {
   labelTextStyle,
   mutedTextStyle,
   panelStyle,
-  primaryButtonStyle,
   sectionTitleStyle,
 } from "./uiStyles";
+import { generateId } from "../lib/character";
 
 interface Props {
   gameData: GameData;
+  activeCampaignId: string;
+  autoFocusCampaignName?: boolean;
+  saveRequestVersion: number;
+  onCampaignContextChange: (campaignId: string) => void;
+  onGameDataChange?: (gameData: GameData) => void;
   onSave: (gameData: GameData) => void;
-  onClose: () => void;
 }
 
-type AdminTab = "campaigns" | "classes" | "skills" | "powers" | "items" | "attacks";
+type AdminTab = "campaign" | "classes" | "skills" | "powers" | "items" | "attacks";
 const HIT_DIE_OPTIONS = [4, 6, 8, 10, 12, 20] as const;
 const ATTRIBUTE_KEYS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 const compactNumberInputStyle = {
@@ -47,43 +51,6 @@ const HP_GAIN_MODE_OPTIONS: Array<{ value: LevelProgressionHpGainMode; label: st
   { value: "random", label: "Random Roll" },
   { value: "half", label: "Half / Average" },
 ];
-
-function makeBlankCampaign(): CampaignDefinition {
-  return {
-    id: `campaign-${Date.now()}`,
-    name: "New Campaign",
-    description: "",
-    labels: {
-      attributes: "Attributes",
-      skills: "Skills",
-      attacks: "Attacks",
-      powers: "Powers",
-      inventory: "Inventory",
-      className: "Class",
-      level: "Level",
-      hp: "HP",
-    },
-    classes: [],
-    skills: [],
-    powers: [],
-    items: [],
-    attackTemplates: [],
-    availableClassIds: [],
-    availableSkillIds: [],
-    availablePowerIds: [],
-    availableItemIds: [],
-    availableAttackTemplateIds: [],
-    attributeRules: {
-      generationMethods: ["manual"],
-      pointBuyTotal: 27,
-      randomRollFormula: "4d6 drop lowest",
-      randomRollCount: 6,
-      randomRollDropLowest: 1,
-      minimumScore: 3,
-      maximumScore: 18,
-    },
-  };
-}
 
 function makeBlankClass(campaignId: string): ClassDefinition {
   return {
@@ -247,22 +214,37 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
   );
 }
 
-export default function AdminScreen({ gameData, onSave, onClose }: Props) {
+export default function AdminScreen({
+  gameData,
+  activeCampaignId,
+  autoFocusCampaignName = false,
+  saveRequestVersion,
+  onCampaignContextChange,
+  onGameDataChange,
+  onSave,
+}: Props) {
   const [workingData, setWorkingData] = useState<GameData>(gameData);
-  const [tab, setTab] = useState<AdminTab>("campaigns");
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>(gameData.campaigns[0]?.id ?? "");
+  const [tab, setTab] = useState<AdminTab>("campaign");
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [selectedSkillId, setSelectedSkillId] = useState<string>("");
   const [selectedPowerId, setSelectedPowerId] = useState<string>("");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedAttackId, setSelectedAttackId] = useState<string>("");
+  const lastHandledSaveVersion = useRef(saveRequestVersion);
 
-  const selectedCampaign = workingData.campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const selectedCampaign =
+    workingData.campaigns.find((campaign) => campaign.id === activeCampaignId) ?? null;
   const selectedClass = selectedCampaign?.classes.find((cls) => cls.id === selectedClassId) ?? null;
   const selectedSkill = selectedCampaign?.skills.find((skill) => skill.id === selectedSkillId) ?? null;
   const selectedPower = selectedCampaign?.powers.find((power) => power.id === selectedPowerId) ?? null;
   const selectedItem = selectedCampaign?.items.find((item) => item.id === selectedItemId) ?? null;
   const selectedAttack = selectedCampaign?.attackTemplates.find((attack) => attack.id === selectedAttackId) ?? null;
+
+  useEffect(() => {
+    if (saveRequestVersion === lastHandledSaveVersion.current) return;
+    lastHandledSaveVersion.current = saveRequestVersion;
+    onSave(workingData);
+  }, [saveRequestVersion, onSave, workingData]);
 
   function updateCampaign(updatedCampaign: CampaignDefinition) {
     setWorkingData((prev) => ({
@@ -273,18 +255,45 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     }));
   }
 
-  function addCampaign() {
-    const newCampaign = makeBlankCampaign();
+  function duplicateActiveCampaign() {
+    if (!selectedCampaign) return;
+
+    const duplicate = {
+      ...selectedCampaign,
+      id: `campaign-${generateId()}`,
+      name: `${selectedCampaign.name} Copy`,
+      classes: selectedCampaign.classes.map((cls) => ({ ...cls })),
+      skills: selectedCampaign.skills.map((skill) => ({ ...skill })),
+      powers: selectedCampaign.powers.map((power) => ({ ...power })),
+      items: selectedCampaign.items.map((item) => ({ ...item })),
+      attackTemplates: selectedCampaign.attackTemplates.map((attack) => ({ ...attack })),
+      availableClassIds: [...(selectedCampaign.availableClassIds ?? [])],
+      availableSkillIds: [...(selectedCampaign.availableSkillIds ?? [])],
+      availablePowerIds: [...(selectedCampaign.availablePowerIds ?? [])],
+      availableItemIds: [...(selectedCampaign.availableItemIds ?? [])],
+      availableAttackTemplateIds: [...(selectedCampaign.availableAttackTemplateIds ?? [])],
+    };
+
     setWorkingData((prev) => ({
       ...prev,
-      campaigns: [...prev.campaigns, newCampaign],
+      campaigns: [...prev.campaigns, duplicate],
     }));
-    setSelectedCampaignId(newCampaign.id);
-    setTab("campaigns");
+    onGameDataChange?.({
+      ...workingData,
+      campaigns: [...workingData.campaigns, duplicate],
+    });
+    setTab("campaign");
   }
 
-  function deleteCampaign(id: string) {
-    const campaign = workingData.campaigns.find((campaign) => campaign.id === id);
+  function deleteActiveCampaign() {
+    if (!selectedCampaign) return;
+    if (workingData.campaigns.length <= 1) {
+      window.alert("At least one campaign must remain.");
+      return;
+    }
+
+    const id = selectedCampaign.id;
+    const campaign = workingData.campaigns.find((value) => value.id === id);
     const displayName = campaign?.name || "this campaign";
     if (!window.confirm(`Delete ${displayName}?`)) return;
 
@@ -293,12 +302,18 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
       ...prev,
       campaigns: remainingCampaigns,
     }));
+    onGameDataChange?.({
+      ...workingData,
+      campaigns: remainingCampaigns,
+    });
 
-    setSelectedCampaignId(remainingCampaigns[0]?.id ?? "");
-  }
+    const fallbackCampaignId =
+      remainingCampaigns.find((campaign) => gameData.campaigns.some((base) => base.id === campaign.id))
+        ?.id ??
+      remainingCampaigns[0]?.id ??
+      "";
 
-  function selectCampaign(id: string) {
-    setSelectedCampaignId(id);
+    onCampaignContextChange(fallbackCampaignId);
     setSelectedClassId("");
     setSelectedSkillId("");
     setSelectedPowerId("");
@@ -644,22 +659,14 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
   }
 
   return (
-    <section style={{ ...panelStyle, display: "flex", flexDirection: "column", height: "70vh", width: 980, maxWidth: 980, overflow: "hidden" }}>
+    <section style={{ ...panelStyle, display: "flex", flexDirection: "column", height: "70vh", width: "100%", overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexShrink: 0 }}>
         <h2 style={sectionTitleStyle}>Admin Screen</h2>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button onClick={onClose} style={buttonStyle}>
-            Close
-          </button>
-          <button onClick={() => onSave(workingData)} style={primaryButtonStyle}>
-            Save Changes
-          </button>
-        </div>
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto" }}>
-        <button onClick={() => setTab("campaigns")} style={{ ...buttonStyle, background: tab === "campaigns" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
-          Campaigns
+        <button onClick={() => setTab("campaign")} style={{ ...buttonStyle, background: tab === "campaign" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+          Campaign
         </button>
         <button onClick={() => setTab("classes")} style={{ ...buttonStyle, background: tab === "classes" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Classes
@@ -678,61 +685,69 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         </button>
       </div>
 
-      {tab === "campaigns" && (
-        <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
-          <EntityListEditor
-            title="Campaigns"
-            helper="A campaign defines a pool of classes, skills, powers, items, and attacks."
-            items={workingData.campaigns}
-            selectedId={selectedCampaignId}
-            onSelect={selectCampaign}
-            onAdd={addCampaign}
-            onDelete={deleteCampaign}
-            subtitle={() => ""}
-          />
-
-          <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
-            {!selectedCampaign ? (
-              <div style={cardStyle()}>
-                <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign to edit.</p>
-              </div>
-            ) : (
-              <div style={{ display: "grid", gap: 16 }}>
-                <section style={cardStyle()}>
-                  <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Basic Info</h3>
-                  <div style={gridCols(2)}>
-                    <label style={labelTextStyle}>
-                      Internal ID
-                      <input
-                        value={selectedCampaign.id}
-                        onChange={(e) => updateCampaign({ ...selectedCampaign, id: e.target.value })}
-                        style={inputStyle}
-                      />
-                    </label>
-
-                    <label style={labelTextStyle}>
-                      Campaign Name
-                      <input
-                        value={selectedCampaign.name}
-                        onChange={(e) => updateCampaign({ ...selectedCampaign, name: e.target.value })}
-                        style={inputStyle}
-                      />
-                    </label>
-
-                    <label style={labelTextStyle}>
-                      Description
-                      <input
-                        value={selectedCampaign.description ?? ""}
-                        onChange={(e) => updateCampaign({ ...selectedCampaign, description: e.target.value })}
-                        style={inputStyle}
-                      />
-                    </label>
+      {tab === "campaign" && (
+        <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
+          {!selectedCampaign ? (
+            <div style={cardStyle()}>
+              <p style={{ margin: 0, ...mutedTextStyle }}>The selected campaign is no longer available in this editor state.</p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 16 }}>
+              <section style={cardStyle()}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", letterSpacing: "0.04em", fontWeight: 700 }}>
+                      EDITING CAMPAIGN
+                    </div>
+                    <div style={{ fontSize: 22, color: "var(--text-primary)", fontWeight: 800 }}>
+                      {selectedCampaign.name || "Untitled Campaign"}
+                    </div>
                   </div>
-                </section>
-              </div>
-            )}
-          </main>
-        </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button type="button" style={buttonStyle} onClick={duplicateActiveCampaign}>
+                      Duplicate Campaign
+                    </button>
+                    <button type="button" style={buttonStyle} onClick={deleteActiveCampaign}>
+                      Delete Campaign
+                    </button>
+                  </div>
+                </div>
+
+                <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Basic Info</h3>
+                <div style={gridCols(2)}>
+                  <label style={labelTextStyle}>
+                    Internal ID
+                    <input
+                      value={selectedCampaign.id}
+                      onChange={(e) => updateCampaign({ ...selectedCampaign, id: e.target.value })}
+                      style={inputStyle}
+                    />
+                  </label>
+
+                  <label style={labelTextStyle}>
+                    Campaign Name
+                    <input
+                      value={selectedCampaign.name}
+                      onChange={(e) => updateCampaign({ ...selectedCampaign, name: e.target.value })}
+                      style={inputStyle}
+                      autoFocus={autoFocusCampaignName}
+                    />
+                  </label>
+
+                  <label style={labelTextStyle}>
+                    Description
+                    <input
+                      value={selectedCampaign.description ?? ""}
+                      onChange={(e) => updateCampaign({ ...selectedCampaign, description: e.target.value })}
+                      style={inputStyle}
+                    />
+                  </label>
+                </div>
+              </section>
+            </div>
+          )}
+        </main>
       )}
 
       {tab === "classes" && (
@@ -743,7 +758,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
-              title="Classes"
+              title={`Classes (${selectedCampaign.name})`}
               helper="Classes belong to the selected campaign."
               items={selectedCampaign.classes}
               selectedId={selectedClassId}
@@ -1322,7 +1337,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
-              title="Skills"
+              title={`Skills (${selectedCampaign.name})`}
               helper="Skills belong to the selected campaign."
               items={selectedCampaign.skills}
               selectedId={selectedSkillId}
@@ -1389,7 +1404,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
-              title="Powers"
+              title={`Powers (${selectedCampaign.name})`}
               helper="Powers belong to the selected campaign."
               items={selectedCampaign.powers}
               selectedId={selectedPowerId}
@@ -1449,7 +1464,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
-              title="Items"
+              title={`Items (${selectedCampaign.name})`}
               helper="Items belong to the selected campaign."
               items={selectedCampaign.items}
               selectedId={selectedItemId}
@@ -1509,7 +1524,7 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
-              title="Attacks"
+              title={`Attacks (${selectedCampaign.name})`}
               helper="Attacks belong to the selected campaign."
               items={selectedCampaign.attackTemplates}
               selectedId={selectedAttackId}

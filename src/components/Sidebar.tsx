@@ -1,5 +1,5 @@
 import type { CharacterRecord } from "../types/character";
-import type { ClassDefinition, CampaignDefinition } from "../types/gameData";
+import type { ClassDefinition } from "../types/gameData";
 import {
   dangerButtonStyle,
   inputStyle,
@@ -10,32 +10,26 @@ import {
 } from "./uiStyles";
 
 interface Props {
-  campaigns: CampaignDefinition[];
   classesForSelectedCampaign: ClassDefinition[];
   characters: CharacterRecord[];
   selectedId: string;
-  newCampaignId: string;
   newClassId: string;
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
-  onCampaignChange: (id: string) => void;
   onClassChange: (id: string) => void;
   getCampaignName: (campaignId: string) => string;
   getClassName: (classId: string) => string;
 }
 
 export default function Sidebar({
-  campaigns,
   classesForSelectedCampaign,
   characters,
   selectedId,
-  newCampaignId,
   newClassId,
   onSelect,
   onCreate,
   onDelete,
-  onCampaignChange,
   onClassChange,
   getCampaignName,
   getClassName,
@@ -49,32 +43,43 @@ export default function Sidebar({
     >
       <h2 style={{ marginTop: 0, marginBottom: 16, color: "var(--text-primary)" }}>Characters</h2>
 
-      <div style={{ display: "grid", gap: 8 }}>
-        <label style={labelTextStyle}>
-          Campaign
-          <select value={newCampaignId} onChange={(e) => onCampaignChange(e.target.value)} style={inputStyle}>
-            {campaigns.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </label>
+      <div style={{ display: "grid", gap: 12 }}>
+        <div
+          style={{
+            padding: 10,
+            borderRadius: 10,
+            border: "1px solid var(--accent-primary)",
+            background: "rgba(73, 224, 255, 0.08)",
+            display: "grid",
+            gap: 8,
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em" }}>
+            NEW CHARACTER SETUP
+          </div>
 
-        <label style={labelTextStyle}>
-          Class
-          <select value={newClassId} onChange={(e) => onClassChange(e.target.value)} style={inputStyle}>
-            {classesForSelectedCampaign.map((cls) => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label style={labelTextStyle}>
+            Class
+            <select
+              value={newClassId}
+              onChange={(e) => onClassChange(e.target.value)}
+              style={inputStyle}
+            >
+              {classesForSelectedCampaign.map((cls) => (
+                <option key={cls.id} value={cls.id}>
+                  {cls.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <button onClick={onCreate} style={primaryButtonStyle}>
-          New Character
-        </button>
+          <button
+            onClick={onCreate}
+            style={primaryButtonStyle}
+          >
+            New Character
+          </button>
+        </div>
       </div>
 
       <div style={{ marginTop: 16, display: "grid", gap: 8 }}>

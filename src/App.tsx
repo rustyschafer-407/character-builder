@@ -13,6 +13,7 @@ import { appStorage } from "./storage/appStorage";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
+  CampaignDefinition,
   ClassLevelProgressionRow,
   ClassItemChoiceRule,
   LevelProgressionHpGainMode,
@@ -34,7 +35,7 @@ import CharacterCreationWizard, {
 } from "./components/CharacterCreationWizard";
 import LevelUpWizard from "./components/LevelUpWizard";
 import AdminScreen from "./components/AdminScreen";
-import { buttonStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
+import { buttonStyle, inputStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
 
 const POINT_BUY_COSTS: Record<number, number> = {
   8: 0,
@@ -281,6 +282,50 @@ function makeDefaultSheet(): CharacterRecord["sheet"] {
   };
 }
 
+function makeBlankCampaignForApp(): CampaignDefinition {
+  return {
+    id: `campaign-${Date.now()}`,
+    name: "New Campaign",
+    description: "",
+    labels: {
+      attributes: "Attributes",
+      skills: "Skills",
+      attacks: "Attacks",
+      powers: "Powers",
+      inventory: "Inventory",
+      className: "Class",
+      level: "Level",
+      hp: "HP",
+    },
+    classes: [],
+    skills: [],
+    powers: [],
+    items: [],
+    attackTemplates: [],
+    availableClassIds: [],
+    availableSkillIds: [],
+    availablePowerIds: [],
+    availableItemIds: [],
+    availableAttackTemplateIds: [],
+    attributeRules: {
+      generationMethods: ["manual"],
+      pointBuyTotal: 27,
+      randomRollFormula: "4d6 drop lowest",
+      randomRollCount: 6,
+      randomRollDropLowest: 1,
+      minimumScore: 3,
+      maximumScore: 18,
+    },
+  };
+}
+
+function getFirstVisibleCharacterId(
+  characters: CharacterRecord[],
+  selectedCampaignId: string
+) {
+  return characters.find((character) => character.campaignId === selectedCampaignId)?.id ?? "";
+}
+
 function loadCharactersWithDefaultSheets(): CharacterRecord[] {
   return appStorage.loadCharacters().map((character) =>
     character.sheet ? character : { ...character, sheet: makeDefaultSheet() }
@@ -297,6 +342,8 @@ export default function App() {
   const [wizardStep, setWizardStep] = useState(0);
   const [creationDraft, setCreationDraft] = useState<CharacterCreationDraft | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [adminAutoFocusCampaignName, setAdminAutoFocusCampaignName] = useState(false);
+  const [adminSaveRequestVersion, setAdminSaveRequestVersion] = useState(0);
   const [roll20PreviewOpen, setRoll20PreviewOpen] = useState(false);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [levelUpApplyPending, setLevelUpApplyPending] = useState(false);
@@ -316,6 +363,15 @@ export default function App() {
     setCampaignId(nextCampaignId);
     const nextClassId = getClassesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
     setClassId(nextClassId);
+
+    const currentlyVisible = characters.some(
+      (character) =>
+        character.id === selectedId && character.campaignId === nextCampaignId
+    );
+
+    if (!currentlyVisible) {
+      setSelectedId(getFirstVisibleCharacterId(characters, nextCampaignId));
+    }
   }
 
   function handleAdminSave(nextGameData: GameData) {
@@ -327,7 +383,30 @@ export default function App() {
     setGameData(nextGameData);
     setCampaignId(nextCampaignId);
     setClassId(nextClassId);
+
+    const selectedCharacter = characters.find((character) => character.id === selectedId) ?? null;
+    if (!selectedCharacter || selectedCharacter.campaignId !== nextCampaignId) {
+      setSelectedId(getFirstVisibleCharacterId(characters, nextCampaignId));
+    }
+
     setAdminOpen(false);
+    setAdminAutoFocusCampaignName(false);
+  }
+
+  function handleAdminGameDataChange(nextGameData: GameData) {
+    const nextCampaignId = nextGameData.campaigns.some((campaign) => campaign.id === campaignId)
+      ? campaignId
+      : nextGameData.campaigns[0]?.id ?? "";
+    const nextClassId = getClassesForCampaign(nextGameData, nextCampaignId)[0]?.id ?? "";
+
+    setGameData(nextGameData);
+    setCampaignId(nextCampaignId);
+    setClassId(nextClassId);
+
+    const selectedCharacter = characters.find((character) => character.id === selectedId) ?? null;
+    if (!selectedCharacter || selectedCharacter.campaignId !== nextCampaignId) {
+      setSelectedId(getFirstVisibleCharacterId(characters, nextCampaignId));
+    }
   }
 
   const selected = useMemo(
@@ -346,6 +425,8 @@ export default function App() {
       : null;
 
   const classesForSelectedCampaign = getClassesForCampaign(gameData, campaignId);
+
+  const filteredCharacters = characters.filter((character) => character.campaignId === campaignId);
 
   const selectedSkills = selectedCampaign ? selectedCampaign.skills : [];
 
@@ -390,6 +471,9 @@ export default function App() {
     level: "Level",
     hp: "HP",
   };
+
+  const currentCampaignContextLabel =
+    gameData.campaigns.find((campaign) => campaign.id === campaignId)?.name ?? "Unknown Campaign";
 
   const pointBuyTotal =
     selected?.attributeGeneration?.pointBuyTotal ??
@@ -462,6 +546,26 @@ export default function App() {
     setCreationDraft(draft);
     setWizardStep(0);
     setWizardOpen(true);
+  }
+
+  function openAdminForCurrentCampaign() {
+    setAdminAutoFocusCampaignName(false);
+    setAdminOpen(true);
+  }
+
+  function createCampaignAndOpenAdmin() {
+    const newCampaign = makeBlankCampaignForApp();
+    const nextGameData: GameData = {
+      ...gameData,
+      campaigns: [...gameData.campaigns, newCampaign],
+    };
+
+    setGameData(nextGameData);
+    setCampaignId(newCampaign.id);
+    setClassId("");
+    setSelectedId(getFirstVisibleCharacterId(characters, newCampaign.id));
+    setAdminAutoFocusCampaignName(true);
+    setAdminOpen(true);
   }
 
   function closeWizard() {
@@ -1160,8 +1264,8 @@ export default function App() {
     const remaining = characters.filter((c) => c.id !== id);
     setCharacters(remaining);
 
-    if (id === selectedId) {
-      setSelectedId(remaining[0]?.id ?? "");
+    if (id === selectedId || !remaining.some((character) => character.id === selectedId)) {
+      setSelectedId(getFirstVisibleCharacterId(remaining, campaignId));
     }
   }
 
@@ -1225,30 +1329,105 @@ export default function App() {
           Character Builder
         </h1>
 
-        <button onClick={() => setAdminOpen((prev) => !prev)} style={buttonStyle}>
-          {adminOpen ? "Close Admin" : "Open Admin"}
-        </button>
+        {adminOpen ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => {
+                setAdminOpen(false);
+                setAdminAutoFocusCampaignName(false);
+              }}
+              style={buttonStyle}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => setAdminSaveRequestVersion((value) => value + 1)}
+              style={primaryButtonStyle}
+            >
+              Save
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={openAdminForCurrentCampaign} style={buttonStyle} disabled={!campaignId}>
+              Edit Campaign
+            </button>
+            <button onClick={createCampaignAndOpenAdmin} style={primaryButtonStyle}>
+              New Campaign
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div
+        style={{
+          marginBottom: 20,
+          padding: "12px 14px",
+          borderRadius: 10,
+          border: "1px solid rgba(73, 224, 255, 0.45)",
+          background: "linear-gradient(135deg, rgba(73, 224, 255, 0.14), rgba(11, 22, 42, 0.72))",
+          display: "grid",
+          gridTemplateColumns: "1fr 320px",
+          gap: 12,
+          alignItems: "end",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 12,
+              color: "var(--text-secondary)",
+              letterSpacing: "0.04em",
+              fontWeight: 700,
+            }}
+          >
+            CURRENT CAMPAIGN
+          </div>
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: 34,
+              lineHeight: 1.08,
+              fontWeight: 800,
+              color: "var(--text-primary)",
+            }}
+          >
+            {currentCampaignContextLabel}
+          </div>
+        </div>
+
+        <label style={{ display: "block", fontWeight: 600, color: "#b9cdf0" }}>
+          Switch Campaign
+          <select value={campaignId} onChange={(e) => handleCampaignChange(e.target.value)} style={inputStyle}>
+            {gameData.campaigns.map((campaign) => (
+              <option key={campaign.id} value={campaign.id}>
+                {campaign.name}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {adminOpen ? (
         <AdminScreen
           gameData={gameData}
+          activeCampaignId={campaignId}
+          autoFocusCampaignName={adminAutoFocusCampaignName}
+          saveRequestVersion={adminSaveRequestVersion}
+          onCampaignContextChange={handleCampaignChange}
+          onGameDataChange={handleAdminGameDataChange}
           onSave={handleAdminSave}
-          onClose={() => setAdminOpen(false)}
         />
       ) : (
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           <Sidebar
-            campaigns={gameData.campaigns}
             classesForSelectedCampaign={classesForSelectedCampaign}
-            characters={characters}
+            characters={filteredCharacters}
             selectedId={selectedId}
-            newCampaignId={campaignId}
             newClassId={classId}
             onSelect={setSelectedId}
             onCreate={openWizard}
             onDelete={deleteCharacter}
-            onCampaignChange={handleCampaignChange}
             onClassChange={setClassId}
             getCampaignName={getCampaignName}
             getClassName={getClassName}

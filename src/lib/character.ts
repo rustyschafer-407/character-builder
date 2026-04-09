@@ -89,17 +89,9 @@ function makeHp(cls: ClassDefinition, conScore: number): CharacterHp {
   const conMod = getAttributeModifier(conScore);
   const hitDie = cls.hpRule.hitDie;
 
-  let max = hitDie;
-
-  if (cls.hpRule.level1Mode === "fixed-value" && cls.hpRule.level1FixedValue) {
-    max = cls.hpRule.level1FixedValue;
-  }
-
-  if (cls.hpRule.level1Mode === "roll") {
-    max = hitDie;
-  }
-
-  max += conMod;
+  // Character creation is always max hit die at level 1.
+  // Class HP rules are still used for future level-up gains.
+  const max = hitDie + conMod;
 
   return {
     max,
