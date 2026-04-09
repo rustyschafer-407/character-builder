@@ -195,7 +195,6 @@ export function buildChatSetAttrCommand(
 ): string {
   const map = buildRoll20AttributeMap(character, gameData);
   const commandPrefix = "!setattr --replace --sel";
-  const maxCommandLength = 1800;
 
   const inlineRefValues: Record<string, string> = {
     pb: clean(character.proficiencyBonus),
@@ -225,84 +224,79 @@ export function buildChatSetAttrCommand(
       .replace(/\n/g, " ");
   }
 
-  const pairs = Object.entries(map)
-    .filter(([, value]) => value !== "")
-    .map(([key, value]) => {
-      // Regular attributes are stored as "attr_foo" in the map but Roll20 uses "foo"
-      const attrName = key.startsWith("attr_") ? key.slice(5) : key;
-      const resolvedValue = resolveInlineRefs(String(value));
-      const safeValue = escapeForChatSetAttr(resolvedValue);
-      return `--${attrName}|'${safeValue}'`;
-    });
-
-  const nonRepeatingPairs: string[] = [];
-  const repeatingGroups = new Map<string, string[]>();
-
-  for (const pair of pairs) {
-    const match = pair.match(/^--repeating_([^_]+)_\$(\d+)_([^|]+)\|/);
-    if (!match) {
-      nonRepeatingPairs.push(pair);
-      continue;
-    }
-
-    const section = match[1];
-    const rowIndex = Number(match[2]);
-    const field = match[3];
-    const valuePart = pair.slice(pair.indexOf("|") + 1);
-    const groupKey = `${section}:${rowIndex}`;
-    const groupPair = `--repeating_${section}_-CREATE_${field}|${valuePart}`;
-
-    if (!repeatingGroups.has(groupKey)) {
-      repeatingGroups.set(groupKey, []);
-    }
-    repeatingGroups.get(groupKey)?.push(groupPair);
+  function makePair(attrName: string, rawValue: string | number) {
+    const resolvedValue = resolveInlineRefs(String(rawValue));
+    const safeValue = escapeForChatSetAttr(resolvedValue);
+    return `--${attrName}|'${safeValue}'`;
   }
+
+  const campaign = gameData.campaigns.find((value) => value.id === character.campaignId);
+  const skillMap = new Map((campaign?.skills ?? []).map((skill) => [skill.id, skill]));
+
+  // Base non-repeating attributes.
+  const basePairsByName = new Map<string, string>();
+  for (const [key, value] of Object.entries(map)) {
+    if (value === "" || key.startsWith("repeating_")) continue;
+    const attrName = key.startsWith("attr_") ? key.slice(5) : key;
+    basePairsByName.set(attrName, makePair(attrName, value));
+  }
+  // Guarantee explicit HP values are present.
+  basePairsByName.set("hp_max", makePair("hp_max", clean(character.hp.max)));
+  basePairsByName.set("hp_current", makePair("hp_current", clean(character.hp.current)));
 
   const commands: string[] = [];
-
-  // Chunk base (non-repeating) attributes.
-  let current = commandPrefix;
-  for (const pair of nonRepeatingPairs) {
-    const next = `${current} ${pair}`;
-    if (next.length > maxCommandLength && current !== commandPrefix) {
-      commands.push(current);
-      current = `${commandPrefix} ${pair}`;
-    } else {
-      current = next;
-    }
-  }
-  if (current !== commandPrefix) {
-    commands.push(current);
+  if (basePairsByName.size > 0) {
+    commands.push(`${commandPrefix} ${[...basePairsByName.values()].join(" ")}`);
   }
 
-  // Emit one command per repeating row so ChatSetAttr can create rows reliably.
-  const orderedGroupKeys = [...repeatingGroups.keys()].sort((a, b) => {
-    const [sectionA, indexA] = a.split(":");
-    const [sectionB, indexB] = b.split(":");
-    if (sectionA === sectionB) return Number(indexA) - Number(indexB);
-    return sectionA.localeCompare(sectionB);
-  });
-
-  for (const key of orderedGroupKeys) {
-    const rowPairs = repeatingGroups.get(key) ?? [];
-    if (rowPairs.length === 0) continue;
-    commands.push(`${commandPrefix} ${rowPairs.join(" ")}`);
+  // Repeating skills.
+  const proficientSkills = character.skills
+    .filter((skill) => skill.proficient)
+    .slice(0, MAX_SKILL_ROWS);
+  for (const skill of proficientSkills) {
+    const def = skillMap.get(skill.skillId);
+    const attr = def?.attribute ?? "STR";
+    commands.push(
+      `${commandPrefix} ${[
+        makePair("repeating_skills_-CREATE_skillname", clean(def?.name ?? skill.skillId)),
+        makePair("repeating_skills_-CREATE_skillattr", clean(getModifier(character.attributes[attr]))),
+        makePair("repeating_skills_-CREATE_skillprof", clean(character.proficiencyBonus)),
+        makePair("repeating_skills_-CREATE_skillbonus", clean(skill.bonus ?? 0)),
+      ].join(" ")}`
+    );
   }
 
-  // Ensure current HP always gets a direct update command.
-  const hpCurrent = escapeForChatSetAttr(clean(character.hp.current));
-  commands.unshift(`${commandPrefix} --hp_current|'${hpCurrent}'`);
+  // Repeating attacks.
+  for (const attack of character.attacks.slice(0, MAX_ATTACK_ROWS)) {
+    commands.push(
+      `${commandPrefix} ${[
+        makePair("repeating_attacks_-CREATE_attackname", clean(attack.name)),
+        makePair("repeating_attacks_-CREATE_attackattr", clean(getModifier(character.attributes[attack.attribute]))),
+        makePair("repeating_attacks_-CREATE_attackprof", clean(character.proficiencyBonus)),
+        makePair("repeating_attacks_-CREATE_attackbonus", clean(attack.bonus ?? 0)),
+        makePair("repeating_attacks_-CREATE_damagedice", clean(attack.damage)),
+        makePair("repeating_attacks_-CREATE_damagebonus", "0"),
+      ].join(" ")}`
+    );
+  }
 
-  // Emit explicit power row create commands to avoid missing powers in some ChatSetAttr runs.
-  const campaign = gameData.campaigns.find((value) => value.id === character.campaignId);
-  const powerMap = new Map((campaign?.powers ?? []).map((power) => [power.id, power]));
+  // Repeating powers.
   for (const power of character.powers.slice(0, MAX_POWER_ROWS)) {
-    const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
-    const notes = clean(power.notes ?? definition?.description ?? "");
-    const text = notes ? `${power.name} - ${notes}` : power.name;
-    const resolved = resolveInlineRefs(text);
-    const safeText = escapeForChatSetAttr(resolved);
-    commands.push(`${commandPrefix} --repeating_powers_-CREATE_powertext|'${safeText}'`);
+    const text = power.notes?.trim() ? `${power.name} - ${power.notes}` : power.name;
+    commands.push(
+      `${commandPrefix} ${makePair("repeating_powers_-CREATE_powertext", clean(text))}`
+    );
+  }
+
+  // Repeating inventory.
+  for (const item of character.inventory.slice(0, MAX_INVENTORY_ROWS)) {
+    commands.push(
+      `${commandPrefix} ${[
+        makePair("repeating_inventory_-CREATE_itemname", clean(item.name)),
+        makePair("repeating_inventory_-CREATE_itemqty", clean(item.quantity)),
+        makePair("repeating_inventory_-CREATE_itemnotes", clean(item.notes ?? "")),
+      ].join(" ")}`
+    );
   }
 
   return commands.join("\n");
