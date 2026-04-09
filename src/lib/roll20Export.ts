@@ -41,6 +41,19 @@ export function buildRoll20AttributeMap(
 
   const result: Record<string, string> = {};
 
+  function setRepeatingValue(
+    sectionNames: string[],
+    rowId: string,
+    fieldNames: string[],
+    value: string
+  ) {
+    for (const sectionName of sectionNames) {
+      for (const fieldName of fieldNames) {
+        result[`repeating_${sectionName}_${rowId}_${fieldName}`] = value;
+      }
+    }
+  }
+
   // Header / top section
   result["attr_character_name"] = clean(character.identity.name);
   result["attr_class_race"] = clean(cls?.name ?? character.classId);
@@ -101,20 +114,17 @@ export function buildRoll20AttributeMap(
     const skill = proficientSkills[i];
     const definition = skillMap.get(skill.skillId);
     const attr = definition?.attribute ?? "STR";
+    const sections = ["skills", "skill"];
 
     const skillName = clean(definition?.name ?? skill.skillId);
     const skillAttr = clean(getModifier(character.attributes[attr]));
     const skillProf = clean(character.proficiencyBonus);
     const skillBonus = clean(skill.bonus ?? 0);
 
-    result[`repeating_skills_${rowId}_skillname`] = skillName;
-    result[`repeating_skills_${rowId}_name`] = skillName;
-    result[`repeating_skills_${rowId}_skillattr`] = skillAttr;
-    result[`repeating_skills_${rowId}_attr`] = skillAttr;
-    result[`repeating_skills_${rowId}_skillprof`] = skillProf;
-    result[`repeating_skills_${rowId}_prof`] = skillProf;
-    result[`repeating_skills_${rowId}_skillbonus`] = skillBonus;
-    result[`repeating_skills_${rowId}_bonus`] = skillBonus;
+    setRepeatingValue(sections, rowId, ["skillname", "name"], skillName);
+    setRepeatingValue(sections, rowId, ["skillattr", "attr"], skillAttr);
+    setRepeatingValue(sections, rowId, ["skillprof", "prof"], skillProf);
+    setRepeatingValue(sections, rowId, ["skillbonus", "bonus"], skillBonus);
   }
 
   // Repeating attacks
@@ -123,6 +133,7 @@ export function buildRoll20AttributeMap(
   for (let i = 0; i < exportedAttacks.length; i++) {
     const rowId = makeRepeatingRowId(i);
     const attack = exportedAttacks[i];
+    const sections = ["attacks", "attack"];
 
     const attackName = clean(attack.name);
     const attackAttr = clean(getModifier(character.attributes[attack.attribute]));
@@ -130,17 +141,12 @@ export function buildRoll20AttributeMap(
     const attackBonus = clean(attack.bonus ?? 0);
     const damageDice = clean(attack.damage);
 
-    result[`repeating_attacks_${rowId}_attackname`] = attackName;
-    result[`repeating_attacks_${rowId}_name`] = attackName;
-    result[`repeating_attacks_${rowId}_attackattr`] = attackAttr;
-    result[`repeating_attacks_${rowId}_attr`] = attackAttr;
-    result[`repeating_attacks_${rowId}_attackprof`] = attackProf;
-    result[`repeating_attacks_${rowId}_prof`] = attackProf;
-    result[`repeating_attacks_${rowId}_attackbonus`] = attackBonus;
-    result[`repeating_attacks_${rowId}_bonus`] = attackBonus;
-    result[`repeating_attacks_${rowId}_damagedice`] = damageDice;
-    result[`repeating_attacks_${rowId}_damage`] = damageDice;
-    result[`repeating_attacks_${rowId}_damagebonus`] = "0";
+    setRepeatingValue(sections, rowId, ["attackname", "name"], attackName);
+    setRepeatingValue(sections, rowId, ["attackattr", "attr"], attackAttr);
+    setRepeatingValue(sections, rowId, ["attackprof", "prof"], attackProf);
+    setRepeatingValue(sections, rowId, ["attackbonus", "bonus"], attackBonus);
+    setRepeatingValue(sections, rowId, ["damagedice", "damage"], damageDice);
+    setRepeatingValue(sections, rowId, ["damagebonus"], "0");
   }
 
   // Repeating powers
@@ -152,15 +158,14 @@ export function buildRoll20AttributeMap(
     const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
     const notes = clean(power.notes ?? definition?.description ?? "");
     const text = notes ? `${power.name} - ${notes}` : power.name;
+    const sections = ["powers", "power"];
     const powerName = clean(power.name);
     const powerNotes = clean(notes);
     const powerText = clean(text);
 
-    result[`repeating_powers_${rowId}_powertext`] = powerText;
-    result[`repeating_powers_${rowId}_powername`] = powerName;
-    result[`repeating_powers_${rowId}_name`] = powerName;
-    result[`repeating_powers_${rowId}_powernotes`] = powerNotes;
-    result[`repeating_powers_${rowId}_notes`] = powerNotes;
+    setRepeatingValue(sections, rowId, ["powertext", "text"], powerText);
+    setRepeatingValue(sections, rowId, ["powername", "name"], powerName);
+    setRepeatingValue(sections, rowId, ["powernotes", "notes"], powerNotes);
   }
 
   // Repeating inventory
@@ -170,18 +175,15 @@ export function buildRoll20AttributeMap(
     const rowId = makeRepeatingRowId(i);
     const item = exportedInventory[i];
     const definition = item.itemId ? itemMap.get(item.itemId) : undefined;
+    const sections = ["inventory", "item", "items"];
 
     const itemName = clean(item.name);
     const itemQty = clean(item.quantity);
     const itemNotes = clean(item.notes ?? definition?.description ?? "");
 
-    result[`repeating_inventory_${rowId}_itemname`] = itemName;
-    result[`repeating_inventory_${rowId}_name`] = itemName;
-    result[`repeating_inventory_${rowId}_itemqty`] = itemQty;
-    result[`repeating_inventory_${rowId}_qty`] = itemQty;
-    result[`repeating_inventory_${rowId}_quantity`] = itemQty;
-    result[`repeating_inventory_${rowId}_itemnotes`] = itemNotes;
-    result[`repeating_inventory_${rowId}_notes`] = itemNotes;
+    setRepeatingValue(sections, rowId, ["itemname", "name"], itemName);
+    setRepeatingValue(sections, rowId, ["itemqty", "qty", "quantity"], itemQty);
+    setRepeatingValue(sections, rowId, ["itemnotes", "notes"], itemNotes);
   }
 
   return result;
