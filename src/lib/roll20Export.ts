@@ -24,10 +24,6 @@ function getThemeValue(campaignId: string) {
   return "fantasy";
 }
 
-function makeRepeatingRowId(index: number) {
-  return `-cbrow${index + 1}`;
-}
-
 export function buildRoll20AttributeMap(
   character: CharacterRecord,
   gameData: GameData
@@ -104,7 +100,7 @@ export function buildRoll20AttributeMap(
     .slice(0, MAX_SKILL_ROWS);
 
   for (let i = 0; i < proficientSkills.length; i++) {
-    const rowId = makeRepeatingRowId(i);
+    const rowId = `$${i}`;
     const skill = proficientSkills[i];
     const definition = skillMap.get(skill.skillId);
     const attr = definition?.attribute ?? "STR";
@@ -124,7 +120,7 @@ export function buildRoll20AttributeMap(
   const exportedAttacks = character.attacks.slice(0, MAX_ATTACK_ROWS);
 
   for (let i = 0; i < exportedAttacks.length; i++) {
-    const rowId = makeRepeatingRowId(i);
+    const rowId = `$${i}`;
     const attack = exportedAttacks[i];
 
     const attackName = clean(attack.name);
@@ -145,7 +141,7 @@ export function buildRoll20AttributeMap(
   const exportedPowers = character.powers.slice(0, MAX_POWER_ROWS);
 
   for (let i = 0; i < exportedPowers.length; i++) {
-    const rowId = makeRepeatingRowId(i);
+    const rowId = `$${i}`;
     const power = exportedPowers[i];
     const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
     const notes = clean(power.notes ?? definition?.description ?? "");
@@ -159,7 +155,7 @@ export function buildRoll20AttributeMap(
   const exportedInventory = character.inventory.slice(0, MAX_INVENTORY_ROWS);
 
   for (let i = 0; i < exportedInventory.length; i++) {
-    const rowId = makeRepeatingRowId(i);
+    const rowId = `$${i}`;
     const item = exportedInventory[i];
     const definition = item.itemId ? itemMap.get(item.itemId) : undefined;
 
