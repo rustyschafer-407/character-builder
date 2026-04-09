@@ -15,25 +15,6 @@ function getModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
-function getAttrModRef(attribute: AttributeKey) {
-  switch (attribute) {
-    case "STR":
-      return "@{str_mod}";
-    case "DEX":
-      return "@{dex_mod}";
-    case "CON":
-      return "@{con_mod}";
-    case "INT":
-      return "@{int_mod}";
-    case "WIS":
-      return "@{wis_mod}";
-    case "CHA":
-      return "@{cha_mod}";
-    default:
-      return "@{str_mod}";
-  }
-}
-
 function getThemeValue(campaignId: string) {
   const normalized = campaignId.toLowerCase();
   if (normalized.includes("scifi") || normalized.includes("sci-fi")) return "scifi";
@@ -44,18 +25,19 @@ function getThemeValue(campaignId: string) {
 }
 
 function makeRepeatingRowId(index: number) {
-  return `import${index + 1}`;
+  return `$${index}`;
 }
 
 export function buildRoll20AttributeMap(
   character: CharacterRecord,
   gameData: GameData
 ): Record<string, string> {
-  const cls = gameData.classes.find((c) => c.id === character.classId);
+  const campaign = gameData.campaigns.find((campaign) => campaign.id === character.campaignId);
+  const cls = campaign?.classes.find((c) => c.id === character.classId);
 
-  const skillMap = new Map(gameData.skills.map((skill) => [skill.id, skill]));
-  const powerMap = new Map(gameData.powers.map((power) => [power.id, power]));
-  const itemMap = new Map(gameData.items.map((item) => [item.id, item]));
+  const skillMap = new Map((campaign?.skills ?? []).map((skill) => [skill.id, skill]));
+  const powerMap = new Map((campaign?.powers ?? []).map((power) => [power.id, power]));
+  const itemMap = new Map((campaign?.items ?? []).map((item) => [item.id, item]));
 
   const result: Record<string, string> = {};
 
@@ -122,8 +104,8 @@ export function buildRoll20AttributeMap(
     result[`repeating_skills_${rowId}_skillname`] = clean(
       definition?.name ?? skill.skillId
     );
-    result[`repeating_skills_${rowId}_skillattr`] = clean(getAttrModRef(attr));
-    result[`repeating_skills_${rowId}_skillprof`] = "@{pb}";
+    result[`repeating_skills_${rowId}_skillattr`] = clean(getModifier(character.attributes[attr]));
+    result[`repeating_skills_${rowId}_skillprof`] = clean(character.proficiencyBonus);
     result[`repeating_skills_${rowId}_skillbonus`] = clean(skill.bonus ?? 0);
   }
 
@@ -135,10 +117,8 @@ export function buildRoll20AttributeMap(
     const attack = exportedAttacks[i];
 
     result[`repeating_attacks_${rowId}_attackname`] = clean(attack.name);
-    result[`repeating_attacks_${rowId}_attackattr`] = clean(
-      getAttrModRef(attack.attribute)
-    );
-    result[`repeating_attacks_${rowId}_attackprof`] = "@{pb}";
+    result[`repeating_attacks_${rowId}_attackattr`] = clean(getModifier(character.attributes[attack.attribute]));
+    result[`repeating_attacks_${rowId}_attackprof`] = clean(character.proficiencyBonus);
     result[`repeating_attacks_${rowId}_attackbonus`] = clean(attack.bonus ?? 0);
     result[`repeating_attacks_${rowId}_damagedice`] = clean(attack.damage);
     result[`repeating_attacks_${rowId}_damagebonus`] = "0";
@@ -191,4 +171,23 @@ export function buildRoll20AttributeMapJson(
   gameData: GameData
 ) {
   return JSON.stringify(buildRoll20AttributeMap(character, gameData), null, 2);
+}
+
+export function buildChatSetAttrCommand(
+  character: CharacterRecord,
+  gameData: GameData
+): string {
+  const map = buildRoll20AttributeMap(character, gameData);
+
+  const pairs = Object.entries(map)
+    .filter(([, value]) => value !== "")
+    .map(([key, value]) => {
+      // Regular attributes are stored as "attr_foo" in the map but Roll20 uses "foo"
+      const attrName = key.startsWith("attr_") ? key.slice(5) : key;
+      // Escape pipe characters in values
+      const safeValue = String(value).replace(/\|/g, "&#124;");
+      return `--${attrName}|${safeValue}`;
+    });
+
+  return `!setattr --sel ${pairs.join(" ")}`;
 }

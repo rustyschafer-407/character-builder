@@ -57,7 +57,7 @@ export default function AttacksSection({ character, label, onAdd, onChange }: Pr
                 onChange={(e) => onChange(a.id, "bonus", Number(e.target.value) || 0)}
                 style={inputStyle}
               />
-              <div style={{ color: "#111827" }}>
+              <div style={{ color: "var(--text-primary)" }}>
                 Total: <strong>{total >= 0 ? "+" : ""}{total}</strong>
               </div>
             </div>

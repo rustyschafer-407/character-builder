@@ -8,7 +8,11 @@ export function loadCharacters(): CharacterRecord[] {
   if (!raw) return [];
 
   try {
-    return JSON.parse(raw) as CharacterRecord[];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed as CharacterRecord[];
   } catch (error) {
     console.error("Failed to parse saved characters", error);
     return [];

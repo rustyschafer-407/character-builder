@@ -1,5 +1,5 @@
 import type { CharacterRecord } from "../types/character";
-import { buttonStyle, inputStyle, labelTextStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
+import { inputStyle, labelTextStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
 
 interface Props {
   character: CharacterRecord;
@@ -9,7 +9,6 @@ interface Props {
   levelLabel: string;
   hpLabel: string;
   onNameChange: (name: string) => void;
-  onExport: () => void;
 }
 
 export default function IdentitySection({
@@ -20,22 +19,18 @@ export default function IdentitySection({
   levelLabel,
   hpLabel,
   onNameChange,
-  onExport,
 }: Props) {
   return (
     <section style={panelStyle}>
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-start",
           alignItems: "center",
           marginBottom: 12,
         }}
       >
         <h2 style={sectionTitleStyle}>Identity</h2>
-        <button onClick={onExport} style={buttonStyle}>
-          Export JSON
-        </button>
       </div>
 
       <div style={{ display: "grid", gap: 12 }}>
@@ -48,19 +43,19 @@ export default function IdentitySection({
           />
         </label>
 
-        <div style={{ color: "#374151" }}>
+        <div style={{ color: "#b9cdf0" }}>
           <strong>Campaign:</strong> {campaignName}
         </div>
 
-        <div style={{ color: "#374151" }}>
+        <div style={{ color: "#b9cdf0" }}>
           <strong>{classLabel}:</strong> {className}
         </div>
 
-        <div style={{ color: "#374151" }}>
+        <div style={{ color: "#b9cdf0" }}>
           <strong>{levelLabel}:</strong> {character.level}
         </div>
 
-        <div style={{ color: "#374151" }}>
+        <div style={{ color: "#b9cdf0" }}>
           <strong>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
         </div>
       </div>

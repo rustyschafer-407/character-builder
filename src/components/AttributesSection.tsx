@@ -41,7 +41,7 @@ export default function AttributesSection({
       <h2 style={sectionTitleStyle}>{label}</h2>
 
       <div style={{ marginBottom: 12 }}>
-        <label style={{ fontWeight: 600, color: "#374151" }}>
+        <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
           Generation Method
           <select
             value={method}
@@ -89,7 +89,7 @@ export default function AttributesSection({
       >
         {ATTRS.map((attr) => (
           <div key={attr} style={statCardStyle}>
-            <strong style={{ color: "#111827" }}>{attr}</strong>
+            <strong style={{ color: "var(--text-primary)" }}>{attr}</strong>
 
             <div style={{ marginTop: 8 }}>
               <input
@@ -100,7 +100,7 @@ export default function AttributesSection({
               />
             </div>
 
-            <div style={{ marginTop: 8, fontSize: 14, color: "#4b5563" }}>
+            <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
               Mod: {getAttributeModifier(character.attributes[attr]) >= 0 ? "+" : ""}
               {getAttributeModifier(character.attributes[attr])}
             </div>

@@ -31,12 +31,17 @@ export interface CampaignDefinition {
   name: string;
   description?: string;
   labels: CampaignLabels;
-  availableClassIds: string[];
-  availableSkillIds: string[];
-  availablePowerIds: string[];
-  availableItemIds: string[];
-  availableAttackTemplateIds: string[];
   attributeRules: AttributeRules;
+  classes: ClassDefinition[];
+  skills: SkillDefinition[];
+  powers: PowerDefinition[];
+  items: ItemDefinition[];
+  attackTemplates: AttackTemplateDefinition[];
+  availableClassIds?: string[];
+  availableSkillIds?: string[];
+  availablePowerIds?: string[];
+  availableItemIds?: string[];
+  availableAttackTemplateIds?: string[];
 }
 
 export interface ClassSkillChoiceRule {

@@ -106,11 +106,11 @@ export default function SkillsSection({
                 opacity: !canBeChosen ? 0.7 : 1,
               }}
             >
-              <div style={{ color: "#111827" }}>
+              <div style={{ color: "var(--text-primary)" }}>
                 <strong>{s.name}</strong> ({s.attribute})
               </div>
 
-              <label style={{ color: "#374151", fontSize: 14 }}>
+              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
                 Prof
                 <input
                   type="checkbox"
@@ -121,12 +121,12 @@ export default function SkillsSection({
                 />
               </label>
 
-              <div style={{ color: "#4b5563" }}>
+              <div style={{ color: "var(--text-secondary)" }}>
                 Base: {base >= 0 ? "+" : ""}
                 {base}
               </div>
 
-              <label style={{ color: "#374151", fontSize: 14 }}>
+              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
                 Bonus
                 <input
                   type="number"
@@ -142,7 +142,7 @@ export default function SkillsSection({
                 />
               </label>
 
-              <div style={{ color: "#111827" }}>
+              <div style={{ color: "var(--text-primary)" }}>
                 Total: <strong>{total >= 0 ? "+" : ""}{total}</strong>
               </div>
             </div>

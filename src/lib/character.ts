@@ -24,11 +24,17 @@ export function getAttributeModifier(score: number) {
 }
 
 export function getClassesForCampaign(gameData: GameData, campaignId: string) {
-  return gameData.classes.filter((cls) => cls.campaignId === campaignId);
+  return (
+    gameData.campaigns.find((campaign) => campaign.id === campaignId)?.classes ?? []
+  );
 }
 
 export function getClassById(gameData: GameData, classId: string) {
-  return gameData.classes.find((cls) => cls.id === classId);
+  for (const campaign of gameData.campaigns) {
+    const cls = campaign.classes.find((item) => item.id === classId);
+    if (cls) return cls;
+  }
+  return undefined;
 }
 
 function makeBaseAttributes(): Record<AttributeKey, number> {
@@ -131,17 +137,17 @@ function makeSheetDefaults(): CharacterRecord["sheet"] {
 }
 
 function makeSkills(campaign: CampaignDefinition): CharacterSkillSelection[] {
-  return campaign.availableSkillIds.map((skillId) => ({
-    skillId,
+  return campaign.skills.map((skill) => ({
+    skillId: skill.id,
     proficient: false,
     bonus: 0,
     source: "campaign",
   }));
 }
 
-function makePowers(gameData: GameData, cls: ClassDefinition): CharacterPowerSelection[] {
+function makePowers(campaign: CampaignDefinition, cls: ClassDefinition): CharacterPowerSelection[] {
   return (cls.defaultPowerIds ?? [])
-    .map((powerId) => gameData.powers.find((power) => power.id === powerId))
+    .map((powerId) => campaign.powers.find((power) => power.id === powerId))
     .filter((power): power is NonNullable<typeof power> => Boolean(power))
     .map((power) => ({
       powerId: power.id,
@@ -151,25 +157,14 @@ function makePowers(gameData: GameData, cls: ClassDefinition): CharacterPowerSel
     }));
 }
 
-function makeItems(gameData: GameData, cls: ClassDefinition): CharacterItem[] {
-  return (cls.defaultItemIds ?? [])
-    .map((itemId) => gameData.items.find((item) => item.id === itemId))
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .map((item) => ({
-      itemId: item.id,
-      name: item.name,
-      quantity: item.defaultQuantity ?? 1,
-      notes: item.description ?? "",
-      equipped: false,
-      source: "class",
-    }));
+function makeItems(): CharacterItem[] {
+  // Items are now chosen by the user during character creation based on class rules
+  return [];
 }
 
-function makeAttacks(gameData: GameData, cls: ClassDefinition): CharacterAttack[] {
+function makeAttacks(campaign: CampaignDefinition, cls: ClassDefinition): CharacterAttack[] {
   return (cls.startingAttackTemplateIds ?? [])
-    .map((templateId) =>
-      gameData.attackTemplates.find((template) => template.id === templateId)
-    )
+    .map((templateId) => campaign.attackTemplates.find((template) => template.id === templateId))
     .filter((template): template is NonNullable<typeof template> => Boolean(template))
     .map((template) => ({
       id: generateId(),
@@ -184,7 +179,6 @@ function makeAttacks(gameData: GameData, cls: ClassDefinition): CharacterAttack[
 }
 
 export function createCharacterFromCampaignAndClass(
-  gameData: GameData,
   campaign: CampaignDefinition,
   cls: ClassDefinition,
   name: string
@@ -206,9 +200,9 @@ export function createCharacterFromCampaignAndClass(
     hp: makeHp(cls, attributes.CON),
     sheet: makeSheetDefaults(),
     skills: makeSkills(campaign),
-    powers: makePowers(gameData, cls),
-    inventory: makeItems(gameData, cls),
-    attacks: makeAttacks(gameData, cls),
+    powers: makePowers(campaign, cls),
+    inventory: makeItems(),
+    attacks: makeAttacks(campaign, cls),
     createdAt,
     updatedAt: createdAt,
   };

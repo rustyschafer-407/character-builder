@@ -110,13 +110,13 @@ export default function InventorySection({
               }}
             >
               <div>
-                <div style={{ color: "#111827", fontWeight: 700 }}>{item.name}</div>
-                <div style={{ color: "#4b5563", fontSize: 14, marginTop: 4 }}>
+                <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>{item.name}</div>
+                <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>
                   {item.description || item.category || "No description."}
                 </div>
               </div>
 
-              <label style={{ color: "#374151", fontSize: 14, whiteSpace: "nowrap" }}>
+              <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
                 Select
                 <input
                   type="checkbox"
@@ -127,7 +127,7 @@ export default function InventorySection({
                 />
               </label>
 
-              <label style={{ color: "#374151", fontSize: 14, whiteSpace: "nowrap" }}>
+              <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
                 Qty
                 <input
                   type="number"
@@ -145,7 +145,7 @@ export default function InventorySection({
                 />
               </label>
 
-              <label style={{ color: "#374151", fontSize: 14, whiteSpace: "nowrap" }}>
+              <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
                 Equipped
                 <input
                   type="checkbox"
@@ -172,14 +172,14 @@ export default function InventorySection({
                 alignItems: "center",
               }}
             >
-              <div style={{ color: "#111827" }}>
+              <div style={{ color: "var(--text-primary)" }}>
                 <strong>{item.name}</strong>
-                <div style={{ color: "#4b5563", fontSize: 14, marginTop: 4 }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>
                   Manual item
                 </div>
               </div>
 
-              <label style={{ color: "#374151", fontSize: 14 }}>
+              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
                 Qty
                 <input
                   type="number"
@@ -196,7 +196,7 @@ export default function InventorySection({
                 />
               </label>
 
-              <label style={{ color: "#374151", fontSize: 14 }}>
+              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
                 Equipped
                 <input
                   type="checkbox"

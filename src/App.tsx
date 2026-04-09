@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { z } from "zod";
 import { gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
@@ -8,10 +7,7 @@ import {
   getClassesForCampaign,
   touchCharacter,
 } from "./lib/character";
-import {
-  buildRoll20AttributeMapJson,
-  buildRoll20AttributeMapText,
-} from "./lib/roll20Export";
+import { buildChatSetAttrCommand } from "./lib/roll20Export";
 import { loadCharacters, saveCharacters } from "./storage/characterStorage";
 import { loadGameData, saveGameData } from "./storage/gameDataStorage";
 import type { CharacterRecord } from "./types/character";
@@ -35,112 +31,7 @@ import CharacterCreationWizard, {
   type CharacterCreationDraft,
 } from "./components/CharacterCreationWizard";
 import AdminScreen from "./components/AdminScreen";
-import { buttonStyle, mutedTextStyle, pageStyle, panelStyle } from "./components/uiStyles";
-
-const attributeKeySchema = z.enum(["STR", "DEX", "CON", "INT", "WIS", "CHA"]);
-
-const characterSkillSchema = z.object({
-  skillId: z.string().min(1),
-  proficient: z.boolean(),
-  bonus: z.number(),
-  source: z.enum(["campaign", "class", "background", "wizard-choice", "level-up", "manual"]),
-});
-
-const characterAttackSchema = z.object({
-  id: z.string().min(1),
-  templateId: z.string().optional(),
-  name: z.string(),
-  attribute: attributeKeySchema,
-  damage: z.string(),
-  bonus: z.number(),
-  damageBonus: z.number().optional(),
-  notes: z.string().optional(),
-});
-
-const characterPowerSchema = z.object({
-  powerId: z.string().optional(),
-  name: z.string(),
-  notes: z.string().optional(),
-  source: z.enum(["campaign", "class", "background", "wizard-choice", "level-up", "manual"]),
-});
-
-const characterItemSchema = z.object({
-  itemId: z.string().optional(),
-  name: z.string(),
-  quantity: z.number(),
-  notes: z.string().optional(),
-  equipped: z.boolean().optional(),
-  source: z.enum(["campaign", "class", "background", "wizard-choice", "level-up", "manual"]),
-});
-
-const characterRecordSchema = z.object({
-  id: z.string().min(1),
-  identity: z.object({
-    name: z.string(),
-    playerName: z.string().optional(),
-    notes: z.string().optional(),
-    ancestry: z.string().optional(),
-    background: z.string().optional(),
-  }),
-  campaignId: z.string().min(1),
-  classId: z.string(),
-  level: z.number(),
-  proficiencyBonus: z.number(),
-  attributes: z.object({
-    STR: z.number(),
-    DEX: z.number(),
-    CON: z.number(),
-    INT: z.number(),
-    WIS: z.number(),
-    CHA: z.number(),
-  }),
-  attributeGeneration: z
-    .object({
-      method: z.enum(["pointBuy", "randomRoll", "manual"]),
-      rolls: z.array(z.number()).optional(),
-      pointBuyTotal: z.number().optional(),
-      notes: z.string().optional(),
-    })
-    .optional(),
-  hp: z.object({
-    max: z.number(),
-    current: z.number(),
-    temp: z.number().optional(),
-    hitDie: z.number().optional(),
-    notes: z.string().optional(),
-  }),
-  sheet: z
-    .object({
-      speed: z.string().optional(),
-      acBase: z.number(),
-      acBonus: z.number(),
-      acUseDex: z.boolean(),
-      initMisc: z.number(),
-      saveProf: z.object({
-        STR: z.boolean(),
-        DEX: z.boolean(),
-        CON: z.boolean(),
-        INT: z.boolean(),
-        WIS: z.boolean(),
-        CHA: z.boolean(),
-      }),
-      saveBonus: z.object({
-        STR: z.number(),
-        DEX: z.number(),
-        CON: z.number(),
-        INT: z.number(),
-        WIS: z.number(),
-        CHA: z.number(),
-      }),
-    })
-    .optional(),
-  skills: z.array(characterSkillSchema),
-  powers: z.array(characterPowerSchema),
-  inventory: z.array(characterItemSchema),
-  attacks: z.array(characterAttackSchema),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-});
+import { buttonStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
 
 const POINT_BUY_COSTS: Record<number, number> = {
   8: 0,
@@ -196,103 +87,6 @@ function getSelectedCountForItemRule(rule: ClassItemChoiceRule, character: Chara
   ).length;
 }
 
-function getModifier(score: number) {
-  return Math.floor((score - 10) / 2);
-}
-
-function formatModifier(score: number) {
-  const mod = getModifier(score);
-  return mod >= 0 ? `+${mod}` : `${mod}`;
-}
-
-function buildRoll20TransferText(character: CharacterRecord, gameData: GameData) {
-  const campaign = gameData.campaigns.find((g) => g.id === character.campaignId);
-  const cls = gameData.classes.find((c) => c.id === character.classId);
-
-  const skillMap = new Map(gameData.skills.map((skill) => [skill.id, skill]));
-  const powerMap = new Map(gameData.powers.map((power) => [power.id, power]));
-  const itemMap = new Map(gameData.items.map((item) => [item.id, item]));
-
-  const proficientSkills = character.skills.filter((skill) => skill.proficient);
-
-  const lines = [
-    "ROLL20 TRANSFER BLOCK",
-    "====================",
-    "",
-    `Name: ${character.identity.name || ""}`,
-    `Campaign: ${campaign?.name ?? character.campaignId}`,
-    `Class: ${cls?.name ?? character.classId}`,
-    `Level: ${character.level}`,
-    `Proficiency Bonus: ${character.proficiencyBonus >= 0 ? "+" : ""}${character.proficiencyBonus}`,
-    "",
-    "ATTRIBUTES",
-    `STR ${character.attributes.STR} (${formatModifier(character.attributes.STR)})`,
-    `DEX ${character.attributes.DEX} (${formatModifier(character.attributes.DEX)})`,
-    `CON ${character.attributes.CON} (${formatModifier(character.attributes.CON)})`,
-    `INT ${character.attributes.INT} (${formatModifier(character.attributes.INT)})`,
-    `WIS ${character.attributes.WIS} (${formatModifier(character.attributes.WIS)})`,
-    `CHA ${character.attributes.CHA} (${formatModifier(character.attributes.CHA)})`,
-    "",
-    "HP",
-    `Current: ${character.hp.current}`,
-    `Max: ${character.hp.max}`,
-    `Temp: ${character.hp.temp ?? 0}`,
-    `Hit Die: d${character.hp.hitDie ?? 0}`,
-    "",
-    "SKILLS",
-    ...(proficientSkills.length > 0
-      ? proficientSkills.map((skill) => {
-          const definition = skillMap.get(skill.skillId);
-          const baseAttr = definition?.attribute ?? "STR";
-          const total =
-            getModifier(character.attributes[baseAttr]) +
-            character.proficiencyBonus +
-            skill.bonus;
-
-          return `${definition?.name ?? skill.skillId}: ${total >= 0 ? "+" : ""}${total} (${baseAttr})`;
-        })
-      : ["None"]),
-    "",
-    "ATTACKS",
-    ...(character.attacks.length > 0
-      ? character.attacks.map((attack) => {
-          const total =
-            getModifier(character.attributes[attack.attribute]) + attack.bonus;
-          const bonusText = total >= 0 ? `+${total}` : `${total}`;
-          const damageBonusText = attack.damageBonus ? ` + ${attack.damageBonus}` : "";
-          const notes = attack.notes?.trim() ? ` | ${attack.notes}` : "";
-          return `${attack.name}: attack ${bonusText}, damage ${attack.damage}${damageBonusText}, attr ${attack.attribute}${notes}`;
-        })
-      : ["None"]),
-    "",
-    "POWERS",
-    ...(character.powers.length > 0
-      ? character.powers.map((power) => {
-          const definition = power.powerId ? powerMap.get(power.powerId) : null;
-          const notes = power.notes?.trim() || definition?.description || "";
-          return notes ? `${power.name}: ${notes}` : power.name;
-        })
-      : ["None"]),
-    "",
-    "INVENTORY",
-    ...(character.inventory.length > 0
-      ? character.inventory.map((item) => {
-          const definition = item.itemId ? itemMap.get(item.itemId) : null;
-          const equipped = item.equipped ? " [equipped]" : "";
-          const notes = item.notes?.trim() || definition?.description || "";
-          return notes
-            ? `${item.name} x${item.quantity}${equipped}: ${notes}`
-            : `${item.name} x${item.quantity}${equipped}`;
-        })
-      : ["None"]),
-    "",
-    "NOTES",
-    character.identity.notes?.trim() || "None",
-  ];
-
-  return lines.join("\n");
-}
-
 function makeDraftFromCampaignAndClass(
   gameData: GameData,
   campaignId: string,
@@ -300,10 +94,10 @@ function makeDraftFromCampaignAndClass(
   name: string
 ) {
   const campaign = gameData.campaigns.find((g) => g.id === campaignId);
-  const cls = gameData.classes.find((c) => c.id === classId);
+  const cls = campaign?.classes.find((c) => c.id === classId);
   if (!campaign || !cls) return null;
 
-  const base = createCharacterFromCampaignAndClass(gameData, campaign, cls, name);
+  const base = createCharacterFromCampaignAndClass(campaign, cls, name);
 
   const draft: CharacterCreationDraft = {
     identity: base.identity,
@@ -366,7 +160,6 @@ export default function App() {
   const [creationDraft, setCreationDraft] = useState<CharacterCreationDraft | null>(null);
   const [adminOpen, setAdminOpen] = useState(false);
   const [roll20PreviewOpen, setRoll20PreviewOpen] = useState(false);
-  const [roll20PreviewMode, setRoll20PreviewMode] = useState<"text" | "json">("text");
 
   useEffect(() => {
     saveCharacters(characters);
@@ -407,17 +200,11 @@ export default function App() {
 
   const classesForSelectedCampaign = getClassesForCampaign(gameData, campaignId);
 
-  const selectedSkills = selectedCampaign
-    ? gameData.skills.filter((skill) => selectedCampaign.availableSkillIds.includes(skill.id))
-    : [];
+  const selectedSkills = selectedCampaign ? selectedCampaign.skills : [];
 
-  const selectedPowers = selectedCampaign
-    ? gameData.powers.filter((power) => selectedCampaign.availablePowerIds.includes(power.id))
-    : [];
+  const selectedPowers = selectedCampaign ? selectedCampaign.powers : [];
 
-  const selectedItems = selectedCampaign
-    ? gameData.items.filter((item) => selectedCampaign.availableItemIds.includes(item.id))
-    : [];
+  const selectedItems = selectedCampaign ? selectedCampaign.items : [];
 
   const skillChoiceRules = selectedClass?.skillChoiceRules ?? [];
   const powerChoiceRules = selectedClass?.powerChoiceRules ?? [];
@@ -454,17 +241,11 @@ export default function App() {
     ? getClassesForCampaign(gameData, creationDraft.campaignId)
     : [];
 
-  const wizardSkills = wizardCampaign
-    ? gameData.skills.filter((skill) => wizardCampaign.availableSkillIds.includes(skill.id))
-    : [];
+  const wizardSkills = wizardCampaign ? wizardCampaign.skills : [];
 
-  const wizardPowers = wizardCampaign
-    ? gameData.powers.filter((power) => wizardCampaign.availablePowerIds.includes(power.id))
-    : [];
+  const wizardPowers = wizardCampaign ? wizardCampaign.powers : [];
 
-  const wizardItems = wizardCampaign
-    ? gameData.items.filter((item) => wizardCampaign.availableItemIds.includes(item.id))
-    : [];
+  const wizardItems = wizardCampaign ? wizardCampaign.items : [];
 
   const wizardSkillChoiceRules = wizardClass?.skillChoiceRules ?? [];
   const wizardPowerChoiceRules = wizardClass?.powerChoiceRules ?? [];
@@ -478,15 +259,14 @@ export default function App() {
   const wizardPointBuySpent = creationDraft ? getPointBuySpent(creationDraft.attributes) : 0;
   const wizardPointBuyRemaining = wizardPointBuyTotal - wizardPointBuySpent;
 
-  const roll20PreviewText = selected ? buildRoll20AttributeMapText(selected, gameData) : "";
-  const roll20PreviewJson = selected ? buildRoll20AttributeMapJson(selected, gameData) : "";
+  const chatSetAttrCommand = selected ? buildChatSetAttrCommand(selected, gameData) : "";
 
   function getCampaignName(id: string) {
     return gameData.campaigns.find((g) => g.id === id)?.name ?? id;
   }
 
   function getClassName(id: string) {
-    return (gameData.classes.find((cls) => cls.id === id)?.name ?? id) || "Unassigned";
+    return (getClassById(gameData, id)?.name ?? id) || "Unassigned";
   }
 
   function openWizard() {
@@ -772,7 +552,7 @@ export default function App() {
   }
 
   function togglePowerWithRules(character: CharacterRecord, powerId: string, nextSelected: boolean) {
-    const power = gameData.powers.find((p) => p.id === powerId);
+    const power = selectedCampaign?.powers.find((p) => p.id === powerId);
     if (!power) return;
 
     const rules = selectedClass?.powerChoiceRules ?? [];
@@ -817,9 +597,9 @@ export default function App() {
   }
 
   function toggleWizardPower(powerId: string, nextSelected: boolean) {
-    if (!creationDraft) return;
+    if (!creationDraft || !wizardCampaign) return;
 
-    const power = gameData.powers.find((p) => p.id === powerId);
+    const power = wizardCampaign.powers.find((p) => p.id === powerId);
     if (!power) return;
 
     if (nextSelected) {
@@ -863,7 +643,7 @@ export default function App() {
   }
 
   function toggleItemWithRules(character: CharacterRecord, itemId: string, nextSelected: boolean) {
-    const item = gameData.items.find((i) => i.id === itemId);
+    const item = selectedCampaign?.items.find((i) => i.id === itemId);
     if (!item) return;
 
     const rules = selectedClass?.itemChoiceRules ?? [];
@@ -910,9 +690,9 @@ export default function App() {
   }
 
   function toggleWizardItem(itemId: string, nextSelected: boolean) {
-    if (!creationDraft) return;
+    if (!creationDraft || !wizardCampaign) return;
 
-    const item = gameData.items.find((i) => i.id === itemId);
+    const item = wizardCampaign.items.find((i) => i.id === itemId);
     if (!item) return;
 
     if (nextSelected) {
@@ -1018,145 +798,23 @@ export default function App() {
     }
   }
 
-  function exportCharacter(character: CharacterRecord) {
-    const data = JSON.stringify(character, null, 2);
-    const blob = new Blob([data], { type: "application/json" });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${character.identity.name || "character"}.json`;
-    a.click();
-
-    URL.revokeObjectURL(url);
-  }
-
-  async function copyRoll20Transfer(character: CharacterRecord) {
+  async function copyChatSetAttr() {
+    if (!selected) return;
     try {
-      const text = buildRoll20TransferText(character, gameData);
-      await navigator.clipboard.writeText(text);
-      alert("Roll20 transfer text copied to clipboard.");
+      await navigator.clipboard.writeText(chatSetAttrCommand);
+      alert("Roll20 import command copied to clipboard. Paste it into the Roll20 chat.");
     } catch {
       alert("Could not copy to clipboard on this device/browser.");
     }
   }
 
-  function downloadRoll20Transfer(character: CharacterRecord) {
-    const text = buildRoll20TransferText(character, gameData);
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${character.identity.name || "character"}-roll20-transfer.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  async function copyRoll20AttributeMap(character: CharacterRecord) {
-    try {
-      const text = buildRoll20AttributeMapText(character, gameData);
-      await navigator.clipboard.writeText(text);
-      alert("Roll20 attribute map copied to clipboard.");
-    } catch {
-      alert("Could not copy Roll20 attribute map to clipboard on this device/browser.");
-    }
-  }
-
   async function copyCurrentPreview() {
-    if (!selected) return;
-
-    const text = roll20PreviewMode === "text" ? roll20PreviewText : roll20PreviewJson;
-
     try {
-      await navigator.clipboard.writeText(text);
-      alert("Preview copied to clipboard.");
+      await navigator.clipboard.writeText(chatSetAttrCommand);
+      alert("Command copied to clipboard.");
     } catch {
-      alert("Could not copy preview to clipboard on this device/browser.");
+      alert("Could not copy to clipboard on this device/browser.");
     }
-  }
-
-  function downloadRoll20AttributeMapText(character: CharacterRecord) {
-    const text = buildRoll20AttributeMapText(character, gameData);
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${character.identity.name || "character"}-roll20-attribute-map.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function downloadRoll20AttributeMapJsonFile(character: CharacterRecord) {
-    const json = buildRoll20AttributeMapJson(character, gameData);
-    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${character.identity.name || "character"}-roll20-attribute-map.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function importCharacter(file: File) {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      try {
-        const raw = JSON.parse(reader.result as string);
-        const parsed = characterRecordSchema.parse(raw);
-
-        const campaignExists = gameData.campaigns.some((g) => g.id === parsed.campaignId);
-        if (!campaignExists) {
-          alert(`Import failed: unknown campaign "${parsed.campaignId}".`);
-          return;
-        }
-
-        const idAlreadyExists = characters.some((c) => c.id === parsed.id);
-
-        const importedCharacter: CharacterRecord = {
-          ...parsed,
-          sheet: parsed.sheet ?? {
-            speed: "",
-            acBase: 10,
-            acBonus: 0,
-            acUseDex: true,
-            initMisc: 0,
-            saveProf: {
-              STR: false,
-              DEX: false,
-              CON: false,
-              INT: false,
-              WIS: false,
-              CHA: false,
-            },
-            saveBonus: {
-              STR: 0,
-              DEX: 0,
-              CON: 0,
-              INT: 0,
-              WIS: 0,
-              CHA: 0,
-            },
-          },
-          id: idAlreadyExists ? generateId() : parsed.id,
-          updatedAt: new Date().toISOString(),
-        };
-
-        setCharacters((prev) => [...prev, importedCharacter]);
-        setSelectedId(importedCharacter.id);
-      } catch (error) {
-        if (error instanceof z.ZodError) {
-          const firstIssue = error.issues[0];
-          const path = firstIssue?.path?.join(".") || "file";
-          alert(`Import failed: invalid character data at "${path}".`);
-          return;
-        }
-
-        alert("Import failed: invalid JSON file.");
-      }
-    };
-
-    reader.readAsText(file);
   }
 
   return (
@@ -1174,7 +832,7 @@ export default function App() {
             fontSize: 56,
             lineHeight: 1.05,
             margin: 0,
-            color: "#111827",
+            color: "var(--text-primary)",
           }}
         >
           Character Builder
@@ -1203,7 +861,6 @@ export default function App() {
             onSelect={setSelectedId}
             onCreate={openWizard}
             onDelete={deleteCharacter}
-            onImport={importCharacter}
             onCampaignChange={handleCampaignChange}
             onClassChange={setClassId}
             getCampaignName={getCampaignName}
@@ -1327,49 +984,6 @@ export default function App() {
             </div>
           ) : (
             <div style={{ flex: 1, display: "grid", gap: 24 }}>
-              <section style={panelStyle}>
-                <h3 style={{ marginTop: 0, color: "#111827" }}>Roll20 Export</h3>
-                <p style={{ marginTop: 0, color: "#4b5563" }}>
-                  The transfer text is human-friendly. The attribute map is a more exact field-style
-                  export for your custom sheet and future automation.
-                </p>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => copyRoll20Transfer(selected)} style={buttonStyle}>
-                    Copy Roll20 Transfer Text
-                  </button>
-                  <button onClick={() => downloadRoll20Transfer(selected)} style={buttonStyle}>
-                    Download Roll20 Transfer Text
-                  </button>
-                  <button onClick={() => copyRoll20AttributeMap(selected)} style={buttonStyle}>
-                    Copy Roll20 Attribute Map
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRoll20PreviewMode("text");
-                      setRoll20PreviewOpen(true);
-                    }}
-                    style={buttonStyle}
-                  >
-                    Preview Attribute Map
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRoll20PreviewMode("json");
-                      setRoll20PreviewOpen(true);
-                    }}
-                    style={buttonStyle}
-                  >
-                    Preview JSON
-                  </button>
-                  <button onClick={() => downloadRoll20AttributeMapText(selected)} style={buttonStyle}>
-                    Download Attribute Map TXT
-                  </button>
-                  <button onClick={() => downloadRoll20AttributeMapJsonFile(selected)} style={buttonStyle}>
-                    Download Attribute Map JSON
-                  </button>
-                </div>
-              </section>
-
               <IdentitySection
                 character={selected}
                 campaignName={selectedCampaign.name}
@@ -1386,7 +1000,6 @@ export default function App() {
                     },
                   })
                 }
-                onExport={() => exportCharacter(selected)}
               />
 
               <AttributesSection
@@ -1554,6 +1167,30 @@ export default function App() {
                   })
                 }
               />
+
+              <section style={panelStyle}>
+                <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Roll20 Import</h3>
+                <p style={{ marginTop: 0, color: "var(--text-secondary)", marginBottom: 12 }}>
+                  Requires the{" "}
+                  <a
+                    href="https://github.com/Roll20/roll20-api-scripts/tree/master/ChatSetAttr"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: "#2563eb" }}
+                  >
+                    ChatSetAttr
+                  </a>{" "}
+                  API script (Roll20 Pro). <strong>Select your character's token</strong> in Roll20, then paste the command into chat.
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={copyChatSetAttr} style={primaryButtonStyle}>
+                    Copy !setattr Command
+                  </button>
+                  <button onClick={() => setRoll20PreviewOpen(true)} style={buttonStyle}>
+                    Preview Command
+                  </button>
+                </div>
+              </section>
             </div>
           )}
         </div>
@@ -1579,9 +1216,9 @@ export default function App() {
               width: "min(1000px, 100%)",
               maxHeight: "90vh",
               overflow: "auto",
-              background: "#ffffff",
+              background: "linear-gradient(165deg, var(--surface-2), var(--surface-1))",
               borderRadius: 14,
-              border: "1px solid #d1d5db",
+              border: "1px solid var(--border-soft)",
               boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
               padding: 20,
             }}
@@ -1597,63 +1234,35 @@ export default function App() {
               }}
             >
               <div>
-                <h2 style={{ margin: 0, color: "#111827" }}>Roll20 Export Preview</h2>
-                <div style={{ color: "#6b7280", marginTop: 4 }}>
-                  {selected.identity.name || "Unnamed Character"}
+                <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Roll20 Import Command</h2>
+                <div style={{ color: "var(--text-secondary)", marginTop: 4 }}>
+                  {selected.identity.name || "Unnamed Character"} — paste into Roll20 chat
                 </div>
               </div>
-
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  onClick={() => setRoll20PreviewMode("text")}
-                  style={{
-                    ...buttonStyle,
-                    background: roll20PreviewMode === "text" ? "#dbeafe" : buttonStyle.background,
-                    border:
-                      roll20PreviewMode === "text"
-                        ? "1px solid #93c5fd"
-                        : buttonStyle.border,
-                  }}
-                >
-                  Attribute Map
-                </button>
-                <button
-                  onClick={() => setRoll20PreviewMode("json")}
-                  style={{
-                    ...buttonStyle,
-                    background: roll20PreviewMode === "json" ? "#dbeafe" : buttonStyle.background,
-                    border:
-                      roll20PreviewMode === "json"
-                        ? "1px solid #93c5fd"
-                        : buttonStyle.border,
-                  }}
-                >
-                  JSON
-                </button>
+              <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={copyCurrentPreview} style={buttonStyle}>
-                  Copy Preview
+                  Copy
                 </button>
                 <button onClick={() => setRoll20PreviewOpen(false)} style={buttonStyle}>
                   Close
                 </button>
               </div>
             </div>
-
             <textarea
               readOnly
-              value={roll20PreviewMode === "text" ? roll20PreviewText : roll20PreviewJson}
+              value={chatSetAttrCommand}
               style={{
                 width: "100%",
-                minHeight: 500,
+                minHeight: 300,
                 borderRadius: 10,
-                border: "1px solid #cbd5e1",
+                border: "1px solid var(--border-soft)",
                 padding: 14,
                 fontFamily:
                   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
                 fontSize: 13,
                 lineHeight: 1.5,
-                color: "#111827",
-                background: "#f8fafc",
+                color: "var(--text-primary)",
+                background: "rgba(7, 14, 29, 0.84)",
                 resize: "vertical",
                 boxSizing: "border-box",
               }}

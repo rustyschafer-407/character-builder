@@ -19,7 +19,6 @@ interface Props {
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
-  onImport: (file: File) => void;
   onCampaignChange: (id: string) => void;
   onClassChange: (id: string) => void;
   getCampaignName: (campaignId: string) => string;
@@ -36,7 +35,6 @@ export default function Sidebar({
   onSelect,
   onCreate,
   onDelete,
-  onImport,
   onCampaignChange,
   onClassChange,
   getCampaignName,
@@ -49,7 +47,7 @@ export default function Sidebar({
         width: 300,
       }}
     >
-      <h2 style={{ marginTop: 0, marginBottom: 16, color: "#111827" }}>Characters</h2>
+      <h2 style={{ marginTop: 0, marginBottom: 16, color: "var(--text-primary)" }}>Characters</h2>
 
       <div style={{ display: "grid", gap: 8 }}>
         <label style={labelTextStyle}>
@@ -79,28 +77,6 @@ export default function Sidebar({
         </button>
       </div>
 
-      <div style={{ marginTop: 12 }}>
-        <label
-          style={{
-            ...labelTextStyle,
-            display: "block",
-            marginBottom: 4,
-          }}
-        >
-          Import Character
-        </label>
-        <input
-          type="file"
-          accept=".json"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) onImport(file);
-            e.currentTarget.value = "";
-          }}
-          style={{ ...inputStyle, padding: 6 }}
-        />
-      </div>
-
       <div style={{ marginTop: 16, display: "grid", gap: 8 }}>
         {characters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
 
@@ -117,14 +93,14 @@ export default function Sidebar({
                   textAlign: "left",
                   padding: 10,
                   borderRadius: 8,
-                  border: isSelected ? "1px solid #2563eb" : "1px solid #cbd5e1",
-                  background: isSelected ? "#dbeafe" : "#ffffff",
-                  color: "#111827",
+                  border: isSelected ? "1px solid var(--accent-primary)" : "1px solid var(--border-soft)",
+                  background: isSelected ? "rgba(73, 224, 255, 0.16)" : "rgba(11, 22, 42, 0.75)",
+                  color: "var(--text-primary)",
                   cursor: "pointer",
                 }}
               >
-                <strong style={{ display: "block", color: "#111827" }}>{displayName}</strong>
-                <div style={{ fontSize: 12, color: "#4b5563", marginTop: 2 }}>
+                <strong style={{ display: "block", color: "var(--text-primary)" }}>{displayName}</strong>
+                <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
                   {getCampaignName(c.campaignId)} • {getClassName(c.classId)}
                 </div>
               </button>

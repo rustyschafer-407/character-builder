@@ -200,7 +200,7 @@ export default function CharacterCreationWizard({
                 fontSize: 13,
                 fontWeight: 700,
                 background: isCurrent ? "#dbeafe" : isDone ? "#ecfdf5" : "#f3f4f6",
-                color: isCurrent ? "#1d4ed8" : isDone ? "#047857" : "#4b5563",
+                color: isCurrent ? "#1d4ed8" : isDone ? "#047857" : "var(--text-secondary)",
                 border: isCurrent
                   ? "1px solid #93c5fd"
                   : isDone
@@ -216,7 +216,7 @@ export default function CharacterCreationWizard({
 
       {step === 0 && (
         <div style={{ display: "grid", gap: 14 }}>
-          <label style={{ fontWeight: 600, color: "#374151" }}>
+          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             Character Name
             <input
               value={draft.identity.name}
@@ -225,7 +225,7 @@ export default function CharacterCreationWizard({
             />
           </label>
 
-          <label style={{ fontWeight: 600, color: "#374151" }}>
+          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             Campaign
             <select
               value={draft.campaignId}
@@ -247,7 +247,7 @@ export default function CharacterCreationWizard({
                 borderRadius: 8,
                 background: "#f9fafb",
                 border: "1px solid #e5e7eb",
-                color: "#374151",
+                color: "#b9cdf0",
               }}
             >
               {selectedCampaign.description || "No description."}
@@ -258,7 +258,7 @@ export default function CharacterCreationWizard({
 
       {step === 1 && (
         <div style={{ display: "grid", gap: 14 }}>
-          <label style={{ fontWeight: 600, color: "#374151" }}>
+          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             {labels.className}
             <select
               value={draft.classId}
@@ -280,7 +280,7 @@ export default function CharacterCreationWizard({
                 borderRadius: 8,
                 background: "#f9fafb",
                 border: "1px solid #e5e7eb",
-                color: "#374151",
+                color: "#b9cdf0",
               }}
             >
               <div>
@@ -290,7 +290,7 @@ export default function CharacterCreationWizard({
                 {selectedClass.description || "No description."}
               </div>
               {(selectedClass.attributeBonuses?.length ?? 0) > 0 && (
-                <div style={{ marginTop: 8, fontSize: 14, color: "#4b5563" }}>
+                <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
                   Bonuses:{" "}
                   {selectedClass.attributeBonuses
                     .map((bonus) => `${bonus.attribute} +${bonus.amount}`)
@@ -304,7 +304,7 @@ export default function CharacterCreationWizard({
 
       {step === 2 && (
         <div style={{ display: "grid", gap: 14 }}>
-          <label style={{ fontWeight: 600, color: "#374151" }}>
+          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             Generation Method
             <select
               value={method}
@@ -351,7 +351,7 @@ export default function CharacterCreationWizard({
             }}
           >
             {ATTRS.map((attr) => (
-              <label key={attr} style={{ fontWeight: 600, color: "#374151" }}>
+              <label key={attr} style={{ fontWeight: 600, color: "#b9cdf0" }}>
                 {attr}
                 <input
                   type="number"
@@ -410,7 +410,7 @@ export default function CharacterCreationWizard({
                   borderRadius: 8,
                   border: "1px solid #e5e7eb",
                   background: "#fff",
-                  color: "#374151",
+                  color: "#b9cdf0",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
                   justifyContent: "space-between",
@@ -482,7 +482,7 @@ export default function CharacterCreationWizard({
                   borderRadius: 8,
                   border: "1px solid #e5e7eb",
                   background: "#fff",
-                  color: "#374151",
+                  color: "#b9cdf0",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
                   justifyContent: "space-between",
@@ -492,7 +492,7 @@ export default function CharacterCreationWizard({
               >
                 <span>
                   <strong>{power.name}</strong>
-                  <div style={{ fontWeight: 400, fontSize: 14, color: "#4b5563", marginTop: 4 }}>
+                  <div style={{ fontWeight: 400, fontSize: 14, color: "var(--text-secondary)", marginTop: 4 }}>
                     {power.description || "No description."}
                   </div>
                 </span>
@@ -552,7 +552,7 @@ export default function CharacterCreationWizard({
                   borderRadius: 8,
                   border: "1px solid #e5e7eb",
                   background: "#fff",
-                  color: "#374151",
+                  color: "#b9cdf0",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
                   justifyContent: "space-between",
@@ -562,7 +562,7 @@ export default function CharacterCreationWizard({
               >
                 <span>
                   <strong>{item.name}</strong>
-                  <div style={{ fontWeight: 400, fontSize: 14, color: "#4b5563", marginTop: 4 }}>
+                  <div style={{ fontWeight: 400, fontSize: 14, color: "var(--text-secondary)", marginTop: 4 }}>
                     {item.description || item.category || "Item"}
                   </div>
                 </span>
@@ -580,39 +580,39 @@ export default function CharacterCreationWizard({
 
       {step === 6 && (
         <div style={{ display: "grid", gap: 14 }}>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>Name:</strong> {draft.identity.name}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>Campaign:</strong> {selectedCampaign?.name}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.className}:</strong> {selectedClass?.name}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.attributes}:</strong>{" "}
             {ATTRS.map((attr) => `${attr} ${draft.attributes[attr]}`).join(", ")}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.skills}:</strong>{" "}
             {draft.skills
               .filter((skill) => skill.proficient)
               .map((skill) => skills.find((s) => s.id === skill.skillId)?.name ?? skill.skillId)
               .join(", ") || "None"}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.powers}:</strong>{" "}
             {draft.powers.map((power) => power.name).join(", ") || "None"}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.inventory}:</strong>{" "}
             {draft.inventory.map((item) => `${item.name} x${item.quantity}`).join(", ") || "None"}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.attacks}:</strong>{" "}
             {draft.attacks.map((attack) => `${attack.name} (${attack.damage})`).join(", ") || "None"}
           </div>
-          <div style={{ color: "#374151" }}>
+          <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.hp}:</strong> {draft.hp.current} / {draft.hp.max}
           </div>
         </div>

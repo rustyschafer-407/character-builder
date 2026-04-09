@@ -1,130 +1,29 @@
 import { campaigns } from "./campaigns";
-import type { GameData } from "../types/gameData";
+import type { CampaignDefinition, GameData } from "../types/gameData";
 
-export const gameData: GameData = {
-  campaigns: campaigns,
+function normalizeGameData(value: { campaigns: CampaignDefinition[] }): GameData {
+  const campaigns = value.campaigns.map((campaign) => ({
+    ...campaign,
+    availableClassIds: campaign.availableClassIds ?? campaign.classes.map((cls) => cls.id),
+    availableSkillIds: campaign.availableSkillIds ?? campaign.skills.map((skill) => skill.id),
+    availablePowerIds: campaign.availablePowerIds ?? campaign.powers.map((power) => power.id),
+    availableItemIds: campaign.availableItemIds ?? campaign.items.map((item) => item.id),
+    availableAttackTemplateIds:
+      campaign.availableAttackTemplateIds ?? campaign.attackTemplates.map((attack) => attack.id),
+  }));
 
-  classes: [
-    {
-      id: "fighter",
-      campaignId: "fantasy",
-      name: "Fighter",
-      attributeBonuses: [{ attribute: "STR", amount: 2 }],
-      hpRule: {
-        hitDie: 10,
-        level1Mode: "fixed-max",
-        levelUpMode: "fixed-average",
-        levelUpFixedValue: 6,
-      },
-      startingAttackTemplateIds: ["sword"],
-      skillChoiceRules: [
-        { choose: 2, skillIds: ["athletics", "survival", "perception"] },
-      ],
-    },
-    {
-      id: "wizard",
-      campaignId: "fantasy",
-      name: "Wizard",
-      attributeBonuses: [{ attribute: "INT", amount: 2 }],
-      hpRule: {
-        hitDie: 6,
-        level1Mode: "fixed-max",
-        levelUpMode: "fixed-average",
-        levelUpFixedValue: 4,
-      },
-      defaultPowerIds: ["fireball"],
-      skillChoiceRules: [
-        { choose: 2, skillIds: ["lore", "investigation", "perception"] },
-      ],
-    },
-    {
-      id: "soldier",
-      campaignId: "scifi",
-      name: "Soldier",
-      attributeBonuses: [{ attribute: "STR", amount: 1 }],
-      hpRule: {
-        hitDie: 10,
-        level1Mode: "fixed-max",
-        levelUpMode: "fixed-average",
-        levelUpFixedValue: 6,
-      },
-      startingAttackTemplateIds: ["blaster"],
-      skillChoiceRules: [
-        { choose: 2, skillIds: ["command", "intimidation", "survival"] },
-      ],
-    },
-    {
-      id: "engineer",
-      campaignId: "scifi",
-      name: "Engineer",
-      attributeBonuses: [{ attribute: "INT", amount: 2 }],
-      hpRule: {
-        hitDie: 6,
-        level1Mode: "fixed-max",
-        levelUpMode: "fixed-average",
-        levelUpFixedValue: 4,
-      },
-      defaultPowerIds: ["shield"],
-      skillChoiceRules: [
-        { choose: 2, skillIds: ["engineering", "hacking", "perception"] },
-      ],
-    },
-  ],
+  return {
+    campaigns,
+    classes: campaigns.flatMap((campaign) => campaign.classes).filter(Boolean),
+    skills: campaigns.flatMap((campaign) => campaign.skills).filter(Boolean),
+    powers: campaigns.flatMap((campaign) => campaign.powers).filter(Boolean),
+    items: campaigns.flatMap((campaign) => campaign.items).filter(Boolean),
+    attackTemplates: campaigns.flatMap((campaign) => campaign.attackTemplates).filter(Boolean),
+  };
+}
 
-  skills: [
-    { id: "athletics", name: "Athletics", attribute: "STR" },
-    { id: "acrobatics", name: "Acrobatics", attribute: "DEX" },
-    { id: "stealth", name: "Stealth", attribute: "DEX" },
-    { id: "lore", name: "Lore", attribute: "INT" },
-    { id: "investigation", name: "Investigation", attribute: "INT" },
-    { id: "perception", name: "Perception", attribute: "WIS" },
-    { id: "survival", name: "Survival", attribute: "WIS" },
-    { id: "presence", name: "Presence", attribute: "CHA" },
-    { id: "piloting", name: "Piloting", attribute: "DEX" },
-    { id: "engineering", name: "Engineering", attribute: "INT" },
-    { id: "hacking", name: "Hacking", attribute: "INT" },
-    { id: "command", name: "Command", attribute: "CHA" },
-    { id: "intimidation", name: "Intimidation", attribute: "CHA" },
-  ],
+export const gameData: GameData = normalizeGameData({ campaigns });
 
-  powers: [
-    { id: "fireball", name: "Fireball" },
-    { id: "heal", name: "Heal" },
-    { id: "overcharge", name: "Overcharge" },
-    { id: "shield", name: "Shield" },
-  ],
-
-  items: [
-    { id: "rope", name: "Rope", stackable: false },
-    { id: "torch", name: "Torch", stackable: true, defaultQuantity: 3 },
-    { id: "medkit", name: "Medkit", stackable: false },
-    { id: "scanner", name: "Scanner", stackable: false },
-  ],
-
-  attackTemplates: [
-    {
-      id: "sword",
-      name: "Sword",
-      attribute: "STR",
-      damage: "1d8",
-    },
-    {
-      id: "bow",
-      name: "Bow",
-      attribute: "DEX",
-      damage: "1d6",
-    },
-    {
-      id: "blaster",
-      name: "Blaster",
-      attribute: "DEX",
-      damage: "1d8",
-    },
-    {
-      id: "laser_rifle",
-      name: "Laser Rifle",
-      attribute: "DEX",
-      damage: "1d10",
-    },
-  ],
-};
+export function createGameData(value: { campaigns: CampaignDefinition[] }): GameData {
+  return normalizeGameData(value);
+}
