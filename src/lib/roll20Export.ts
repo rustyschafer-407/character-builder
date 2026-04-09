@@ -350,7 +350,9 @@ export function buildChatSetAttrPhases(
   ;
 
   const phase1Commands = [...baseCommands, finalHpCommand];
-  const phase2Commands = repeatingCommands;
+  // Some Roll20/API runs drop a few repeating updates on the first pass.
+  // Keep Phase 2 idempotent by running the same clear+recreate sequence twice.
+  const phase2Commands = [...repeatingCommands, ...repeatingCommands];
   const phase1 = phase1Commands.join("\n");
   const phase2 = phase2Commands.join("\n");
   const combined = [...phase1Commands, ...phase2Commands].join("\n");
