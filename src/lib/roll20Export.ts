@@ -245,9 +245,10 @@ export function buildChatSetAttrCommand(
   basePairsByName.set("hp_current", makePair("hp_current", clean(character.hp.current)));
 
   const commands: string[] = [];
-  if (basePairsByName.size > 0) {
-    commands.push(`${commandPrefix} ${[...basePairsByName.values()].join(" ")}`);
-  }
+  const baseCommand =
+    basePairsByName.size > 0
+      ? `${commandPrefix} ${[...basePairsByName.values()].join(" ")}`
+      : "";
 
   // Repeating skills.
   const proficientSkills = character.skills
@@ -298,6 +299,15 @@ export function buildChatSetAttrCommand(
       ].join(" ")}`
     );
   }
+
+  if (baseCommand) {
+    commands.push(baseCommand);
+  }
+
+  // Final touch can help the sheet UI repaint consistently after repeating updates.
+  commands.push(
+    `${commandPrefix} ${makePair("hp_max", clean(character.hp.max))} ${makePair("hp_current", clean(character.hp.current))}`
+  );
 
   return commands.join("\n");
 }
