@@ -271,7 +271,11 @@ export default function App() {
 
   function openWizard() {
     const defaultCampaignId = campaignId || gameData.campaigns[0]?.id || "";
-    const defaultClassId = getClassesForCampaign(gameData, defaultCampaignId)[0]?.id ?? "";
+    const classesInCampaign = getClassesForCampaign(gameData, defaultCampaignId);
+    const selectedClassInCampaign = classesInCampaign.some((cls) => cls.id === classId)
+      ? classId
+      : "";
+    const defaultClassId = selectedClassInCampaign || classesInCampaign[0]?.id || "";
 
     const draft = makeDraftFromCampaignAndClass(
       gameData,
@@ -376,7 +380,7 @@ export default function App() {
         const count = creationDraft.inventory.filter(
           (item) => item.itemId && rule.itemIds.includes(item.itemId)
         ).length;
-        return count === rule.choose;
+        return count <= rule.choose;
       });
     }
 
