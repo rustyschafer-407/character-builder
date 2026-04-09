@@ -309,5 +309,6 @@ export function buildChatSetAttrCommand(
     `${commandPrefix} ${makePair("hp_max", clean(character.hp.max))} ${makePair("hp_current", clean(character.hp.current))}`
   );
 
-  return commands.join("\n");
+  const secondPassRepeating = commands.filter((command) => command.includes("repeating_"));
+  return [...commands, ...secondPassRepeating].join("\n");
 }
