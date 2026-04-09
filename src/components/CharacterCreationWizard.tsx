@@ -623,6 +623,11 @@ export default function CharacterCreationWizard({
           <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.hp}:</strong> {draft.hp.current} / {draft.hp.max}
           </div>
+          {selectedClass && (
+            <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+              Starting HP uses d{selectedClass.hpRule.hitDie} + CON modifier.
+            </div>
+          )}
         </div>
       )}
 
