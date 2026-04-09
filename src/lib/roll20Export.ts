@@ -226,6 +226,7 @@ export function buildChatSetAttrCommand(
   gameData: GameData
 ): string {
   const map = buildRoll20AttributeMap(character, gameData);
+  const characterName = clean(character.identity.name || "");
 
   const inlineRefValues: Record<string, string> = {
     pb: clean(character.proficiencyBonus),
@@ -262,5 +263,11 @@ export function buildChatSetAttrCommand(
       return `--${attrName}|"${safeValue}"`;
     });
 
-  return `!setattr --sel ${pairs.join(" ")}`;
+  const safeCharacterName = characterName
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\|/g, "&#124;")
+    .replace(/\n/g, " ");
+
+  return `!setattr --name|"${safeCharacterName}" ${pairs.join(" ")}`;
 }
