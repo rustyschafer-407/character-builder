@@ -44,6 +44,8 @@ const POINT_BUY_COSTS: Record<number, number> = {
   15: 9,
 };
 
+const ATTRIBUTE_KEYS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
+
 function getPointBuyCost(score: number) {
   if (score < 8) return 0;
   if (score > 15) return 999;
@@ -55,6 +57,29 @@ function getPointBuySpent(attributes: Record<AttributeKey, number>) {
     (total, key) => total + getPointBuyCost(attributes[key]),
     0
   );
+}
+
+function makeBaseAttributes(): Record<AttributeKey, number> {
+  return {
+    STR: 10,
+    DEX: 10,
+    CON: 10,
+    INT: 10,
+    WIS: 10,
+    CHA: 10,
+  };
+}
+
+function applyClassAttributeModifiers(
+  attributes: Record<AttributeKey, number>,
+  cls: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null
+) {
+  if (!cls) return attributes;
+  const next = { ...attributes };
+  for (const bonus of cls.attributeBonuses ?? []) {
+    next[bonus.attribute] = (next[bonus.attribute] ?? 0) + bonus.amount;
+  }
+  return next;
 }
 
 function getRuleForSkill(skillId: string, rules: ClassSkillChoiceRule[]) {
@@ -113,6 +138,13 @@ function makeDraftFromCampaignAndClass(
     inventory: base.inventory,
     attacks: base.attacks,
   };
+
+  const method = draft.attributeGeneration?.method ?? "manual";
+  if (method === "manual") {
+    draft.attributes = makeBaseAttributes();
+  } else {
+    draft.attributes = applyClassAttributeModifiers(makeBaseAttributes(), cls);
+  }
 
   return draft;
 }
@@ -958,6 +990,10 @@ export default function App() {
                 onAttributeGenerationChange={(method) =>
                   setCreationDraft({
                     ...creationDraft,
+                    attributes:
+                      method === "manual"
+                        ? creationDraft.attributes
+                        : applyClassAttributeModifiers(makeBaseAttributes(), wizardClass),
                     attributeGeneration: {
                       ...creationDraft.attributeGeneration,
                       method,
@@ -974,12 +1010,13 @@ export default function App() {
                     return dice[0] + dice[1] + dice[2];
                   });
 
-                  const attrs: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
-                  const newAttributes = { ...creationDraft.attributes };
+                  const rolledAttributes = { ...creationDraft.attributes };
 
-                  attrs.forEach((attr, i) => {
-                    newAttributes[attr] = values[i];
+                  ATTRIBUTE_KEYS.forEach((attr, i) => {
+                    rolledAttributes[attr] = values[i];
                   });
+
+                  const newAttributes = applyClassAttributeModifiers(rolledAttributes, wizardClass);
 
                   setCreationDraft({
                     ...creationDraft,

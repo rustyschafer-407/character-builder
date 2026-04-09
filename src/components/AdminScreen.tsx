@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type {
   AttackTemplateDefinition,
+  AttributeBonusRule,
   AttributeKey,
   ClassDefinition,
   ClassItemChoiceRule,
@@ -30,6 +31,7 @@ interface Props {
 
 type AdminTab = "campaigns" | "classes" | "skills" | "powers" | "items" | "attacks";
 const HIT_DIE_OPTIONS = [4, 6, 8, 10, 12, 20] as const;
+const ATTRIBUTE_KEYS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 
 function makeBlankCampaign(): CampaignDefinition {
   return {
@@ -502,6 +504,24 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     } as ClassDefinition);
   }
 
+  function getClassAttributeBonusAmount(attribute: AttributeKey) {
+    if (!selectedClass) return 0;
+    return selectedClass.attributeBonuses.find((bonus) => bonus.attribute === attribute)?.amount ?? 0;
+  }
+
+  function setClassAttributeBonusAmount(attribute: AttributeKey, amount: number) {
+    if (!selectedClass) return;
+
+    const existing = selectedClass.attributeBonuses.filter((bonus) => bonus.attribute !== attribute);
+    const nextBonuses: AttributeBonusRule[] =
+      amount === 0 ? existing : [...existing, { attribute, amount }];
+
+    updateClass({
+      ...selectedClass,
+      attributeBonuses: nextBonuses,
+    });
+  }
+
   function getRuleFor<T extends ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule>(
     field: "skillChoiceRules" | "powerChoiceRules" | "itemChoiceRules"
   ): T | null {
@@ -675,6 +695,28 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                           ))}
                         </select>
                       </label>
+                    </div>
+                  </section>
+
+                  <section style={cardStyle()}>
+                    <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Attribute Modifiers</h3>
+                    <p style={{ marginTop: 0, ...mutedTextStyle }}>
+                      Set class bonuses and penalties (for example: STR +2, INT -2).
+                    </p>
+                    <div style={gridCols(3)}>
+                      {ATTRIBUTE_KEYS.map((attribute) => (
+                        <label key={attribute} style={labelTextStyle}>
+                          {attribute}
+                          <input
+                            type="number"
+                            value={getClassAttributeBonusAmount(attribute)}
+                            onChange={(e) =>
+                              setClassAttributeBonusAmount(attribute, Number(e.target.value) || 0)
+                            }
+                            style={inputStyle}
+                          />
+                        </label>
+                      ))}
                     </div>
                   </section>
 
