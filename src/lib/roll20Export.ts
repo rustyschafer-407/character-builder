@@ -15,25 +15,6 @@ function getModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
-function getAttrModRef(attribute: AttributeKey) {
-  switch (attribute) {
-    case "STR":
-      return "@{str_mod}";
-    case "DEX":
-      return "@{dex_mod}";
-    case "CON":
-      return "@{con_mod}";
-    case "INT":
-      return "@{int_mod}";
-    case "WIS":
-      return "@{wis_mod}";
-    case "CHA":
-      return "@{cha_mod}";
-    default:
-      return "@{str_mod}";
-  }
-}
-
 function getThemeValue(campaignId: string) {
   const normalized = campaignId.toLowerCase();
   if (normalized.includes("scifi") || normalized.includes("sci-fi")) return "scifi";
@@ -150,8 +131,8 @@ export function buildRoll20AttributeMap(
     const sections = ["skills", "skill"];
 
     const skillName = clean(definition?.name ?? skill.skillId);
-    const skillAttr = clean(getAttrModRef(attr));
-    const skillProf = "@{pb}";
+    const skillAttr = clean(getModifier(character.attributes[attr]));
+    const skillProf = clean(character.proficiencyBonus);
     const skillBonus = clean(skill.bonus ?? 0);
 
     setRepeatingValue(sections, rowKeys, ["skillname", "name"], skillName);
@@ -169,8 +150,8 @@ export function buildRoll20AttributeMap(
     const sections = ["attacks", "attack"];
 
     const attackName = clean(attack.name);
-    const attackAttr = clean(getAttrModRef(attack.attribute));
-    const attackProf = "@{pb}";
+    const attackAttr = clean(getModifier(character.attributes[attack.attribute]));
+    const attackProf = clean(character.proficiencyBonus);
     const attackBonus = clean(attack.bonus ?? 0);
     const damageDice = clean(attack.damage);
 
