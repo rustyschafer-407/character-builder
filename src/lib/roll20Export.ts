@@ -232,10 +232,34 @@ export function buildChatSetAttrCommand(
       return `--${attrName}|'${safeValue}'`;
     });
 
-  const commands: string[] = [];
-  let current = commandPrefix;
+  const nonRepeatingPairs: string[] = [];
+  const repeatingGroups = new Map<string, string[]>();
 
   for (const pair of pairs) {
+    const match = pair.match(/^--repeating_([^_]+)_\$(\d+)_([^|]+)\|/);
+    if (!match) {
+      nonRepeatingPairs.push(pair);
+      continue;
+    }
+
+    const section = match[1];
+    const rowIndex = Number(match[2]);
+    const field = match[3];
+    const valuePart = pair.slice(pair.indexOf("|") + 1);
+    const groupKey = `${section}:${rowIndex}`;
+    const groupPair = `--repeating_${section}_-CREATE_${field}|${valuePart}`;
+
+    if (!repeatingGroups.has(groupKey)) {
+      repeatingGroups.set(groupKey, []);
+    }
+    repeatingGroups.get(groupKey)?.push(groupPair);
+  }
+
+  const commands: string[] = [];
+
+  // Chunk base (non-repeating) attributes.
+  let current = commandPrefix;
+  for (const pair of nonRepeatingPairs) {
     const next = `${current} ${pair}`;
     if (next.length > maxCommandLength && current !== commandPrefix) {
       commands.push(current);
@@ -244,9 +268,22 @@ export function buildChatSetAttrCommand(
       current = next;
     }
   }
-
   if (current !== commandPrefix) {
     commands.push(current);
+  }
+
+  // Emit one command per repeating row so ChatSetAttr can create rows reliably.
+  const orderedGroupKeys = [...repeatingGroups.keys()].sort((a, b) => {
+    const [sectionA, indexA] = a.split(":");
+    const [sectionB, indexB] = b.split(":");
+    if (sectionA === sectionB) return Number(indexA) - Number(indexB);
+    return sectionA.localeCompare(sectionB);
+  });
+
+  for (const key of orderedGroupKeys) {
+    const rowPairs = repeatingGroups.get(key) ?? [];
+    if (rowPairs.length === 0) continue;
+    commands.push(`${commandPrefix} ${rowPairs.join(" ")}`);
   }
 
   return commands.join("\n");
