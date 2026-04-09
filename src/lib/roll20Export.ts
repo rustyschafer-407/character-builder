@@ -194,6 +194,8 @@ export function buildChatSetAttrCommand(
   gameData: GameData
 ): string {
   const map = buildRoll20AttributeMap(character, gameData);
+  const commandPrefix = "!setattr --replace --sel";
+  const maxCommandLength = 1800;
 
   const inlineRefValues: Record<string, string> = {
     pb: clean(character.proficiencyBonus),
@@ -230,5 +232,22 @@ export function buildChatSetAttrCommand(
       return `--${attrName}|'${safeValue}'`;
     });
 
-  return `!setattr --replace --sel ${pairs.join(" ")}`;
+  const commands: string[] = [];
+  let current = commandPrefix;
+
+  for (const pair of pairs) {
+    const next = `${current} ${pair}`;
+    if (next.length > maxCommandLength && current !== commandPrefix) {
+      commands.push(current);
+      current = `${commandPrefix} ${pair}`;
+    } else {
+      current = next;
+    }
+  }
+
+  if (current !== commandPrefix) {
+    commands.push(current);
+  }
+
+  return commands.join("\n");
 }
