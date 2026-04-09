@@ -67,6 +67,14 @@ export interface HpRule {
   levelUpFixedValue?: number;
 }
 
+export interface ClassLevelProgressionRow {
+  level: number;
+  hitDiceGained: number;
+  newSkillChoices: number;
+  newPowerChoices: number;
+  attributeBonuses: AttributeBonusRule[];
+}
+
 export interface ClassDefinition {
   id: string;
   campaignId: string;
@@ -74,6 +82,7 @@ export interface ClassDefinition {
   description?: string;
   attributeBonuses: AttributeBonusRule[];
   hpRule: HpRule;
+  levelProgression: ClassLevelProgressionRow[];
   startingAttackTemplateIds?: string[];
   defaultPowerIds?: string[];
   defaultItemIds?: string[];

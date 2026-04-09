@@ -35,6 +35,15 @@ export const scifiCampaign: CampaignDefinition = {
         levelUpMode: "fixed-average",
         level1FixedValue: 6,
       },
+      levelProgression: [
+        {
+          level: 1,
+          hitDiceGained: 1,
+          newSkillChoices: 2,
+          newPowerChoices: 0,
+          attributeBonuses: [{ attribute: "STR", amount: 1 }],
+        },
+      ],
       startingAttackTemplateIds: ["blaster"],
       skillChoiceRules: [
         { choose: 2, skillIds: ["command", "intimidation", "survival"] },
@@ -51,6 +60,15 @@ export const scifiCampaign: CampaignDefinition = {
         levelUpMode: "fixed-average",
         level1FixedValue: 4,
       },
+      levelProgression: [
+        {
+          level: 1,
+          hitDiceGained: 1,
+          newSkillChoices: 2,
+          newPowerChoices: 0,
+          attributeBonuses: [{ attribute: "INT", amount: 2 }],
+        },
+      ],
       defaultPowerIds: ["shield"],
       skillChoiceRules: [
         { choose: 2, skillIds: ["engineering", "hacking", "perception"] },

@@ -83,6 +83,15 @@ function makeBlankClass(campaignId: string): ClassDefinition {
       levelUpMode: "fixed-average",
       levelUpFixedValue: 5,
     },
+    levelProgression: [
+      {
+        level: 1,
+        hitDiceGained: 1,
+        newSkillChoices: 0,
+        newPowerChoices: 0,
+        attributeBonuses: [],
+      },
+    ],
     startingAttackTemplateIds: [],
     defaultPowerIds: [],
     skillChoiceRules: [],

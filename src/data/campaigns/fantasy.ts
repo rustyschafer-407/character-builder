@@ -35,6 +35,15 @@ export const fantasyCampaign: CampaignDefinition = {
         levelUpMode: "fixed-average",
         level1FixedValue: 6,
       },
+      levelProgression: [
+        {
+          level: 1,
+          hitDiceGained: 1,
+          newSkillChoices: 2,
+          newPowerChoices: 0,
+          attributeBonuses: [{ attribute: "STR", amount: 2 }],
+        },
+      ],
       startingAttackTemplateIds: ["sword"],
       skillChoiceRules: [
         { choose: 2, skillIds: ["athletics", "survival", "perception"] },
@@ -51,6 +60,15 @@ export const fantasyCampaign: CampaignDefinition = {
         levelUpMode: "fixed-average",
         level1FixedValue: 4,
       },
+      levelProgression: [
+        {
+          level: 1,
+          hitDiceGained: 1,
+          newSkillChoices: 2,
+          newPowerChoices: 0,
+          attributeBonuses: [{ attribute: "INT", amount: 2 }],
+        },
+      ],
       defaultPowerIds: ["arcane-bolt"],
       skillChoiceRules: [
         { choose: 2, skillIds: ["lore", "investigation", "perception"] },
