@@ -227,13 +227,33 @@ export function buildChatSetAttrCommand(
 ): string {
   const map = buildRoll20AttributeMap(character, gameData);
 
+  const inlineRefValues: Record<string, string> = {
+    pb: clean(character.proficiencyBonus),
+    str_mod: clean(getModifier(character.attributes.STR)),
+    dex_mod: clean(getModifier(character.attributes.DEX)),
+    con_mod: clean(getModifier(character.attributes.CON)),
+    int_mod: clean(getModifier(character.attributes.INT)),
+    wis_mod: clean(getModifier(character.attributes.WIS)),
+    cha_mod: clean(getModifier(character.attributes.CHA)),
+  };
+
+  function resolveInlineRefs(value: string) {
+    return value
+      .replace(/@\{([a-z_]+)\}/gi, (_full, key: string) => {
+        const normalized = key.toLowerCase();
+        return inlineRefValues[normalized] ?? "0";
+      })
+      .trim();
+  }
+
   const pairs = Object.entries(map)
     .filter(([, value]) => value !== "")
     .map(([key, value]) => {
       // Regular attributes are stored as "attr_foo" in the map but Roll20 uses "foo"
       const attrName = key.startsWith("attr_") ? key.slice(5) : key;
+      const resolvedValue = resolveInlineRefs(String(value));
       // Escape characters that can break ChatSetAttr parsing
-      const safeValue = String(value)
+      const safeValue = resolvedValue
         .replace(/\\/g, "\\\\")
         .replace(/"/g, '\\"')
         .replace(/\|/g, "&#124;")
