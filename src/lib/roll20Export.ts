@@ -25,7 +25,7 @@ function getThemeValue(campaignId: string) {
 }
 
 function makeRepeatingRowId(index: number) {
-  return `$${index}`;
+  return `-cbrow${index + 1}`;
 }
 
 export function buildRoll20AttributeMap(
@@ -57,6 +57,7 @@ export function buildRoll20AttributeMap(
   result["attr_speed"] = "";
 
   // HP
+  result["attr_hp"] = clean(character.hp.max);
   result["attr_hp_max"] = clean(character.hp.max);
   result["attr_hp_current"] = clean(character.hp.current);
 
@@ -101,12 +102,19 @@ export function buildRoll20AttributeMap(
     const definition = skillMap.get(skill.skillId);
     const attr = definition?.attribute ?? "STR";
 
-    result[`repeating_skills_${rowId}_skillname`] = clean(
-      definition?.name ?? skill.skillId
-    );
-    result[`repeating_skills_${rowId}_skillattr`] = clean(getModifier(character.attributes[attr]));
-    result[`repeating_skills_${rowId}_skillprof`] = clean(character.proficiencyBonus);
-    result[`repeating_skills_${rowId}_skillbonus`] = clean(skill.bonus ?? 0);
+    const skillName = clean(definition?.name ?? skill.skillId);
+    const skillAttr = clean(getModifier(character.attributes[attr]));
+    const skillProf = clean(character.proficiencyBonus);
+    const skillBonus = clean(skill.bonus ?? 0);
+
+    result[`repeating_skills_${rowId}_skillname`] = skillName;
+    result[`repeating_skills_${rowId}_name`] = skillName;
+    result[`repeating_skills_${rowId}_skillattr`] = skillAttr;
+    result[`repeating_skills_${rowId}_attr`] = skillAttr;
+    result[`repeating_skills_${rowId}_skillprof`] = skillProf;
+    result[`repeating_skills_${rowId}_prof`] = skillProf;
+    result[`repeating_skills_${rowId}_skillbonus`] = skillBonus;
+    result[`repeating_skills_${rowId}_bonus`] = skillBonus;
   }
 
   // Repeating attacks
@@ -116,11 +124,22 @@ export function buildRoll20AttributeMap(
     const rowId = makeRepeatingRowId(i);
     const attack = exportedAttacks[i];
 
-    result[`repeating_attacks_${rowId}_attackname`] = clean(attack.name);
-    result[`repeating_attacks_${rowId}_attackattr`] = clean(getModifier(character.attributes[attack.attribute]));
-    result[`repeating_attacks_${rowId}_attackprof`] = clean(character.proficiencyBonus);
-    result[`repeating_attacks_${rowId}_attackbonus`] = clean(attack.bonus ?? 0);
-    result[`repeating_attacks_${rowId}_damagedice`] = clean(attack.damage);
+    const attackName = clean(attack.name);
+    const attackAttr = clean(getModifier(character.attributes[attack.attribute]));
+    const attackProf = clean(character.proficiencyBonus);
+    const attackBonus = clean(attack.bonus ?? 0);
+    const damageDice = clean(attack.damage);
+
+    result[`repeating_attacks_${rowId}_attackname`] = attackName;
+    result[`repeating_attacks_${rowId}_name`] = attackName;
+    result[`repeating_attacks_${rowId}_attackattr`] = attackAttr;
+    result[`repeating_attacks_${rowId}_attr`] = attackAttr;
+    result[`repeating_attacks_${rowId}_attackprof`] = attackProf;
+    result[`repeating_attacks_${rowId}_prof`] = attackProf;
+    result[`repeating_attacks_${rowId}_attackbonus`] = attackBonus;
+    result[`repeating_attacks_${rowId}_bonus`] = attackBonus;
+    result[`repeating_attacks_${rowId}_damagedice`] = damageDice;
+    result[`repeating_attacks_${rowId}_damage`] = damageDice;
     result[`repeating_attacks_${rowId}_damagebonus`] = "0";
   }
 
@@ -132,9 +151,16 @@ export function buildRoll20AttributeMap(
     const power = exportedPowers[i];
     const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
     const notes = clean(power.notes ?? definition?.description ?? "");
-    const text = notes ? `${power.name} — ${notes}` : power.name;
+    const text = notes ? `${power.name} - ${notes}` : power.name;
+    const powerName = clean(power.name);
+    const powerNotes = clean(notes);
+    const powerText = clean(text);
 
-    result[`repeating_powers_${rowId}_powertext`] = clean(text);
+    result[`repeating_powers_${rowId}_powertext`] = powerText;
+    result[`repeating_powers_${rowId}_powername`] = powerName;
+    result[`repeating_powers_${rowId}_name`] = powerName;
+    result[`repeating_powers_${rowId}_powernotes`] = powerNotes;
+    result[`repeating_powers_${rowId}_notes`] = powerNotes;
   }
 
   // Repeating inventory
@@ -145,11 +171,17 @@ export function buildRoll20AttributeMap(
     const item = exportedInventory[i];
     const definition = item.itemId ? itemMap.get(item.itemId) : undefined;
 
-    result[`repeating_inventory_${rowId}_itemname`] = clean(item.name);
-    result[`repeating_inventory_${rowId}_itemqty`] = clean(item.quantity);
-    result[`repeating_inventory_${rowId}_itemnotes`] = clean(
-      item.notes ?? definition?.description ?? ""
-    );
+    const itemName = clean(item.name);
+    const itemQty = clean(item.quantity);
+    const itemNotes = clean(item.notes ?? definition?.description ?? "");
+
+    result[`repeating_inventory_${rowId}_itemname`] = itemName;
+    result[`repeating_inventory_${rowId}_name`] = itemName;
+    result[`repeating_inventory_${rowId}_itemqty`] = itemQty;
+    result[`repeating_inventory_${rowId}_qty`] = itemQty;
+    result[`repeating_inventory_${rowId}_quantity`] = itemQty;
+    result[`repeating_inventory_${rowId}_itemnotes`] = itemNotes;
+    result[`repeating_inventory_${rowId}_notes`] = itemNotes;
   }
 
   return result;
@@ -184,8 +216,11 @@ export function buildChatSetAttrCommand(
     .map(([key, value]) => {
       // Regular attributes are stored as "attr_foo" in the map but Roll20 uses "foo"
       const attrName = key.startsWith("attr_") ? key.slice(5) : key;
-      // Escape pipe characters in values
-      const safeValue = String(value).replace(/\|/g, "&#124;");
+      // Escape characters that can break ChatSetAttr parsing
+      const safeValue = String(value)
+        .replace(/\|/g, "&#124;")
+        .replace(/--/g, "&#45;&#45;")
+        .replace(/\n/g, " ");
       return `--${attrName}|${safeValue}`;
     });
 

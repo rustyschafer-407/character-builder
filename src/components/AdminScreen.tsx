@@ -462,6 +462,45 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
     } as ClassDefinition);
   }
 
+  function setClassRuleIds(
+    field: "skillChoiceRules" | "powerChoiceRules" | "itemChoiceRules",
+    ids: string[]
+  ) {
+    if (!selectedClass) return;
+
+    if (field === "skillChoiceRules") {
+      const rule = getRuleFor<ClassSkillChoiceRule>(field);
+      updateClassRule(field, {
+        choose: rule?.choose ?? 0,
+        skillIds: ids,
+      });
+      return;
+    }
+
+    if (field === "powerChoiceRules") {
+      const rule = getRuleFor<ClassPowerChoiceRule>(field);
+      updateClassRule(field, {
+        choose: rule?.choose ?? 0,
+        powerIds: ids,
+      });
+      return;
+    }
+
+    const rule = getRuleFor<ClassItemChoiceRule>(field);
+    updateClassRule(field, {
+      choose: rule?.choose ?? 1,
+      itemIds: ids,
+    });
+  }
+
+  function setClassFieldIds(field: "startingAttackTemplateIds" | "defaultPowerIds", ids: string[]) {
+    if (!selectedClass) return;
+    updateClass({
+      ...selectedClass,
+      [field]: ids,
+    } as ClassDefinition);
+  }
+
   function getRuleFor<T extends ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule>(
     field: "skillChoiceRules" | "powerChoiceRules" | "itemChoiceRules"
   ): T | null {
@@ -680,7 +719,25 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                       <div style={{ display: "grid", gap: 12 }}>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                           <div style={{ ...panelStyle, padding: 12 }}>
-                            <h4 style={{ marginTop: 0, marginBottom: 12 }}>Allowed Skills</h4>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                              <h4 style={{ margin: 0 }}>Allowed Skills</h4>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  type="button"
+                                  style={buttonStyle}
+                                  onClick={() => setClassRuleIds("skillChoiceRules", selectedCampaign.skills.map((skill) => skill.id))}
+                                >
+                                  Select All
+                                </button>
+                                <button
+                                  type="button"
+                                  style={buttonStyle}
+                                  onClick={() => setClassRuleIds("skillChoiceRules", [])}
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
                             {selectedCampaign.skills.length === 0 ? (
                               <p style={{ margin: 0, ...mutedTextStyle }}>No skills are defined for this campaign.</p>
                             ) : (
@@ -710,7 +767,25 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                             )}
                           </div>
                           <div style={{ ...panelStyle, padding: 12 }}>
-                            <h4 style={{ marginTop: 0, marginBottom: 12 }}>Allowed Powers</h4>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                              <h4 style={{ margin: 0 }}>Allowed Powers</h4>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  type="button"
+                                  style={buttonStyle}
+                                  onClick={() => setClassRuleIds("powerChoiceRules", selectedCampaign.powers.map((power) => power.id))}
+                                >
+                                  Select All
+                                </button>
+                                <button
+                                  type="button"
+                                  style={buttonStyle}
+                                  onClick={() => setClassRuleIds("powerChoiceRules", [])}
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
                             {selectedCampaign.powers.length === 0 ? (
                               <p style={{ margin: 0, ...mutedTextStyle }}>No powers are defined for this campaign.</p>
                             ) : (
@@ -743,7 +818,25 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
 
                         <div style={{ display: "grid", gap: 12 }}>
                           <div style={{ ...panelStyle, padding: 12 }}>
-                            <h4 style={{ marginTop: 0, marginBottom: 12 }}>Allowed Items</h4>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                              <h4 style={{ margin: 0 }}>Allowed Items</h4>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  type="button"
+                                  style={buttonStyle}
+                                  onClick={() => setClassRuleIds("itemChoiceRules", selectedCampaign.items.map((item) => item.id))}
+                                >
+                                  Select All
+                                </button>
+                                <button
+                                  type="button"
+                                  style={buttonStyle}
+                                  onClick={() => setClassRuleIds("itemChoiceRules", [])}
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            </div>
                             {selectedCampaign.items.length === 0 ? (
                               <p style={{ margin: 0, ...mutedTextStyle }}>No items are defined for this campaign.</p>
                             ) : (
@@ -781,7 +874,25 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Anchored Defaults</h3>
                     <div style={{ display: "grid", gap: 16 }}>
                       <div style={{ ...panelStyle, padding: 12 }}>
-                        <h4 style={{ marginTop: 0, marginBottom: 12 }}>Starting Attacks</h4>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <h4 style={{ margin: 0 }}>Starting Attacks</h4>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              type="button"
+                              style={buttonStyle}
+                              onClick={() => setClassFieldIds("startingAttackTemplateIds", selectedCampaign.attackTemplates.map((attack) => attack.id))}
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              style={buttonStyle}
+                              onClick={() => setClassFieldIds("startingAttackTemplateIds", [])}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
                         {selectedCampaign.attackTemplates.length === 0 ? (
                           <p style={{ margin: 0, ...mutedTextStyle }}>No attacks are defined for this campaign.</p>
                         ) : (
@@ -799,7 +910,25 @@ export default function AdminScreen({ gameData, onSave, onClose }: Props) {
                       </div>
 
                       <div style={{ ...panelStyle, padding: 12 }}>
-                        <h4 style={{ marginTop: 0, marginBottom: 12 }}>Default Powers</h4>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                          <h4 style={{ margin: 0 }}>Default Powers</h4>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              type="button"
+                              style={buttonStyle}
+                              onClick={() => setClassFieldIds("defaultPowerIds", selectedCampaign.powers.map((power) => power.id))}
+                            >
+                              Select All
+                            </button>
+                            <button
+                              type="button"
+                              style={buttonStyle}
+                              onClick={() => setClassFieldIds("defaultPowerIds", [])}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
                         {selectedCampaign.powers.length === 0 ? (
                           <p style={{ margin: 0, ...mutedTextStyle }}>No powers are defined for this campaign.</p>
                         ) : (

@@ -199,13 +199,17 @@ export default function CharacterCreationWizard({
                 textAlign: "center",
                 fontSize: 13,
                 fontWeight: 700,
-                background: isCurrent ? "#dbeafe" : isDone ? "#ecfdf5" : "#f3f4f6",
-                color: isCurrent ? "#1d4ed8" : isDone ? "#047857" : "var(--text-secondary)",
-                border: isCurrent
-                  ? "1px solid #93c5fd"
+                background: isCurrent
+                  ? "rgba(73, 224, 255, 0.22)"
                   : isDone
-                  ? "1px solid #a7f3d0"
-                  : "1px solid #e5e7eb",
+                  ? "rgba(138, 247, 207, 0.16)"
+                  : "rgba(9, 20, 38, 0.82)",
+                color: isCurrent ? "#e9fdff" : isDone ? "#c9ffe8" : "var(--text-secondary)",
+                border: isCurrent
+                  ? "1px solid var(--accent-primary)"
+                  : isDone
+                  ? "1px solid rgba(138, 247, 207, 0.45)"
+                  : "1px solid var(--border-soft)",
               }}
             >
               {index + 1}. {title}
@@ -245,9 +249,9 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                background: "#f9fafb",
-                border: "1px solid #e5e7eb",
-                color: "#b9cdf0",
+                background: "rgba(10, 20, 39, 0.78)",
+                border: "1px solid var(--border-soft)",
+                color: "var(--text-primary)",
               }}
             >
               {selectedCampaign.description || "No description."}
@@ -278,9 +282,9 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                background: "#f9fafb",
-                border: "1px solid #e5e7eb",
-                color: "#b9cdf0",
+                background: "rgba(10, 20, 39, 0.78)",
+                border: "1px solid var(--border-soft)",
+                color: "var(--text-primary)",
               }}
             >
               <div>
@@ -326,9 +330,10 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 10,
                 borderRadius: 8,
-                background: "#eff6ff",
-                color: "#1e3a8a",
+                background: "rgba(73, 224, 255, 0.18)",
+                color: "var(--text-primary)",
                 fontSize: 14,
+                border: "1px solid var(--accent-primary)",
               }}
             >
               <strong>Point Buy:</strong> {pointBuyRemaining} / {pointBuyTotal} points remaining
@@ -375,9 +380,10 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 10,
                   borderRadius: 8,
-                  background: "#eff6ff",
-                  color: "#1e3a8a",
+                  background: "rgba(73, 224, 255, 0.18)",
+                  color: "var(--text-primary)",
                   fontSize: 14,
+                  border: "1px solid var(--accent-primary)",
                 }}
               >
                 <strong>{labels.skills} Picks:</strong> choose {rule.choose} from{" "}
@@ -408,9 +414,9 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 10,
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  color: "#b9cdf0",
+                  border: "1px solid var(--border-soft)",
+                  background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  color: "var(--text-primary)",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
                   justifyContent: "space-between",
@@ -421,7 +427,7 @@ export default function CharacterCreationWizard({
                 <span>
                   <strong>{skill.name}</strong> ({skill.attribute})
                   {skill.description && (
-                    <div style={{ fontWeight: 400, fontSize: 14, color: "#6b7280", marginTop: 4 }}>
+                    <div style={{ fontWeight: 400, fontSize: 14, color: "var(--text-secondary)", marginTop: 4 }}>
                       {skill.description}
                     </div>
                   )}
@@ -448,9 +454,10 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 10,
                   borderRadius: 8,
-                  background: "#eff6ff",
-                  color: "#1e3a8a",
+                  background: "rgba(73, 224, 255, 0.18)",
+                  color: "var(--text-primary)",
                   fontSize: 14,
+                  border: "1px solid var(--accent-primary)",
                 }}
               >
                 <strong>{labels.powers} Picks:</strong> choose {rule.choose} from{" "}
@@ -480,9 +487,9 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 10,
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  color: "#b9cdf0",
+                  border: "1px solid var(--border-soft)",
+                  background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  color: "var(--text-primary)",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
                   justifyContent: "space-between",
@@ -518,9 +525,10 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 10,
                   borderRadius: 8,
-                  background: "#eff6ff",
-                  color: "#1e3a8a",
+                  background: "rgba(73, 224, 255, 0.18)",
+                  color: "var(--text-primary)",
                   fontSize: 14,
+                  border: "1px solid var(--accent-primary)",
                 }}
               >
                 <strong>{labels.inventory} Picks:</strong> choose {rule.choose} from{" "}
@@ -550,9 +558,9 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 10,
                   borderRadius: 8,
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  color: "#b9cdf0",
+                  border: "1px solid var(--border-soft)",
+                  background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  color: "var(--text-primary)",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
                   justifyContent: "space-between",
