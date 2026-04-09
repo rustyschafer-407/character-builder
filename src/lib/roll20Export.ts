@@ -41,25 +41,8 @@ export function buildRoll20AttributeMap(
 
   const result: Record<string, string> = {};
 
-  function setAttrAliases(fieldNames: string[], value: string) {
-    for (const fieldName of fieldNames) {
-      result[`attr_${fieldName}`] = value;
-    }
-  }
-
-  function setRepeatingValue(
-    sectionNames: string[],
-    rowKeys: string[],
-    fieldNames: string[],
-    value: string
-  ) {
-    for (const sectionName of sectionNames) {
-      for (const rowKey of rowKeys) {
-        for (const fieldName of fieldNames) {
-          result[`repeating_${sectionName}_${rowKey}_${fieldName}`] = value;
-        }
-      }
-    }
+  function setRepeatingValue(sectionName: string, rowId: string, fieldName: string, value: string) {
+    result[`repeating_${sectionName}_${rowId}_${fieldName}`] = value;
   }
 
   // Header / top section
@@ -76,7 +59,6 @@ export function buildRoll20AttributeMap(
   result["attr_ac_bonus"] = "0";
   // This sheet's worker uses parseInt(ac_use_dex), so it must be numeric.
   result["attr_ac_use_dex"] = "1";
-  setAttrAliases(["ac_use_dex_flag", "ac_use_dex_value", "use_dex_for_ac"], "1");
   result["attr_speed"] = "";
 
   // HP
@@ -85,8 +67,6 @@ export function buildRoll20AttributeMap(
   // Keep explicit keys first for this sheet.
   result["attr_hp_max"] = maxHp;
   result["attr_hp_current"] = currentHp;
-  setAttrAliases(["hp", "max_hp", "hit_points_max", "health_max"], maxHp);
-  setAttrAliases(["hp_current", "current_hp", "hit_points", "health"], currentHp);
 
   // Attributes
   result["attr_str"] = clean(character.attributes.STR);
@@ -124,30 +104,28 @@ export function buildRoll20AttributeMap(
     .slice(0, MAX_SKILL_ROWS);
 
   for (let i = 0; i < proficientSkills.length; i++) {
-    const rowKeys = [makeRepeatingRowId(i), `$${i}`];
+    const rowId = makeRepeatingRowId(i);
     const skill = proficientSkills[i];
     const definition = skillMap.get(skill.skillId);
     const attr = definition?.attribute ?? "STR";
-    const sections = ["skills", "skill"];
 
     const skillName = clean(definition?.name ?? skill.skillId);
     const skillAttr = clean(getModifier(character.attributes[attr]));
     const skillProf = clean(character.proficiencyBonus);
     const skillBonus = clean(skill.bonus ?? 0);
 
-    setRepeatingValue(sections, rowKeys, ["skillname", "name"], skillName);
-    setRepeatingValue(sections, rowKeys, ["skillattr", "attr"], skillAttr);
-    setRepeatingValue(sections, rowKeys, ["skillprof", "prof"], skillProf);
-    setRepeatingValue(sections, rowKeys, ["skillbonus", "bonus"], skillBonus);
+    setRepeatingValue("skills", rowId, "skillname", skillName);
+    setRepeatingValue("skills", rowId, "skillattr", skillAttr);
+    setRepeatingValue("skills", rowId, "skillprof", skillProf);
+    setRepeatingValue("skills", rowId, "skillbonus", skillBonus);
   }
 
   // Repeating attacks
   const exportedAttacks = character.attacks.slice(0, MAX_ATTACK_ROWS);
 
   for (let i = 0; i < exportedAttacks.length; i++) {
-    const rowKeys = [makeRepeatingRowId(i), `$${i}`];
+    const rowId = makeRepeatingRowId(i);
     const attack = exportedAttacks[i];
-    const sections = ["attacks", "attack"];
 
     const attackName = clean(attack.name);
     const attackAttr = clean(getModifier(character.attributes[attack.attribute]));
@@ -155,49 +133,43 @@ export function buildRoll20AttributeMap(
     const attackBonus = clean(attack.bonus ?? 0);
     const damageDice = clean(attack.damage);
 
-    setRepeatingValue(sections, rowKeys, ["attackname", "name"], attackName);
-    setRepeatingValue(sections, rowKeys, ["attackattr", "attr"], attackAttr);
-    setRepeatingValue(sections, rowKeys, ["attackprof", "prof"], attackProf);
-    setRepeatingValue(sections, rowKeys, ["attackbonus", "bonus"], attackBonus);
-    setRepeatingValue(sections, rowKeys, ["damagedice", "damage"], damageDice);
-    setRepeatingValue(sections, rowKeys, ["damagebonus"], "0");
+    setRepeatingValue("attacks", rowId, "attackname", attackName);
+    setRepeatingValue("attacks", rowId, "attackattr", attackAttr);
+    setRepeatingValue("attacks", rowId, "attackprof", attackProf);
+    setRepeatingValue("attacks", rowId, "attackbonus", attackBonus);
+    setRepeatingValue("attacks", rowId, "damagedice", damageDice);
+    setRepeatingValue("attacks", rowId, "damagebonus", "0");
   }
 
   // Repeating powers
   const exportedPowers = character.powers.slice(0, MAX_POWER_ROWS);
 
   for (let i = 0; i < exportedPowers.length; i++) {
-    const rowKeys = [makeRepeatingRowId(i), `$${i}`];
+    const rowId = makeRepeatingRowId(i);
     const power = exportedPowers[i];
     const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
     const notes = clean(power.notes ?? definition?.description ?? "");
     const text = notes ? `${power.name} - ${notes}` : power.name;
-    const sections = ["powers", "power"];
-    const powerName = clean(power.name);
-    const powerNotes = clean(notes);
     const powerText = clean(text);
 
-    setRepeatingValue(sections, rowKeys, ["powertext", "text"], powerText);
-    setRepeatingValue(sections, rowKeys, ["powername", "name"], powerName);
-    setRepeatingValue(sections, rowKeys, ["powernotes", "notes"], powerNotes);
+    setRepeatingValue("powers", rowId, "powertext", powerText);
   }
 
   // Repeating inventory
   const exportedInventory = character.inventory.slice(0, MAX_INVENTORY_ROWS);
 
   for (let i = 0; i < exportedInventory.length; i++) {
-    const rowKeys = [makeRepeatingRowId(i), `$${i}`];
+    const rowId = makeRepeatingRowId(i);
     const item = exportedInventory[i];
     const definition = item.itemId ? itemMap.get(item.itemId) : undefined;
-    const sections = ["inventory", "item", "items"];
 
     const itemName = clean(item.name);
     const itemQty = clean(item.quantity);
     const itemNotes = clean(item.notes ?? definition?.description ?? "");
 
-    setRepeatingValue(sections, rowKeys, ["itemname", "name"], itemName);
-    setRepeatingValue(sections, rowKeys, ["itemqty", "qty", "quantity"], itemQty);
-    setRepeatingValue(sections, rowKeys, ["itemnotes", "notes"], itemNotes);
+    setRepeatingValue("inventory", rowId, "itemname", itemName);
+    setRepeatingValue("inventory", rowId, "itemqty", itemQty);
+    setRepeatingValue("inventory", rowId, "itemnotes", itemNotes);
   }
 
   return result;
@@ -256,18 +228,18 @@ export function buildChatSetAttrCommand(
       // Escape characters that can break ChatSetAttr parsing
       const safeValue = resolvedValue
         .replace(/\\/g, "\\\\")
-        .replace(/"/g, '\\"')
+        .replace(/'/g, "\\'")
         .replace(/\|/g, "&#124;")
         .replace(/--/g, "&#45;&#45;")
         .replace(/\n/g, " ");
-      return `--${attrName}|"${safeValue}"`;
+      return `--${attrName}|'${safeValue}'`;
     });
 
   const safeCharacterName = characterName
     .replace(/\\/g, "\\\\")
-    .replace(/"/g, '\\"')
+    .replace(/'/g, "\\'")
     .replace(/\|/g, "&#124;")
     .replace(/\n/g, " ");
 
-  return `!setattr --name "${safeCharacterName}" ${pairs.join(" ")}`;
+  return `!setattr --replace --name '${safeCharacterName}' ${pairs.join(" ")}`;
 }
