@@ -809,7 +809,7 @@ export default function App() {
     if (!selected) return;
     try {
       await navigator.clipboard.writeText(chatSetAttrCommand);
-      alert("Roll20 import commands copied. Paste Phase 1 first, then Phase 2.");
+      alert("Roll20 import commands copied. Paste Attributes & Core first, then Repeating Lists.");
     } catch {
       alert("Could not copy to clipboard on this device/browser.");
     }
@@ -819,7 +819,7 @@ export default function App() {
     if (!selected) return;
     try {
       await navigator.clipboard.writeText(roll20Commands.phase1);
-      alert("Roll20 Phase 1 command copied to clipboard.");
+      alert("Roll20 Attributes & Core command copied to clipboard.");
     } catch {
       alert("Could not copy to clipboard on this device/browser.");
     }
@@ -829,7 +829,7 @@ export default function App() {
     if (!selected) return;
     try {
       await navigator.clipboard.writeText(roll20Commands.phase2);
-      alert("Roll20 Phase 2 commands copied to clipboard.");
+      alert("Roll20 Repeating Lists commands copied to clipboard.");
     } catch {
       alert("Could not copy to clipboard on this device/browser.");
     }
@@ -1207,17 +1207,17 @@ export default function App() {
                   >
                     ChatSetAttr
                   </a>{" "}
-                  API script (Roll20 Pro). <strong>Select your character's token</strong> in Roll20, then paste <strong>Phase 1</strong> and then <strong>Phase 2</strong>.
+                  API script (Roll20 Pro). <strong>Select your character's token</strong> in Roll20, then paste <strong>Attributes & Core</strong> and then <strong>Repeating Lists</strong>.
                 </p>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button onClick={copyChatSetAttrPhase1} style={buttonStyle}>
-                    Copy Phase 1
+                    Copy Attributes & Core
                   </button>
                   <button onClick={copyChatSetAttrPhase2} style={buttonStyle}>
-                    Copy Phase 2
+                    Copy Repeating Lists
                   </button>
                   <button onClick={copyChatSetAttr} style={primaryButtonStyle}>
-                    Copy Both Phases
+                    Copy Both Commands
                   </button>
                   <button onClick={() => setRoll20PreviewOpen(true)} style={buttonStyle}>
                     Preview Command
@@ -1269,7 +1269,7 @@ export default function App() {
               <div>
                 <h2 style={{ margin: 0, color: "var(--text-primary)" }}>Roll20 Import Commands</h2>
                 <div style={{ color: "var(--text-secondary)", marginTop: 4 }}>
-                  {selected.identity.name || "Unnamed Character"} — paste Phase 1, then Phase 2
+                  {selected.identity.name || "Unnamed Character"} — paste Attributes & Core, then Repeating Lists
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8 }}>
