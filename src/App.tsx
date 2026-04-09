@@ -9,8 +9,7 @@ import {
   touchCharacter,
 } from "./lib/character";
 import { buildChatSetAttrPhases } from "./lib/roll20Export";
-import { loadCharacters, saveCharacters } from "./storage/characterStorage";
-import { loadGameData, saveGameData } from "./storage/gameDataStorage";
+import { appStorage } from "./storage/appStorage";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
@@ -283,16 +282,16 @@ function makeDefaultSheet(): CharacterRecord["sheet"] {
 }
 
 function loadCharactersWithDefaultSheets(): CharacterRecord[] {
-  return loadCharacters().map((character) =>
+  return appStorage.loadCharacters().map((character) =>
     character.sheet ? character : { ...character, sheet: makeDefaultSheet() }
   );
 }
 
 export default function App() {
-  const [gameData, setGameData] = useState<GameData>(() => loadGameData(seedGameData));
+  const [gameData, setGameData] = useState<GameData>(() => appStorage.loadGameData(seedGameData));
   const [characters, setCharacters] = useState<CharacterRecord[]>(() => loadCharactersWithDefaultSheets());
   const [selectedId, setSelectedId] = useState(() => characters[0]?.id ?? "");
-  const [campaignId, setCampaignId] = useState(() => loadGameData(seedGameData).campaigns[0]?.id ?? "");
+  const [campaignId, setCampaignId] = useState(() => appStorage.loadGameData(seedGameData).campaigns[0]?.id ?? "");
   const [classId, setClassId] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
@@ -306,11 +305,11 @@ export default function App() {
   const [levelUpMissingRowMessage, setLevelUpMissingRowMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    saveCharacters(characters);
+    appStorage.saveCharacters(characters);
   }, [characters]);
 
   useEffect(() => {
-    saveGameData(gameData);
+    appStorage.saveGameData(gameData);
   }, [gameData]);
 
   function handleCampaignChange(nextCampaignId: string) {

@@ -14,6 +14,7 @@ import type {
   ClassDefinition,
   GameData,
 } from "../types/gameData";
+import { findCampaign, findClassInCampaign, resolveCampaignAssets } from "./domain";
 
 export function generateId() {
   return crypto.randomUUID();
@@ -24,14 +25,13 @@ export function getAttributeModifier(score: number) {
 }
 
 export function getClassesForCampaign(gameData: GameData, campaignId: string) {
-  return (
-    gameData.campaigns.find((campaign) => campaign.id === campaignId)?.classes ?? []
-  );
+  const campaign = findCampaign(gameData, campaignId);
+  return resolveCampaignAssets(campaign).classes;
 }
 
 export function getClassById(gameData: GameData, classId: string) {
   for (const campaign of gameData.campaigns) {
-    const cls = campaign.classes.find((item) => item.id === classId);
+    const cls = findClassInCampaign(campaign, classId);
     if (cls) return cls;
   }
   return undefined;

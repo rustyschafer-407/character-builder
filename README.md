@@ -1,73 +1,90 @@
-# React + TypeScript + Vite
+# Character Builder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Character Builder is a campaign-aware character management app for creating, editing, leveling, and exporting RPG characters.
 
-Currently, two official plugins are available:
+## What The App Does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Lets you define campaign content in an admin editor.
+- Lets players create characters from campaign + class definitions.
+- Supports level-up progression with automatic and choice-based gains.
+- Exports characters to Roll20 using ChatSetAttr Mod-compatible commands.
 
-## React Compiler
+## Campaign Ownership Model
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Each campaign owns its own gameplay content. In this app, campaigns contain:
 
-## Expanding the ESLint configuration
+- Classes
+- Skills
+- Powers
+- Items
+- Attack templates
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Characters are tied to a campaign and class, and all available options are resolved from that campaign.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Character Creation And Level-Up
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Character creation wizard (high level):
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- Pick campaign and class.
+- Set attributes by generation method.
+- Make class-constrained skill/power/item choices.
+- Finish with a full character record.
+
+Level-up wizard (high level):
+
+- Computes the next level and reads that class progression row.
+- Applies automatic gains (level, HP/hit dice, attribute bonuses).
+- Requires choices for new skills/powers when configured.
+- Blocks invalid or duplicate applications.
+
+## Roll20 Mod Workflow (High Level)
+
+The app generates ChatSetAttr Mod commands in two phases:
+
+1. Attributes and core fields
+2. Repeating sections (skills, attacks, powers, inventory)
+
+Typical flow:
+
+- Open a character in this app.
+- Copy the generated commands.
+- In Roll20 (with ChatSetAttr Mod), select the token and paste phase 1 then phase 2.
+
+## Commands
+
+Install dependencies:
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run dev server:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Build production bundle:
+
+```bash
+npm run build
+```
+
+Run lint:
+
+```bash
+npm run lint
+```
+
+## Developer Smoke Test
+
+Use [SMOKE_TEST_CHECKLIST.md](SMOKE_TEST_CHECKLIST.md) for a quick manual validation pass after changes.
+
+## Architecture Overview
+
+- `src/components/` UI screens and editor/wizard sections.
+- `src/data/` seeded and normalized game data by campaign/genre.
+- `src/lib/` character logic and Roll20 export command builders.
+- `src/storage/` localStorage load/save and migration defaults.
+- `src/types/` shared TypeScript domain models.
+- `src/App.tsx` top-level app orchestration and workflows.

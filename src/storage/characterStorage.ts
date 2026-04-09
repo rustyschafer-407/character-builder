@@ -1,4 +1,5 @@
 import type { CharacterRecord } from "../types/character";
+import { applySafeCharacterDefaults } from "../lib/domain";
 
 const ATTRIBUTE_KEYS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"] as const;
 
@@ -43,11 +44,12 @@ function normalizePowers(value: unknown) {
 }
 
 function normalizeCharacter(character: CharacterRecord): CharacterRecord {
-  const skills = normalizeSkills(character.skills);
-  const powers = normalizePowers(character.powers);
+  const safeCharacter = applySafeCharacterDefaults(character);
+  const skills = normalizeSkills(safeCharacter.skills);
+  const powers = normalizePowers(safeCharacter.powers);
 
-  const level = Number.isFinite(character.level)
-    ? Math.max(1, Math.floor(character.level))
+  const level = Number.isFinite(safeCharacter.level)
+    ? Math.max(1, Math.floor(safeCharacter.level))
     : 1;
 
   const fromSkills = skills
@@ -58,7 +60,7 @@ function normalizeCharacter(character: CharacterRecord): CharacterRecord {
     .filter((power) => power.source === "level-up" && power.powerId)
     .map((power) => power.powerId as string);
 
-  const progression = character.levelProgression;
+  const progression = safeCharacter.levelProgression;
   const normalizedAttributeIncreases = makeZeroAttributeMap();
 
   for (const key of ATTRIBUTE_KEYS) {
@@ -69,7 +71,7 @@ function normalizeCharacter(character: CharacterRecord): CharacterRecord {
   }
 
   return {
-    ...character,
+    ...safeCharacter,
     level,
     skills,
     powers,

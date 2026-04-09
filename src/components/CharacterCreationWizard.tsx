@@ -20,6 +20,14 @@ import type {
   PowerDefinition,
   SkillDefinition,
 } from "../types/gameData";
+import {
+  getItemChoiceState,
+  getPowerChoiceState,
+  getSelectedCountForItemRule,
+  getSelectedCountForPowerRule,
+  getSelectedCountForSkillRule,
+  getSkillChoiceState,
+} from "../lib/creationChoiceRules";
 import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
 
 export interface CharacterCreationDraft {
@@ -81,45 +89,6 @@ function getStepTitles(labels: CampaignLabels) {
     labels.inventory,
     "Review",
   ];
-}
-
-function getRuleForSkill(skillId: string, rules: ClassSkillChoiceRule[]) {
-  return rules.find((rule) => rule.skillIds.includes(skillId));
-}
-
-function getSelectedCountForSkillRule(
-  rule: ClassSkillChoiceRule,
-  draft: CharacterCreationDraft
-) {
-  return draft.skills.filter(
-    (skill) => rule.skillIds.includes(skill.skillId) && skill.proficient
-  ).length;
-}
-
-function getRuleForPower(powerId: string, rules: ClassPowerChoiceRule[]) {
-  return rules.find((rule) => rule.powerIds.includes(powerId));
-}
-
-function getSelectedCountForPowerRule(
-  rule: ClassPowerChoiceRule,
-  draft: CharacterCreationDraft
-) {
-  return draft.powers.filter(
-    (power) => power.powerId && rule.powerIds.includes(power.powerId)
-  ).length;
-}
-
-function getRuleForItem(itemId: string, rules: ClassItemChoiceRule[]) {
-  return rules.find((rule) => rule.itemIds.includes(itemId));
-}
-
-function getSelectedCountForItemRule(
-  rule: ClassItemChoiceRule,
-  draft: CharacterCreationDraft
-) {
-  return draft.inventory.filter(
-    (item) => item.itemId && rule.itemIds.includes(item.itemId)
-  ).length;
 }
 
 function getStepStatus(index: number, currentStep: number) {
@@ -403,7 +372,7 @@ export default function CharacterCreationWizard({
       {step === 3 && (
         <div style={{ display: "grid", gap: 10 }}>
           {skillChoiceRules.map((rule, index) => {
-            const selectedCount = getSelectedCountForSkillRule(rule, draft);
+            const selectedCount = getSelectedCountForSkillRule(rule, draft.skills);
             return (
               <div
                 key={`${index}-${rule.skillIds.join("-")}`}
@@ -430,13 +399,14 @@ export default function CharacterCreationWizard({
           {skills.map((skill) => {
             const selectedSkill = draft.skills.find((s) => s.skillId === skill.id);
             const isSelected = selectedSkill?.proficient ?? false;
-            const rule = getRuleForSkill(skill.id, skillChoiceRules);
-            const selectedCount = rule ? getSelectedCountForSkillRule(rule, draft) : 0;
-            const remaining = rule ? rule.choose - selectedCount : 0;
-            const canBeChosen = skillChoiceRules.length === 0 || Boolean(rule) || isSelected;
-            const disabled =
-              !isSelected &&
-              ((skillChoiceRules.length > 0 && !canBeChosen) || (rule ? remaining <= 0 : false));
+            const choiceState = getSkillChoiceState(
+              skill.id,
+              isSelected,
+              draft.skills,
+              skillChoiceRules
+            );
+            const canBeChosen = choiceState.canBeChosen;
+            const disabled = choiceState.disabled;
 
             return (
               <label
@@ -477,7 +447,7 @@ export default function CharacterCreationWizard({
       {step === 4 && (
         <div style={{ display: "grid", gap: 10 }}>
           {powerChoiceRules.map((rule, index) => {
-            const selectedCount = getSelectedCountForPowerRule(rule, draft);
+            const selectedCount = getSelectedCountForPowerRule(rule, draft.powers);
             return (
               <div
                 key={`${index}-${rule.powerIds.join("-")}`}
@@ -503,13 +473,14 @@ export default function CharacterCreationWizard({
 
           {powers.map((power) => {
             const isSelected = draft.powers.some((p) => p.powerId === power.id);
-            const rule = getRuleForPower(power.id, powerChoiceRules);
-            const selectedCount = rule ? getSelectedCountForPowerRule(rule, draft) : 0;
-            const remaining = rule ? rule.choose - selectedCount : 0;
-            const canBeChosen = powerChoiceRules.length === 0 || Boolean(rule) || isSelected;
-            const disabled =
-              !isSelected &&
-              ((powerChoiceRules.length > 0 && !canBeChosen) || (rule ? remaining <= 0 : false));
+            const choiceState = getPowerChoiceState(
+              power.id,
+              isSelected,
+              draft.powers,
+              powerChoiceRules
+            );
+            const canBeChosen = choiceState.canBeChosen;
+            const disabled = choiceState.disabled;
 
             return (
               <label
@@ -548,7 +519,7 @@ export default function CharacterCreationWizard({
       {step === 5 && (
         <div style={{ display: "grid", gap: 10 }}>
           {itemChoiceRules.map((rule, index) => {
-            const selectedCount = getSelectedCountForItemRule(rule, draft);
+            const selectedCount = getSelectedCountForItemRule(rule, draft.inventory);
             return (
               <div
                 key={`${index}-${rule.itemIds.join("-")}`}
@@ -574,13 +545,14 @@ export default function CharacterCreationWizard({
 
           {items.map((item) => {
             const isSelected = draft.inventory.some((i) => i.itemId === item.id);
-            const rule = getRuleForItem(item.id, itemChoiceRules);
-            const selectedCount = rule ? getSelectedCountForItemRule(rule, draft) : 0;
-            const remaining = rule ? rule.choose - selectedCount : 0;
-            const canBeChosen = itemChoiceRules.length === 0 || Boolean(rule) || isSelected;
-            const disabled =
-              !isSelected &&
-              ((itemChoiceRules.length > 0 && !canBeChosen) || (rule ? remaining <= 0 : false));
+            const choiceState = getItemChoiceState(
+              item.id,
+              isSelected,
+              draft.inventory,
+              itemChoiceRules
+            );
+            const canBeChosen = choiceState.canBeChosen;
+            const disabled = choiceState.disabled;
 
             return (
               <label

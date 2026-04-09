@@ -1,10 +1,108 @@
 import type { CharacterRecord } from "../types/character";
 import type { AttributeKey, GameData } from "../types/gameData";
+import {
+  findCampaign,
+  findClassInCampaign,
+  resolveCampaignAssets,
+  validateCharacterReferences,
+} from "./domain";
 
 const MAX_SKILL_ROWS = 12;
 const MAX_ATTACK_ROWS = 8;
 const MAX_POWER_ROWS = 12;
 const MAX_INVENTORY_ROWS = 20;
+
+const LEGACY_SHEET_DEFAULTS = {
+  acBase: 10,
+  acBonus: 0,
+  acUseDex: true,
+  speed: "",
+  initMisc: 0,
+  saveProf: {
+    STR: false,
+    DEX: false,
+    CON: false,
+    INT: false,
+    WIS: false,
+    CHA: false,
+  } as Record<AttributeKey, boolean>,
+  saveBonus: {
+    STR: 0,
+    DEX: 0,
+    CON: 0,
+    INT: 0,
+    WIS: 0,
+    CHA: 0,
+  } as Record<AttributeKey, number>,
+};
+
+type ExportContext = {
+  campaign: ReturnType<typeof findCampaign>;
+  cls: ReturnType<typeof findClassInCampaign>;
+  skillMap: Map<string, { id: string; name: string; attribute: AttributeKey }>;
+  powerMap: Map<string, { id: string; name: string; description?: string }>;
+  itemMap: Map<string, { id: string; name: string; description?: string }>;
+  invalidSkillIdSet: Set<string>;
+  invalidPowerIdSet: Set<string>;
+  invalidItemIdSet: Set<string>;
+  invalidAttackTemplateIdSet: Set<string>;
+  campaignPowerIds: Set<string>;
+};
+
+function getEffectiveSheetState(character: CharacterRecord) {
+  return {
+    acBase: Number.isFinite(character.sheet?.acBase)
+      ? Number(character.sheet.acBase)
+      : LEGACY_SHEET_DEFAULTS.acBase,
+    acBonus: Number.isFinite(character.sheet?.acBonus)
+      ? Number(character.sheet.acBonus)
+      : LEGACY_SHEET_DEFAULTS.acBonus,
+    acUseDex:
+      typeof character.sheet?.acUseDex === "boolean"
+        ? character.sheet.acUseDex
+        : LEGACY_SHEET_DEFAULTS.acUseDex,
+    speed: character.sheet?.speed ?? LEGACY_SHEET_DEFAULTS.speed,
+    initMisc: Number.isFinite(character.sheet?.initMisc)
+      ? Number(character.sheet.initMisc)
+      : LEGACY_SHEET_DEFAULTS.initMisc,
+    saveProf: {
+      STR: Boolean(character.sheet?.saveProf?.STR),
+      DEX: Boolean(character.sheet?.saveProf?.DEX),
+      CON: Boolean(character.sheet?.saveProf?.CON),
+      INT: Boolean(character.sheet?.saveProf?.INT),
+      WIS: Boolean(character.sheet?.saveProf?.WIS),
+      CHA: Boolean(character.sheet?.saveProf?.CHA),
+    } as Record<AttributeKey, boolean>,
+    saveBonus: {
+      STR: Number(character.sheet?.saveBonus?.STR ?? LEGACY_SHEET_DEFAULTS.saveBonus.STR),
+      DEX: Number(character.sheet?.saveBonus?.DEX ?? LEGACY_SHEET_DEFAULTS.saveBonus.DEX),
+      CON: Number(character.sheet?.saveBonus?.CON ?? LEGACY_SHEET_DEFAULTS.saveBonus.CON),
+      INT: Number(character.sheet?.saveBonus?.INT ?? LEGACY_SHEET_DEFAULTS.saveBonus.INT),
+      WIS: Number(character.sheet?.saveBonus?.WIS ?? LEGACY_SHEET_DEFAULTS.saveBonus.WIS),
+      CHA: Number(character.sheet?.saveBonus?.CHA ?? LEGACY_SHEET_DEFAULTS.saveBonus.CHA),
+    } as Record<AttributeKey, number>,
+  };
+}
+
+function buildExportContext(character: CharacterRecord, gameData: GameData): ExportContext {
+  const campaign = findCampaign(gameData, character.campaignId);
+  const cls = findClassInCampaign(campaign, character.classId);
+  const assets = resolveCampaignAssets(campaign);
+  const referenceValidation = validateCharacterReferences(character, campaign);
+
+  return {
+    campaign,
+    cls,
+    skillMap: new Map(assets.skills.map((skill) => [skill.id, skill])),
+    powerMap: new Map(assets.powers.map((power) => [power.id, power])),
+    itemMap: new Map(assets.items.map((item) => [item.id, item])),
+    invalidSkillIdSet: new Set(referenceValidation.invalidSkillIds),
+    invalidPowerIdSet: new Set(referenceValidation.invalidPowerIds),
+    invalidItemIdSet: new Set(referenceValidation.invalidItemIds),
+    invalidAttackTemplateIdSet: new Set(referenceValidation.invalidAttackTemplateIds),
+    campaignPowerIds: new Set(assets.powers.map((power) => power.id)),
+  };
+}
 
 function getExportedSkills(character: CharacterRecord) {
   const gainedSkillIds = new Set(character.levelProgression?.gainedSkillIds ?? []);
@@ -13,7 +111,11 @@ function getExportedSkills(character: CharacterRecord) {
   );
 }
 
-function getExportedPowers(character: CharacterRecord, gamePowerIds: Set<string>) {
+function getExportedPowers(
+  character: CharacterRecord,
+  gamePowerIds: Set<string>,
+  powerMap: Map<string, { id: string; name: string; description?: string }>
+) {
   const existingPowerIds = new Set(character.powers.map((power) => power.powerId).filter(Boolean));
   const gainedPowerIds = (character.levelProgression?.gainedPowerIds ?? []).filter(
     (powerId) => gamePowerIds.has(powerId)
@@ -23,8 +125,8 @@ function getExportedPowers(character: CharacterRecord, gamePowerIds: Set<string>
     .filter((powerId) => !existingPowerIds.has(powerId))
     .map((powerId) => ({
       powerId,
-      name: powerId,
-      notes: "",
+      name: powerMap.get(powerId)?.name ?? powerId,
+      notes: powerMap.get(powerId)?.description ?? "",
       source: "level-up" as const,
     }));
 
@@ -53,12 +155,9 @@ export function buildRoll20AttributeMap(
   character: CharacterRecord,
   gameData: GameData
 ): Record<string, string> {
-  const campaign = gameData.campaigns.find((campaign) => campaign.id === character.campaignId);
-  const cls = campaign?.classes.find((c) => c.id === character.classId);
-
-  const skillMap = new Map((campaign?.skills ?? []).map((skill) => [skill.id, skill]));
-  const powerMap = new Map((campaign?.powers ?? []).map((power) => [power.id, power]));
-  const itemMap = new Map((campaign?.items ?? []).map((item) => [item.id, item]));
+  const context = buildExportContext(character, gameData);
+  const sheet = getEffectiveSheetState(character);
+  const exported = getFilteredExportCollections(character, context);
 
   const result: Record<string, string> = {};
 
@@ -68,19 +167,19 @@ export function buildRoll20AttributeMap(
 
   // Header / top section
   result["attr_character_name"] = clean(character.identity.name);
-  result["attr_class_race"] = clean(cls?.name ?? character.classId);
+  result["attr_class_race"] = clean(context.cls?.name ?? character.classId);
   result["attr_sheet_theme"] = clean(getThemeValue(character.campaignId));
 
   // Core stats
   result["attr_level"] = clean(character.level);
   result["attr_pb"] = clean(character.proficiencyBonus);
 
-  // These are not modeled yet in your builder, so export safe defaults/blanks
-  result["attr_ac_base"] = "10";
-  result["attr_ac_bonus"] = "0";
+  // Sheet/core state with legacy defaults for older saved records.
+  result["attr_ac_base"] = clean(sheet.acBase);
+  result["attr_ac_bonus"] = clean(sheet.acBonus);
   // This sheet's worker uses parseInt(ac_use_dex), so it must be numeric.
-  result["attr_ac_use_dex"] = "1";
-  result["attr_speed"] = "";
+  result["attr_ac_use_dex"] = sheet.acUseDex ? "1" : "0";
+  result["attr_speed"] = clean(sheet.speed);
 
   // HP
   const maxHp = clean(character.hp.max);
@@ -89,7 +188,7 @@ export function buildRoll20AttributeMap(
   result["attr_hp_max"] = maxHp;
   result["attr_hp_current"] = currentHp;
   result["attr_hp_temp"] = clean(character.hp.temp ?? 0);
-  result["attr_hit_die"] = clean(character.hp.hitDie ?? cls?.hpRule.hitDie ?? 0);
+  result["attr_hit_die"] = clean(character.hp.hitDie ?? context.cls?.hpRule.hitDie ?? 0);
   result["attr_hit_dice_total"] = clean(character.levelProgression?.totalHitDice ?? character.level);
 
   // Attributes
@@ -108,27 +207,29 @@ export function buildRoll20AttributeMap(
   result["attr_wis_mod"] = clean(getModifier(character.attributes.WIS));
   result["attr_cha_mod"] = clean(getModifier(character.attributes.CHA));
 
-  // Save profs/bonuses/totals are not modeled separately in your app yet
+  // Saving throw state from modeled character sheet fields.
   const saveAttrs: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
   for (const attr of saveAttrs) {
     const lower = attr.toLowerCase();
-    result[`attr_${lower}_saveprof`] = "";
-    result[`attr_${lower}_savebonus`] = "0";
-    result[`attr_${lower}_save_total`] = clean(getModifier(character.attributes[attr]));
+    result[`attr_${lower}_saveprof`] = sheet.saveProf[attr] ? "1" : "";
+    result[`attr_${lower}_savebonus`] = clean(sheet.saveBonus[attr]);
+    result[`attr_${lower}_save_total`] = clean(
+      getModifier(character.attributes[attr]) + sheet.saveBonus[attr]
+    );
   }
 
   // AC / initiative derived fields
-  result["attr_ac"] = clean(10 + getModifier(character.attributes.DEX));
-  result["attr_init_misc"] = "0";
-  result["attr_initiative"] = clean(getModifier(character.attributes.DEX));
+  result["attr_ac"] = clean(
+    sheet.acBase + sheet.acBonus + (sheet.acUseDex ? getModifier(character.attributes.DEX) : 0)
+  );
+  result["attr_init_misc"] = clean(sheet.initMisc);
+  result["attr_initiative"] = clean(getModifier(character.attributes.DEX) + sheet.initMisc);
 
   // Repeating skills
-  const exportedSkills = getExportedSkills(character).slice(0, MAX_SKILL_ROWS);
-
-  for (let i = 0; i < exportedSkills.length; i++) {
+  for (let i = 0; i < exported.skills.length; i++) {
     const rowId = `$${i}`;
-    const skill = exportedSkills[i];
-    const definition = skillMap.get(skill.skillId);
+    const skill = exported.skills[i];
+    const definition = context.skillMap.get(skill.skillId);
     const attr = definition?.attribute ?? "STR";
 
     const skillName = clean(definition?.name ?? skill.skillId);
@@ -143,11 +244,9 @@ export function buildRoll20AttributeMap(
   }
 
   // Repeating attacks
-  const exportedAttacks = character.attacks.slice(0, MAX_ATTACK_ROWS);
-
-  for (let i = 0; i < exportedAttacks.length; i++) {
+  for (let i = 0; i < exported.attacks.length; i++) {
     const rowId = `$${i}`;
-    const attack = exportedAttacks[i];
+    const attack = exported.attacks[i];
 
     const attackName = clean(attack.name);
     const attackAttr = clean(getModifier(character.attributes[attack.attribute]));
@@ -164,15 +263,10 @@ export function buildRoll20AttributeMap(
   }
 
   // Repeating powers
-  const exportedPowers = getExportedPowers(
-    character,
-    new Set((campaign?.powers ?? []).map((power) => power.id))
-  ).slice(0, MAX_POWER_ROWS);
-
-  for (let i = 0; i < exportedPowers.length; i++) {
+  for (let i = 0; i < exported.powers.length; i++) {
     const rowId = `$${i}`;
-    const power = exportedPowers[i];
-    const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
+    const power = exported.powers[i];
+    const definition = power.powerId ? context.powerMap.get(power.powerId) : undefined;
     const notes = clean(power.notes ?? definition?.description ?? "");
     const text = notes ? `${power.name} - ${notes}` : power.name;
     const powerText = clean(text);
@@ -181,12 +275,10 @@ export function buildRoll20AttributeMap(
   }
 
   // Repeating inventory
-  const exportedInventory = character.inventory.slice(0, MAX_INVENTORY_ROWS);
-
-  for (let i = 0; i < exportedInventory.length; i++) {
+  for (let i = 0; i < exported.inventory.length; i++) {
     const rowId = `$${i}`;
-    const item = exportedInventory[i];
-    const definition = item.itemId ? itemMap.get(item.itemId) : undefined;
+    const item = exported.inventory[i];
+    const definition = item.itemId ? context.itemMap.get(item.itemId) : undefined;
 
     const itemName = clean(item.name);
     const itemQty = clean(item.quantity);
@@ -200,28 +292,30 @@ export function buildRoll20AttributeMap(
   return result;
 }
 
-export function buildRoll20AttributeMapText(
-  character: CharacterRecord,
-  gameData: GameData
-) {
-  const map = buildRoll20AttributeMap(character, gameData);
+function getFilteredExportCollections(character: CharacterRecord, context: ExportContext) {
+  const skills = getExportedSkills(character)
+    .filter((skill) => !context.invalidSkillIdSet.has(skill.skillId))
+    .slice(0, MAX_SKILL_ROWS);
 
-  return Object.entries(map)
-    .map(([key, value]) => `${key}=${value}`)
-    .join("\n");
+  const powers = getExportedPowers(character, context.campaignPowerIds, context.powerMap)
+    .filter((power) => !context.invalidPowerIdSet.has(power.powerId ?? ""))
+    .slice(0, MAX_POWER_ROWS);
+
+  const inventory = character.inventory
+    .filter((item) => !context.invalidItemIdSet.has(item.itemId ?? ""))
+    .slice(0, MAX_INVENTORY_ROWS);
+
+  const attacks = character.attacks
+    .filter(
+      (attack) =>
+        !attack.templateId || !context.invalidAttackTemplateIdSet.has(attack.templateId)
+    )
+    .slice(0, MAX_ATTACK_ROWS);
+
+  return { skills, powers, inventory, attacks };
 }
 
-export function buildRoll20AttributeMapJson(
-  character: CharacterRecord,
-  gameData: GameData
-) {
-  return JSON.stringify(buildRoll20AttributeMap(character, gameData), null, 2);
-}
-
-export function buildChatSetAttrCommand(
-  character: CharacterRecord,
-  gameData: GameData
-): string {
+export function buildChatSetAttrCommand(character: CharacterRecord, gameData: GameData): string {
   return buildChatSetAttrPhases(character, gameData).combined;
 }
 
@@ -230,6 +324,8 @@ export function buildChatSetAttrPhases(
   gameData: GameData
 ): { phase1: string; phase2: string; combined: string } {
   const map = buildRoll20AttributeMap(character, gameData);
+  const context = buildExportContext(character, gameData);
+  const exported = getFilteredExportCollections(character, context);
   const setPrefix = "!setattr --replace --sel";
   const delPrefix = "!delattr --mute --sel";
   const maxCommandLength = 1700;
@@ -290,10 +386,6 @@ export function buildChatSetAttrPhases(
     return commands;
   }
 
-  const campaign = gameData.campaigns.find((value) => value.id === character.campaignId);
-  const skillMap = new Map((campaign?.skills ?? []).map((skill) => [skill.id, skill]));
-  const powerMap = new Map((campaign?.powers ?? []).map((power) => [power.id, power]));
-
   // Base non-repeating attributes.
   const basePairsByName = new Map<string, string>();
   for (const [key, value] of Object.entries(map)) {
@@ -331,9 +423,8 @@ export function buildChatSetAttrPhases(
   repeatingCommands.push(...chunkCommands(delPrefix, repeatingDeleteParts));
 
   // Repeating skills.
-  const exportedSkills = getExportedSkills(character).slice(0, MAX_SKILL_ROWS);
-  for (const skill of exportedSkills) {
-    const def = skillMap.get(skill.skillId);
+  for (const skill of exported.skills) {
+    const def = context.skillMap.get(skill.skillId);
     const attr = def?.attribute ?? "STR";
     repeatingCommands.push(
       `${setPrefix} ${[
@@ -346,7 +437,7 @@ export function buildChatSetAttrPhases(
   }
 
   // Repeating attacks.
-  for (const attack of character.attacks.slice(0, MAX_ATTACK_ROWS)) {
+  for (const attack of exported.attacks) {
     repeatingCommands.push(
       `${setPrefix} ${[
         makePair("repeating_attacks_-CREATE_attackname", clean(attack.name)),
@@ -360,12 +451,8 @@ export function buildChatSetAttrPhases(
   }
 
   // Repeating powers.
-  const exportedPowers = getExportedPowers(
-    character,
-    new Set((campaign?.powers ?? []).map((power) => power.id))
-  ).slice(0, MAX_POWER_ROWS);
-  for (const power of exportedPowers) {
-    const definition = power.powerId ? powerMap.get(power.powerId) : undefined;
+  for (const power of exported.powers) {
+    const definition = power.powerId ? context.powerMap.get(power.powerId) : undefined;
     const notes = clean(power.notes ?? definition?.description ?? "");
     const text = notes ? `${power.name} - ${notes}` : power.name;
     repeatingCommands.push(
@@ -374,7 +461,7 @@ export function buildChatSetAttrPhases(
   }
 
   // Repeating inventory.
-  for (const item of character.inventory.slice(0, MAX_INVENTORY_ROWS)) {
+  for (const item of exported.inventory) {
     repeatingCommands.push(
       `${setPrefix} ${[
         makePair("repeating_inventory_-CREATE_itemname", clean(item.name)),
