@@ -126,6 +126,21 @@ function getStepStatus(index: number, currentStep: number) {
   return "upcoming";
 }
 
+function formatSignedNumber(value: number) {
+  return value >= 0 ? `+${value}` : `${value}`;
+}
+
+function formatClassAttributeModifiers(
+  selectedClass: ClassDefinition | null
+) {
+  if (!selectedClass) return "";
+  const modifiers = (selectedClass.attributeBonuses ?? []).filter((bonus) => bonus.amount !== 0);
+  if (modifiers.length === 0) return "None";
+  return modifiers
+    .map((bonus) => `${bonus.attribute} ${formatSignedNumber(bonus.amount)}`)
+    .join(", ");
+}
+
 export default function CharacterCreationWizard({
   step,
   draft,
@@ -158,6 +173,7 @@ export default function CharacterCreationWizard({
 }: Props) {
   const method = draft.attributeGeneration?.method ?? "manual";
   const stepTitles = getStepTitles(labels);
+  const classModifiersText = formatClassAttributeModifiers(selectedClass);
 
   return (
     <section style={panelStyle}>
@@ -293,14 +309,12 @@ export default function CharacterCreationWizard({
               <div style={{ marginTop: 4 }}>
                 {selectedClass.description || "No description."}
               </div>
-              {(selectedClass.attributeBonuses?.length ?? 0) > 0 && (
-                <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
-                  Bonuses:{" "}
-                  {selectedClass.attributeBonuses
-                    .map((bonus) => `${bonus.attribute} +${bonus.amount}`)
-                    .join(", ")}
-                </div>
-              )}
+              <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
+                Hit Die: d{selectedClass.hpRule.hitDie}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
+                Modifiers: {classModifiersText}
+              </div>
             </div>
           )}
         </div>
@@ -308,6 +322,20 @@ export default function CharacterCreationWizard({
 
       {step === 2 && (
         <div style={{ display: "grid", gap: 14 }}>
+          {selectedClass && (
+            <div
+              style={{
+                padding: 10,
+                borderRadius: 8,
+                background: "rgba(10, 20, 39, 0.78)",
+                border: "1px solid var(--border-soft)",
+                color: "var(--text-secondary)",
+                fontSize: 14,
+              }}
+            >
+              Class Modifiers: <strong style={{ color: "var(--text-primary)" }}>{classModifiersText}</strong>
+            </div>
+          )}
           <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             Generation Method
             <select
