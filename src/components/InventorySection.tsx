@@ -112,7 +112,7 @@ export default function InventorySection({
               <div>
                 <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>{item.name}</div>
                 <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>
-                  {item.description || item.category || "No description."}
+                  {item.description || "No description."}
                 </div>
               </div>
 

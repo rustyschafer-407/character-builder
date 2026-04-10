@@ -408,6 +408,10 @@ export default function CharacterCreationWizard({
             const canBeChosen = choiceState.canBeChosen;
             const disabled = choiceState.disabled;
 
+            if (!canBeChosen && !isSelected) {
+              return null;
+            }
+
             return (
               <label
                 key={skill.id}
@@ -482,6 +486,10 @@ export default function CharacterCreationWizard({
             const canBeChosen = choiceState.canBeChosen;
             const disabled = choiceState.disabled;
 
+            if (!canBeChosen && !isSelected) {
+              return null;
+            }
+
             return (
               <label
                 key={power.id}
@@ -554,6 +562,10 @@ export default function CharacterCreationWizard({
             const canBeChosen = choiceState.canBeChosen;
             const disabled = choiceState.disabled;
 
+            if (!canBeChosen && !isSelected) {
+              return null;
+            }
+
             return (
               <label
                 key={item.id}
@@ -573,7 +585,7 @@ export default function CharacterCreationWizard({
                 <span>
                   <strong>{item.name}</strong>
                   <div style={{ fontWeight: 400, fontSize: 14, color: "var(--text-secondary)", marginTop: 4 }}>
-                    {item.description || item.category || "Item"}
+                    {item.description || "Item"}
                   </div>
                 </span>
                 <input

@@ -14,6 +14,7 @@ import type {
   ClassDefinition,
   GameData,
 } from "../types/gameData";
+import { syncDerivedAttacks } from "./attackSync";
 import { findCampaign, findClassInCampaign, resolveCampaignAssets } from "./domain";
 
 export function generateId() {
@@ -197,6 +198,10 @@ export function createCharacterFromCampaignAndClass(
 
   const createdAt = new Date().toISOString();
 
+  const powers = makePowers(campaign, cls);
+  const inventory = makeItems();
+  const baseAttacks = makeAttacks(campaign, cls);
+
   return {
     id: generateId(),
     identity: makeIdentity(name),
@@ -209,9 +214,16 @@ export function createCharacterFromCampaignAndClass(
     hp: makeHp(cls, attributes.CON),
     sheet: makeSheetDefaults(),
     skills: makeSkills(campaign),
-    powers: makePowers(campaign, cls),
-    inventory: makeItems(),
-    attacks: makeAttacks(campaign, cls),
+    powers,
+    inventory,
+    attacks: syncDerivedAttacks(
+      {
+        powers,
+        inventory,
+        attacks: baseAttacks,
+      },
+      campaign
+    ),
     levelProgression: makeLevelProgressionDefaults(1),
     createdAt,
     updatedAt: createdAt,

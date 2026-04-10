@@ -2,7 +2,10 @@ import { useMemo, useState } from "react";
 import type {
   AttributeKey,
   CampaignDefinition,
+  ClassItemChoiceRule,
   ClassDefinition,
+  ClassPowerChoiceRule,
+  ClassSkillChoiceRule,
   GameData,
 } from "../types/gameData";
 import type { CharacterCreationDraft } from "../components/CharacterCreationWizard";
@@ -17,16 +20,39 @@ import {
   getSelectedCountForPowerRule,
   getSelectedCountForSkillRule,
 } from "../lib/creationChoiceRules";
+import { syncDerivedAttacks } from "../lib/attackSync";
 import { getClassById, getClassesForCampaign } from "../lib/character";
 
 type AttributeGenerationMethod = "pointBuy" | "randomRoll" | "manual";
+type ClassChoiceRule = ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule;
+
+function getAllowedIds<T extends ClassChoiceRule>(
+  rules: T[],
+  selectedIds: string[],
+  defaultIds: string[] = []
+) {
+  if (rules.length === 0) {
+    return new Set([...selectedIds, ...defaultIds]);
+  }
+
+  return new Set([
+    ...selectedIds,
+    ...defaultIds,
+    ...rules.flatMap((rule) => ruleIds(rule)),
+  ]);
+}
+
+function ruleIds(rule: ClassChoiceRule) {
+  if ("skillIds" in rule) return rule.skillIds;
+  if ("powerIds" in rule) return rule.powerIds;
+  return rule.itemIds;
+}
 
 interface UseCharacterCreationParams {
   gameData: GameData;
   campaignId: string;
   classId: string;
   getCampaignName: (id: string) => string;
-  getClassName: (id: string) => string;
   makeDraftFromCampaignAndClass: (
     gameData: GameData,
     campaignId: string,
@@ -47,7 +73,6 @@ export function useCharacterCreation({
   campaignId,
   classId,
   getCampaignName,
-  getClassName,
   makeDraftFromCampaignAndClass,
   makeBaseAttributes,
   applyClassAttributeModifiers,
@@ -79,13 +104,44 @@ export function useCharacterCreation({
     [creationDraft, gameData]
   );
 
-  const wizardSkills = wizardCampaign ? wizardCampaign.skills : [];
-  const wizardPowers = wizardCampaign ? wizardCampaign.powers : [];
-  const wizardItems = wizardCampaign ? wizardCampaign.items : [];
-
   const wizardSkillChoiceRules = wizardClass?.skillChoiceRules ?? [];
   const wizardPowerChoiceRules = wizardClass?.powerChoiceRules ?? [];
   const wizardItemChoiceRules = wizardClass?.itemChoiceRules ?? [];
+
+  const wizardSkills = useMemo(() => {
+    if (!wizardCampaign || !creationDraft) return [];
+
+    const allowedSkillIds = getAllowedIds(
+      wizardSkillChoiceRules,
+      creationDraft.skills.filter((skill) => skill.proficient).map((skill) => skill.skillId)
+    );
+
+    return wizardCampaign.skills.filter((skill) => allowedSkillIds.has(skill.id));
+  }, [creationDraft, wizardCampaign, wizardSkillChoiceRules]);
+
+  const wizardPowers = useMemo(() => {
+    if (!wizardCampaign || !creationDraft) return [];
+
+    const allowedPowerIds = getAllowedIds(
+      wizardPowerChoiceRules,
+      creationDraft.powers.flatMap((power) => (power.powerId ? [power.powerId] : [])),
+      wizardClass?.defaultPowerIds ?? []
+    );
+
+    return wizardCampaign.powers.filter((power) => allowedPowerIds.has(power.id));
+  }, [creationDraft, wizardCampaign, wizardClass?.defaultPowerIds, wizardPowerChoiceRules]);
+
+  const wizardItems = useMemo(() => {
+    if (!wizardCampaign || !creationDraft) return [];
+
+    const allowedItemIds = getAllowedIds(
+      wizardItemChoiceRules,
+      creationDraft.inventory.flatMap((item) => (item.itemId ? [item.itemId] : [])),
+      wizardClass?.defaultItemIds ?? []
+    );
+
+    return wizardCampaign.items.filter((item) => allowedItemIds.has(item.id));
+  }, [creationDraft, wizardCampaign, wizardClass?.defaultItemIds, wizardItemChoiceRules]);
 
   const wizardPointBuyTotal =
     creationDraft?.attributeGeneration?.pointBuyTotal ??
@@ -107,7 +163,7 @@ export function useCharacterCreation({
       gameData,
       defaultCampaignId,
       defaultClassId,
-      `${getClassName(defaultClassId)} ${getCampaignName(defaultCampaignId)} Character`
+      `${getCampaignName(defaultCampaignId)} Character`
     );
 
     if (!draft) return;
@@ -264,13 +320,36 @@ export function useCharacterCreation({
             source: "wizard-choice",
           },
         ],
+        attacks: syncDerivedAttacks(
+          {
+            ...creationDraft,
+            powers: [
+              ...creationDraft.powers,
+              {
+                powerId: power.id,
+                name: power.name,
+                notes: power.description,
+                source: "wizard-choice",
+              },
+            ],
+          },
+          wizardCampaign
+        ),
       });
       return;
     }
 
+    const nextPowers = creationDraft.powers.filter((p) => p.powerId !== powerId);
     setCreationDraft({
       ...creationDraft,
-      powers: creationDraft.powers.filter((p) => p.powerId !== powerId),
+      powers: nextPowers,
+      attacks: syncDerivedAttacks(
+        {
+          ...creationDraft,
+          powers: nextPowers,
+        },
+        wizardCampaign
+      ),
     });
   }
 
@@ -310,13 +389,38 @@ export function useCharacterCreation({
             source: "wizard-choice",
           },
         ],
+        attacks: syncDerivedAttacks(
+          {
+            ...creationDraft,
+            inventory: [
+              ...creationDraft.inventory,
+              {
+                itemId: item.id,
+                name: item.name,
+                quantity: item.defaultQuantity ?? 1,
+                notes: item.description,
+                equipped: false,
+                source: "wizard-choice",
+              },
+            ],
+          },
+          wizardCampaign
+        ),
       });
       return;
     }
 
+    const nextInventory = creationDraft.inventory.filter((i) => i.itemId !== itemId);
     setCreationDraft({
       ...creationDraft,
-      inventory: creationDraft.inventory.filter((i) => i.itemId !== itemId),
+      inventory: nextInventory,
+      attacks: syncDerivedAttacks(
+        {
+          ...creationDraft,
+          inventory: nextInventory,
+        },
+        wizardCampaign
+      ),
     });
   }
 

@@ -151,7 +151,7 @@ function loadCharactersWithDefaultSheets(): CharacterRecord[] {
 export default function App() {
   const [gameData, setGameData] = useState<GameData>(() => appStorage.loadGameData(seedGameData));
   const [characters, setCharacters] = useState<CharacterRecord[]>(() => loadCharactersWithDefaultSheets());
-  const [selectedId, setSelectedId] = useState(() => characters[0]?.id ?? "");
+  const [selectedId, setSelectedId] = useState("");
   const [campaignId, setCampaignId] = useState(() => appStorage.loadGameData(seedGameData).campaigns[0]?.id ?? "");
   const [classId, setClassId] = useState("");
   useEffect(() => {
@@ -172,7 +172,7 @@ export default function App() {
         character.id === selectedId && character.campaignId === nextCampaignId
     );
 
-    if (!currentlyVisible) {
+    if (selectedId && !currentlyVisible) {
       setSelectedId(getFirstVisibleCharacterId(characters, nextCampaignId));
     }
   }
@@ -258,7 +258,6 @@ export default function App() {
     campaignId,
     classId,
     getCampaignName,
-    getClassName,
     makeDraftFromCampaignAndClass,
     makeBaseAttributes,
     applyClassAttributeModifiers,
@@ -276,10 +275,8 @@ export default function App() {
     : null;
 
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
-  const classesForSelectedCampaign = getClassesForCampaign(gameData, campaignId);
 
   const filteredCharacters = characters.filter((character) => character.campaignId === campaignId);
-
   const selectedSkills = selectedCampaign ? selectedCampaign.skills : [];
 
   const selectedPowers = selectedCampaign ? selectedCampaign.powers : [];
@@ -512,14 +509,11 @@ export default function App() {
       ) : (
         <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           <Sidebar
-            classesForSelectedCampaign={classesForSelectedCampaign}
             characters={filteredCharacters}
             selectedId={selectedId}
-            newClassId={classId}
             onSelect={setSelectedId}
             onCreate={openWizard}
             onDelete={deleteCharacter}
-            onClassChange={setClassId}
             getCampaignName={getCampaignName}
             getClassName={getClassName}
           />
@@ -575,7 +569,9 @@ export default function App() {
                 flex: 1,
               }}
             >
-              <p style={{ margin: 0, ...mutedTextStyle }}>Create a character to begin.</p>
+              <p style={{ margin: 0, ...mutedTextStyle }}>
+                Select a character from the sidebar, or create a new one to get started.
+              </p>
             </div>
           ) : (
             <SelectedCharacterWorkspace

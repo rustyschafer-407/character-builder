@@ -24,6 +24,7 @@ import {
   sectionTitleStyle,
 } from "./uiStyles";
 import { generateId } from "../lib/character";
+import { syncCampaignDerivedAttackTemplates } from "../lib/derivedAttacks";
 
 interface Props {
   gameData: GameData;
@@ -102,7 +103,7 @@ function makeBlankPower(): PowerDefinition {
     name: "New Power",
     description: "",
     tags: [],
-    category: "",
+    isAttack: false,
     sourceText: "",
   };
 }
@@ -112,7 +113,7 @@ function makeBlankItem(): ItemDefinition {
     id: `item-${Date.now()}`,
     name: "New Item",
     description: "",
-    category: "gear",
+    isAttack: false,
     stackable: false,
     defaultQuantity: 1,
     tags: [],
@@ -230,6 +231,7 @@ export default function AdminScreen({
   const [selectedPowerId, setSelectedPowerId] = useState<string>("");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedAttackId, setSelectedAttackId] = useState<string>("");
+  const [duplicateCampaignNoticeName, setDuplicateCampaignNoticeName] = useState<string | null>(null);
   const lastHandledSaveVersion = useRef(saveRequestVersion);
 
   const selectedCampaign =
@@ -283,6 +285,7 @@ export default function AdminScreen({
       campaigns: [...workingData.campaigns, duplicate],
     });
     setTab("campaign");
+    setDuplicateCampaignNoticeName(duplicate.name);
   }
 
   function deleteActiveCampaign() {
@@ -389,21 +392,21 @@ export default function AdminScreen({
 
   function updatePower(updatedPower: PowerDefinition) {
     if (!selectedCampaign) return;
-    updateCampaign({
+    updateCampaign(syncCampaignDerivedAttackTemplates({
       ...selectedCampaign,
       powers: selectedCampaign.powers.map((power) =>
         power.id === updatedPower.id ? updatedPower : power
       ),
-    });
+    }));
   }
 
   function addPower() {
     if (!selectedCampaign) return;
     const newPower = makeBlankPower();
-    updateCampaign({
+    updateCampaign(syncCampaignDerivedAttackTemplates({
       ...selectedCampaign,
       powers: [...selectedCampaign.powers, newPower],
-    });
+    }));
     setSelectedPowerId(newPower.id);
     setTab("powers");
   }
@@ -413,30 +416,30 @@ export default function AdminScreen({
     const power = selectedCampaign.powers.find((value) => value.id === id);
     const displayName = power?.name || "this power";
     if (!window.confirm(`Delete ${displayName}?`)) return;
-    updateCampaign({
+    updateCampaign(syncCampaignDerivedAttackTemplates({
       ...selectedCampaign,
       powers: selectedCampaign.powers.filter((value) => value.id !== id),
-    });
+    }));
     setSelectedPowerId("");
   }
 
   function updateItem(updatedItem: ItemDefinition) {
     if (!selectedCampaign) return;
-    updateCampaign({
+    updateCampaign(syncCampaignDerivedAttackTemplates({
       ...selectedCampaign,
       items: selectedCampaign.items.map((item) =>
         item.id === updatedItem.id ? updatedItem : item
       ),
-    });
+    }));
   }
 
   function addItem() {
     if (!selectedCampaign) return;
     const newItem = makeBlankItem();
-    updateCampaign({
+    updateCampaign(syncCampaignDerivedAttackTemplates({
       ...selectedCampaign,
       items: [...selectedCampaign.items, newItem],
-    });
+    }));
     setSelectedItemId(newItem.id);
     setTab("items");
   }
@@ -446,10 +449,10 @@ export default function AdminScreen({
     const item = selectedCampaign.items.find((value) => value.id === id);
     const displayName = item?.name || "this item";
     if (!window.confirm(`Delete ${displayName}?`)) return;
-    updateCampaign({
+    updateCampaign(syncCampaignDerivedAttackTemplates({
       ...selectedCampaign,
       items: selectedCampaign.items.filter((value) => value.id !== id),
-    });
+    }));
     setSelectedItemId("");
   }
 
@@ -659,17 +662,15 @@ export default function AdminScreen({
   }
 
   return (
-    <section style={{ ...panelStyle, display: "flex", flexDirection: "column", height: "70vh", width: "100%", overflow: "hidden" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexShrink: 0 }}>
+    <>
+      <section style={{ ...panelStyle, display: "flex", flexDirection: "column", height: "70vh", width: "100%", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexShrink: 0 }}>
         <h2 style={sectionTitleStyle}>Admin Screen</h2>
-      </div>
+        </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto" }}>
         <button onClick={() => setTab("campaign")} style={{ ...buttonStyle, background: tab === "campaign" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Campaign
-        </button>
-        <button onClick={() => setTab("classes")} style={{ ...buttonStyle, background: tab === "classes" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
-          Classes
         </button>
         <button onClick={() => setTab("skills")} style={{ ...buttonStyle, background: tab === "skills" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Skills
@@ -683,7 +684,10 @@ export default function AdminScreen({
         <button onClick={() => setTab("attacks")} style={{ ...buttonStyle, background: tab === "attacks" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Attacks
         </button>
-      </div>
+        <button onClick={() => setTab("classes")} style={{ ...buttonStyle, background: tab === "classes" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+          Classes
+        </button>
+        </div>
 
       {tab === "campaign" && (
         <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
@@ -1440,11 +1444,12 @@ export default function AdminScreen({
                         />
                       </label>
                       <label style={labelTextStyle}>
-                        Category
+                        Is Attack
                         <input
-                          value={selectedPower.category ?? ""}
-                          onChange={(e) => updatePower({ ...selectedPower, category: e.target.value })}
-                          style={inputStyle}
+                          type="checkbox"
+                          checked={Boolean(selectedPower.isAttack)}
+                          onChange={(e) => updatePower({ ...selectedPower, isAttack: e.target.checked })}
+                          style={{ marginLeft: 8 }}
                         />
                       </label>
                     </div>
@@ -1500,11 +1505,12 @@ export default function AdminScreen({
                         />
                       </label>
                       <label style={labelTextStyle}>
-                        Category
+                        Is Attack
                         <input
-                          value={selectedItem.category ?? ""}
-                          onChange={(e) => updateItem({ ...selectedItem, category: e.target.value })}
-                          style={inputStyle}
+                          type="checkbox"
+                          checked={Boolean(selectedItem.isAttack)}
+                          onChange={(e) => updateItem({ ...selectedItem, isAttack: e.target.checked })}
+                          style={{ marginLeft: 8 }}
                         />
                       </label>
                     </div>
@@ -1643,6 +1649,47 @@ export default function AdminScreen({
           </div>
         )
       )}
-    </section>
+      </section>
+
+      {duplicateCampaignNoticeName ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(2, 6, 16, 0.6)",
+            display: "grid",
+            placeItems: "center",
+            padding: 20,
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              ...panelStyle,
+              width: "min(520px, 100%)",
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Campaign Duplicated</h3>
+            <p style={{ margin: 0, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              <strong style={{ color: "var(--text-primary)" }}>{duplicateCampaignNoticeName}</strong> was created.
+              Select the new campaign from the dropdown to start editing it.
+            </p>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                style={buttonStyle}
+                onClick={() => setDuplicateCampaignNoticeName(null)}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }

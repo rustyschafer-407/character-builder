@@ -59,7 +59,7 @@ export default function SheetFieldsSection({
 
   return (
     <section style={panelStyle}>
-      <h2 style={sectionTitleStyle}>Sheet Fields</h2>
+      <h2 style={sectionTitleStyle}>Core</h2>
 
       <div
         style={{

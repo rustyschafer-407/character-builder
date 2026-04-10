@@ -19,7 +19,6 @@ import InventorySection from "./InventorySection";
 import AttacksSection from "./AttacksSection";
 import LevelUpWizard from "./LevelUpWizard";
 import Roll20ExportPanel from "./Roll20ExportPanel";
-import { buttonStyle, panelStyle } from "./uiStyles";
 
 interface SelectedCharacterWorkspaceProps {
   character: CharacterRecord;
@@ -159,17 +158,6 @@ export default function SelectedCharacterWorkspace({
 
   return (
     <div style={{ flex: 1, display: "grid", gap: 24 }}>
-      <section style={panelStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ color: "var(--text-secondary)" }}>
-            Advance this character to the next class level progression step.
-          </div>
-          <button onClick={onOpenLevelUpWizard} style={buttonStyle}>
-            Level Up
-          </button>
-        </div>
-      </section>
-
       <IdentitySection
         character={character}
         campaignName={selectedCampaignName}
@@ -178,6 +166,7 @@ export default function SelectedCharacterWorkspace({
         levelLabel={labels.level}
         hpLabel={labels.hp}
         onNameChange={onNameChange}
+        onOpenLevelUpWizard={onOpenLevelUpWizard}
       />
 
       <AttributesSection

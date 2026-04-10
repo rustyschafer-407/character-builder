@@ -33,6 +33,8 @@ export interface CharacterSkillSelection {
 export interface CharacterAttack {
   id: string;
   templateId?: string;
+  derivedFromType?: "power" | "item";
+  derivedFromId?: string;
   name: string;
   attribute: AttributeKey;
   damage: string;

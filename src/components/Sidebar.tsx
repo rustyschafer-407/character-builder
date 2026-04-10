@@ -1,36 +1,27 @@
 import type { CharacterRecord } from "../types/character";
-import type { ClassDefinition } from "../types/gameData";
 import {
   dangerButtonStyle,
-  inputStyle,
-  labelTextStyle,
   mutedTextStyle,
   panelStyle,
   primaryButtonStyle,
 } from "./uiStyles";
 
 interface Props {
-  classesForSelectedCampaign: ClassDefinition[];
   characters: CharacterRecord[];
   selectedId: string;
-  newClassId: string;
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
-  onClassChange: (id: string) => void;
   getCampaignName: (campaignId: string) => string;
   getClassName: (classId: string) => string;
 }
 
 export default function Sidebar({
-  classesForSelectedCampaign,
   characters,
   selectedId,
-  newClassId,
   onSelect,
   onCreate,
   onDelete,
-  onClassChange,
   getCampaignName,
   getClassName,
 }: Props) {
@@ -43,46 +34,36 @@ export default function Sidebar({
     >
       <h2 style={{ marginTop: 0, marginBottom: 16, color: "var(--text-primary)" }}>Characters</h2>
 
-      <div style={{ display: "grid", gap: 12 }}>
-        <div
+      <div style={{ display: "flex", gap: 6 }}>
+        <button
+          onClick={onCreate}
           style={{
-            padding: 10,
-            borderRadius: 10,
-            border: "1px solid var(--accent-primary)",
-            background: "rgba(73, 224, 255, 0.08)",
-            display: "grid",
-            gap: 8,
+            ...primaryButtonStyle,
+            flex: 1,
+            justifyContent: "center",
+            padding: "12px 14px",
+            fontSize: 15,
+            fontWeight: 800,
+            letterSpacing: "0.01em",
+            boxShadow: "0 8px 18px rgba(73, 224, 255, 0.2)",
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 700, color: "var(--text-secondary)", letterSpacing: "0.04em" }}>
-            NEW CHARACTER SETUP
-          </div>
+          New Character
+        </button>
 
-          <label style={labelTextStyle}>
-            Class
-            <select
-              value={newClassId}
-              onChange={(e) => onClassChange(e.target.value)}
-              style={inputStyle}
-            >
-              {classesForSelectedCampaign.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <button
-            onClick={onCreate}
-            style={primaryButtonStyle}
-          >
-            New Character
-          </button>
+        <div
+          aria-hidden
+          style={{
+            ...dangerButtonStyle,
+            visibility: "hidden",
+            pointerEvents: "none",
+          }}
+        >
+          ✕
         </div>
       </div>
 
-      <div style={{ marginTop: 16, display: "grid", gap: 8 }}>
+      <div style={{ marginTop: 24, display: "grid", gap: 8 }}>
         {characters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
 
         {characters.map((c) => {

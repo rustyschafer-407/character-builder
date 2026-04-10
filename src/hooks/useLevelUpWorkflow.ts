@@ -6,6 +6,7 @@ import {
   getLevelUpHpGain,
   getNextLevelProgressionRow,
 } from "../lib/progression";
+import { syncDerivedAttacks } from "../lib/attackSync";
 import type { CharacterRecord } from "../types/character";
 import type {
   CampaignDefinition,
@@ -224,6 +225,8 @@ export function useLevelUpWorkflow({
       nextLevelProgressionRow.hitDiceGained
     );
 
+    const nextPowers = [...selected.powers, ...addedPowers];
+
     const updated: CharacterRecord = {
       ...selected,
       level: selected.level + 1,
@@ -238,7 +241,14 @@ export function useLevelUpWorkflow({
           ? { ...skill, proficient: true, source: "level-up" }
           : skill
       ),
-      powers: [...selected.powers, ...addedPowers],
+      powers: nextPowers,
+      attacks: syncDerivedAttacks(
+        {
+          ...selected,
+          powers: nextPowers,
+        },
+        selectedCampaign
+      ),
       levelProgression: {
         totalHitDice:
           selected.levelProgression.totalHitDice + nextLevelProgressionRow.hitDiceGained,

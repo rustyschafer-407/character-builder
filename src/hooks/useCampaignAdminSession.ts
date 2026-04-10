@@ -27,6 +27,14 @@ function deriveCampaignSyncState(
 ) {
   const nextCampaignId = resolveActiveCampaignId(nextGameData, preferredCampaignId);
   const nextClassId = getClassesForCampaign(nextGameData, nextCampaignId)[0]?.id ?? "";
+  if (!selectedId) {
+    return {
+      nextCampaignId,
+      nextClassId,
+      nextSelectedId: "",
+    };
+  }
+
   const selectedCharacter = characters.find((character) => character.id === selectedId) ?? null;
   const nextSelectedId =
     !selectedCharacter || selectedCharacter.campaignId !== nextCampaignId

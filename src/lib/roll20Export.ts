@@ -472,9 +472,8 @@ export function buildChatSetAttrPhases(
   }
 
   // Final touch can help the sheet UI repaint consistently after repeating updates.
-  const finalHpCommand =
-    `${setPrefix} ${makePair("hp_max", clean(character.hp.max))} ${makePair("hp_current", clean(character.hp.current))}`
-  ;
+  // This sheet expects max HP via --hp||<max> (empty current, explicit max).
+  const finalHpCommand = `${setPrefix} --hp||'${escapeForChatSetAttr(clean(character.hp.max))}'`;
 
   const phase1Commands = [...baseCommands, finalHpCommand];
   // Some Roll20/API runs drop a few repeating updates on the first pass.

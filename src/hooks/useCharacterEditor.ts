@@ -1,4 +1,5 @@
 import { getRuleForItem, getRuleForPower, getRuleForSkill, getSelectedCountForItemRule, getSelectedCountForPowerRule, getSelectedCountForSkillRule } from "../lib/creationChoiceRules";
+import { syncDerivedAttacks } from "../lib/attackSync";
 import { getFirstVisibleCharacterId } from "../lib/campaigns";
 import type { CharacterRecord } from "../types/character";
 import type { AttributeKey, CampaignDefinition, ClassDefinition } from "../types/gameData";
@@ -112,6 +113,7 @@ export function useCharacterEditor({
   }
 
   function togglePowerWithRules(character: CharacterRecord, powerId: string, nextSelected: boolean) {
+    if (!selectedCampaign) return;
     const power = selectedCampaign?.powers.find((p) => p.id === powerId);
     if (!power) return;
 
@@ -146,17 +148,41 @@ export function useCharacterEditor({
             source: "wizard-choice",
           },
         ],
+        attacks: syncDerivedAttacks(
+          {
+            ...character,
+            powers: [
+              ...character.powers,
+              {
+                powerId: power.id,
+                name: power.name,
+                notes: power.description,
+                source: "wizard-choice",
+              },
+            ],
+          },
+          selectedCampaign
+        ),
       });
       return;
     }
 
+    const nextPowers = character.powers.filter((p) => p.powerId !== powerId);
     updateCharacter({
       ...character,
-      powers: character.powers.filter((p) => p.powerId !== powerId),
+      powers: nextPowers,
+      attacks: syncDerivedAttacks(
+        {
+          ...character,
+          powers: nextPowers,
+        },
+        selectedCampaign
+      ),
     });
   }
 
   function toggleItemWithRules(character: CharacterRecord, itemId: string, nextSelected: boolean) {
+    if (!selectedCampaign) return;
     const item = selectedCampaign?.items.find((i) => i.id === itemId);
     if (!item) return;
 
@@ -193,13 +219,38 @@ export function useCharacterEditor({
             source: "wizard-choice",
           },
         ],
+        attacks: syncDerivedAttacks(
+          {
+            ...character,
+            inventory: [
+              ...character.inventory,
+              {
+                itemId: item.id,
+                name: item.name,
+                quantity: item.defaultQuantity ?? 1,
+                notes: item.description,
+                equipped: false,
+                source: "wizard-choice",
+              },
+            ],
+          },
+          selectedCampaign
+        ),
       });
       return;
     }
 
+    const nextInventory = character.inventory.filter((i) => i.itemId !== itemId);
     updateCharacter({
       ...character,
-      inventory: character.inventory.filter((i) => i.itemId !== itemId),
+      inventory: nextInventory,
+      attacks: syncDerivedAttacks(
+        {
+          ...character,
+          inventory: nextInventory,
+        },
+        selectedCampaign
+      ),
     });
   }
 
@@ -259,7 +310,11 @@ export function useCharacterEditor({
     const remaining = characters.filter((c) => c.id !== id);
     setCharacters(() => remaining);
 
-    if (id === selectedId || !remaining.some((remainingCharacter) => remainingCharacter.id === selectedId)) {
+    if (
+      selectedId &&
+      (id === selectedId ||
+        !remaining.some((remainingCharacter) => remainingCharacter.id === selectedId))
+    ) {
       setSelectedId(getFirstVisibleCharacterId(remaining, campaignId));
     }
   }

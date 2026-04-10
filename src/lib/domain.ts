@@ -179,8 +179,14 @@ function normalizeClassForCampaign(
 export function normalizeCampaignDefinition(campaign: CampaignDefinition): CampaignDefinition {
   const baseAssets = {
     skills: campaign.skills ?? [],
-    powers: campaign.powers ?? [],
-    items: campaign.items ?? [],
+    powers: (campaign.powers ?? []).map((power) => ({
+      ...power,
+      isAttack: Boolean(power.isAttack),
+    })),
+    items: (campaign.items ?? []).map((item) => ({
+      ...item,
+      isAttack: Boolean(item.isAttack),
+    })),
     attacks: campaign.attackTemplates ?? [],
   };
 

@@ -110,7 +110,7 @@ export interface PowerDefinition {
   name: string;
   description?: string;
   tags?: string[];
-  category?: string;
+  isAttack?: boolean;
   sourceText?: string;
 }
 
@@ -118,7 +118,7 @@ export interface ItemDefinition {
   id: string;
   name: string;
   description?: string;
-  category?: string;
+  isAttack?: boolean;
   stackable: boolean;
   defaultQuantity?: number;
   tags?: string[];
@@ -126,6 +126,8 @@ export interface ItemDefinition {
 
 export interface AttackTemplateDefinition {
   id: string;
+  derivedFromType?: "power" | "item";
+  derivedFromId?: string;
   name: string;
   attribute: AttributeKey;
   damage: string;
