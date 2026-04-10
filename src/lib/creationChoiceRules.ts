@@ -111,3 +111,24 @@ export function getItemChoiceState(
     disabled,
   };
 }
+
+export function areSkillRulesSatisfiedExactly(
+  rules: ClassSkillChoiceRule[],
+  selectedSkills: CharacterSkillSelection[]
+) {
+  return rules.every((rule) => getSelectedCountForSkillRule(rule, selectedSkills) === rule.choose);
+}
+
+export function arePowerRulesSatisfiedExactly(
+  rules: ClassPowerChoiceRule[],
+  selectedPowers: CharacterPowerSelection[]
+) {
+  return rules.every((rule) => getSelectedCountForPowerRule(rule, selectedPowers) === rule.choose);
+}
+
+export function areItemRulesSatisfiedAtMost(
+  rules: ClassItemChoiceRule[],
+  selectedItems: CharacterItem[]
+) {
+  return rules.every((rule) => getSelectedCountForItemRule(rule, selectedItems) <= rule.choose);
+}
