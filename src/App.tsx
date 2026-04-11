@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { gameData as seedGameData } from "./data/gameData";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createGameData, gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
   generateId,
@@ -11,6 +11,15 @@ import {
   getFirstVisibleCharacterId,
 } from "./lib/campaigns";
 import { buildChatSetAttrPhases } from "./lib/roll20Export";
+import {
+  deleteCampaignById,
+  deleteCharacterRow,
+  listAllCharacterRows,
+  listCampaignRows,
+  upsertCampaignBySlug,
+  upsertCharacterRow,
+} from "./lib/cloudRepository";
+import { hasSupabaseEnv } from "./lib/supabaseClient";
 import { appStorage } from "./storage/appStorage";
 import type { CharacterRecord } from "./types/character";
 import type {
@@ -149,11 +158,19 @@ function loadCharactersWithDefaultSheets(): CharacterRecord[] {
 }
 
 export default function App() {
+  const cloudEnabled = hasSupabaseEnv();
   const [gameData, setGameData] = useState<GameData>(() => appStorage.loadGameData(seedGameData));
   const [characters, setCharacters] = useState<CharacterRecord[]>(() => loadCharactersWithDefaultSheets());
   const [selectedId, setSelectedId] = useState("");
   const [campaignId, setCampaignId] = useState(() => appStorage.loadGameData(seedGameData).campaigns[0]?.id ?? "");
   const [classId, setClassId] = useState("");
+  const [cloudReady, setCloudReady] = useState(!cloudEnabled);
+  const [cloudStatus, setCloudStatus] = useState(
+    cloudEnabled ? "Connecting to cloud..." : "Local storage mode"
+  );
+  const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
+  const cloudInitDoneRef = useRef(false);
+
   useEffect(() => {
     appStorage.saveCharacters(characters);
   }, [characters]);
@@ -161,6 +178,180 @@ export default function App() {
   useEffect(() => {
     appStorage.saveGameData(gameData);
   }, [gameData]);
+
+  useEffect(() => {
+    if (!cloudEnabled || cloudInitDoneRef.current) return;
+
+    let isCancelled = false;
+
+    async function initializeCloud() {
+      try {
+        setCloudStatus("Syncing from cloud...");
+
+        let campaignRows = await listCampaignRows();
+
+        // First run bootstrap: seed cloud with current local campaigns.
+        if (campaignRows.length === 0) {
+          for (const campaign of gameData.campaigns) {
+            await upsertCampaignBySlug({
+              slug: campaign.id,
+              name: campaign.name,
+              campaign,
+            });
+          }
+          campaignRows = await listCampaignRows();
+        }
+
+        if (isCancelled) return;
+
+        const nextCampaignMap = Object.fromEntries(
+          campaignRows.map((row) => [row.data.id, row.id])
+        );
+        setCampaignRowIdsByAppId(nextCampaignMap);
+
+        if (campaignRows.length > 0) {
+          const nextGameData = createGameData({
+            campaigns: campaignRows.map((row) => row.data),
+          });
+
+          setGameData(nextGameData);
+          setCampaignId((current) =>
+            nextGameData.campaigns.some((campaign) => campaign.id === current)
+              ? current
+              : nextGameData.campaigns[0]?.id ?? ""
+          );
+
+          const characterRows = await listAllCharacterRows();
+          if (isCancelled) return;
+
+          const nextCharacters = characterRows
+            .map((row) => row.data)
+            .map((character) =>
+              character.sheet
+                ? character
+                : {
+                    ...character,
+                    sheet: makeDefaultSheet(),
+                  }
+            );
+
+          setCharacters(nextCharacters);
+          setSelectedId((current) =>
+            nextCharacters.some((character) => character.id === current) ? current : ""
+          );
+        }
+
+        setCloudStatus("Cloud sync active");
+      } catch (error) {
+        console.error("Failed to initialize cloud sync", error);
+        if (!isCancelled) {
+          setCloudStatus("Cloud unavailable, using local data");
+        }
+      } finally {
+        if (!isCancelled) {
+          cloudInitDoneRef.current = true;
+          setCloudReady(true);
+        }
+      }
+    }
+
+    void initializeCloud();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [cloudEnabled]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !cloudReady) return;
+
+    let isCancelled = false;
+
+    async function syncCampaignsToCloud() {
+      try {
+        const existingRows = await listCampaignRows();
+        const expectedSlugs = new Set(gameData.campaigns.map((campaign) => campaign.id));
+        const nextCampaignMap: Record<string, string> = {};
+
+        for (const campaign of gameData.campaigns) {
+          const row = await upsertCampaignBySlug({
+            slug: campaign.id,
+            name: campaign.name,
+            campaign,
+          });
+          nextCampaignMap[campaign.id] = row.id;
+        }
+
+        for (const row of existingRows) {
+          if (!expectedSlugs.has(row.slug)) {
+            await deleteCampaignById(row.id);
+          }
+        }
+
+        if (!isCancelled) {
+          setCampaignRowIdsByAppId(nextCampaignMap);
+          setCloudStatus("Cloud sync active");
+        }
+      } catch (error) {
+        console.error("Failed to sync campaigns to cloud", error);
+        if (!isCancelled) {
+          setCloudStatus("Cloud campaign sync failed (see console)");
+        }
+      }
+    }
+
+    void syncCampaignsToCloud();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [cloudEnabled, cloudReady, gameData]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !cloudReady) return;
+
+    const knownCampaignRowIds = new Set(Object.values(campaignRowIdsByAppId));
+    if (knownCampaignRowIds.size === 0) return;
+
+    let isCancelled = false;
+
+    async function syncCharactersToCloud() {
+      try {
+        for (const character of characters) {
+          const campaignRowId = campaignRowIdsByAppId[character.campaignId];
+          if (!campaignRowId) continue;
+          await upsertCharacterRow({
+            campaignId: campaignRowId,
+            character,
+          });
+        }
+
+        const remoteRows = await listAllCharacterRows();
+        const localCharacterIds = new Set(characters.map((character) => character.id));
+
+        for (const row of remoteRows) {
+          if (knownCampaignRowIds.has(row.campaign_id) && !localCharacterIds.has(row.id)) {
+            await deleteCharacterRow(row.id);
+          }
+        }
+
+        if (!isCancelled) {
+          setCloudStatus("Cloud sync active");
+        }
+      } catch (error) {
+        console.error("Failed to sync characters to cloud", error);
+        if (!isCancelled) {
+          setCloudStatus("Cloud character sync failed (see console)");
+        }
+      }
+    }
+
+    void syncCharactersToCloud();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [campaignRowIdsByAppId, characters, cloudEnabled, cloudReady]);
 
   function handleCampaignChange(nextCampaignId: string) {
     setCampaignId(nextCampaignId);
@@ -493,6 +684,9 @@ export default function App() {
               </option>
             ))}
           </select>
+          <div style={{ marginTop: 6, fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>
+            {cloudStatus}
+          </div>
         </label>
       </div>
 
