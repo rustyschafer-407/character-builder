@@ -79,7 +79,9 @@ export default function SkillsSection({
           const skill = character.skills.find((x) => x.skillId === s.id);
           if (!skill) return null;
 
-          const base = getAttributeModifier(character.attributes[s.attribute]);
+          const skillAttribute = skill.attribute ?? s.attribute;
+
+          const base = getAttributeModifier(character.attributes[skillAttribute]);
           const total =
             base +
             (skill.proficient ? character.proficiencyBonus : 0) +
@@ -107,7 +109,7 @@ export default function SkillsSection({
               }}
             >
               <div style={{ color: "var(--text-primary)" }}>
-                <strong>{s.name}</strong> ({s.attribute})
+                <strong>{s.name}</strong> ({skillAttribute})
               </div>
 
               <label style={{ color: "#b9cdf0", fontSize: 14 }}>

@@ -46,6 +46,7 @@ interface SelectedCharacterWorkspaceProps {
   nextAttributeBonuses: AttributeBonusRule[];
   nextNewSkillChoices: number;
   nextNewPowerChoices: number;
+  nextProficiencyBonus?: number;
   availableLevelUpSkills: SkillDefinition[];
   availableLevelUpPowers: PowerDefinition[];
   onOpenLevelUpWizard: () => void;
@@ -101,6 +102,7 @@ export default function SelectedCharacterWorkspace({
   nextAttributeBonuses,
   nextNewSkillChoices,
   nextNewPowerChoices,
+  nextProficiencyBonus,
   availableLevelUpSkills,
   availableLevelUpPowers,
   onOpenLevelUpWizard,
@@ -141,6 +143,7 @@ export default function SelectedCharacterWorkspace({
           attributeBonuses={nextAttributeBonuses}
           newSkillChoices={nextNewSkillChoices}
           newPowerChoices={nextNewPowerChoices}
+          proficiencyBonusOverride={nextProficiencyBonus}
           availableSkillChoices={availableLevelUpSkills}
           availablePowerChoices={availableLevelUpPowers}
           selectedSkillIds={levelUpSkillSelections}

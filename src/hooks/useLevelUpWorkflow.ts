@@ -16,6 +16,10 @@ import type {
   SkillDefinition,
 } from "../types/gameData";
 
+function sortByName<T extends { name: string }>(items: T[]) {
+  return [...items].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 interface UseLevelUpWorkflowParams {
   selected: CharacterRecord | null;
   selectedCampaign: CampaignDefinition | null;
@@ -71,6 +75,9 @@ export function useLevelUpWorkflow({
       )
     : [];
 
+  const sortedAvailableLevelUpSkills = sortByName(availableLevelUpSkills);
+  const sortedAvailableLevelUpPowers = sortByName(availableLevelUpPowers);
+
   function openLevelUpWizard() {
     if (!selected || !selectedClass) return;
 
@@ -121,7 +128,7 @@ export function useLevelUpWorkflow({
     if (nextSelected) {
       if (levelUpSkillSelections.includes(skillId)) return;
       if (levelUpSkillSelections.length >= maxChoices) return;
-      if (!availableLevelUpSkills.some((skill) => skill.id === skillId)) return;
+      if (!sortedAvailableLevelUpSkills.some((skill) => skill.id === skillId)) return;
       setLevelUpSkillSelections((prev) => [...prev, skillId]);
       return;
     }
@@ -136,7 +143,7 @@ export function useLevelUpWorkflow({
     if (nextSelected) {
       if (levelUpPowerSelections.includes(powerId)) return;
       if (levelUpPowerSelections.length >= maxChoices) return;
-      if (!availableLevelUpPowers.some((power) => power.id === powerId)) return;
+      if (!sortedAvailableLevelUpPowers.some((power) => power.id === powerId)) return;
       setLevelUpPowerSelections((prev) => [...prev, powerId]);
       return;
     }
@@ -161,8 +168,8 @@ export function useLevelUpWorkflow({
       return;
     }
 
-    const availableSkillIdSet = new Set(availableLevelUpSkills.map((skill) => skill.id));
-    const availablePowerIdSet = new Set(availableLevelUpPowers.map((power) => power.id));
+    const availableSkillIdSet = new Set(sortedAvailableLevelUpSkills.map((skill) => skill.id));
+    const availablePowerIdSet = new Set(sortedAvailableLevelUpPowers.map((power) => power.id));
 
     if (levelUpSkillSelections.some((skillId) => !availableSkillIdSet.has(skillId))) {
       alert("One or more selected skills are no longer valid for this level-up.");
@@ -230,6 +237,9 @@ export function useLevelUpWorkflow({
     const updated: CharacterRecord = {
       ...selected,
       level: selected.level + 1,
+      proficiencyBonus: Number.isFinite(nextLevelProgressionRow.proficiencyBonus)
+        ? Math.max(0, Math.floor(Number(nextLevelProgressionRow.proficiencyBonus)))
+        : selected.proficiencyBonus,
       attributes: nextAttributes,
       hp: {
         ...selected.hp,
@@ -276,8 +286,8 @@ export function useLevelUpWorkflow({
     levelUpPowerSelections,
     levelUpMissingRowMessage,
     nextLevelProgressionRow,
-    availableLevelUpSkills,
-    availableLevelUpPowers,
+    availableLevelUpSkills: sortedAvailableLevelUpSkills,
+    availableLevelUpPowers: sortedAvailableLevelUpPowers,
     openLevelUpWizard,
     closeLevelUpWizard,
     toggleLevelUpSkill,

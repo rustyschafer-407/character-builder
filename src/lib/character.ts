@@ -27,7 +27,7 @@ export function getAttributeModifier(score: number) {
 
 export function getClassesForCampaign(gameData: GameData, campaignId: string) {
   const campaign = findCampaign(gameData, campaignId);
-  return resolveCampaignAssets(campaign).classes;
+  return [...resolveCampaignAssets(campaign).classes].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getClassById(gameData: GameData, classId: string) {
@@ -92,7 +92,7 @@ function makeHp(cls: ClassDefinition, conScore: number): CharacterHp {
 
   // Character creation is always max hit die at level 1.
   // Class HP rules are still used for future level-up gains.
-  const max = hitDie + conMod;
+  const max = Math.max(1, hitDie + conMod);
 
   return {
     max,
@@ -149,6 +149,7 @@ function makeLevelProgressionDefaults(level: number): CharacterRecord["levelProg
 function makeSkills(campaign: CampaignDefinition): CharacterSkillSelection[] {
   return campaign.skills.map((skill) => ({
     skillId: skill.id,
+    attribute: skill.attribute,
     proficient: false,
     bonus: 0,
     source: "campaign",
