@@ -65,7 +65,9 @@ function getPointBuySpent(attributes: Record<AttributeKey, number>) {
 }
 
 function sortByName<T extends { name: string }>(items: T[]) {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name));
+  return [...items].sort((a, b) =>
+    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+  );
 }
 
 function makeBaseAttributes(): Record<AttributeKey, number> {

@@ -153,7 +153,9 @@ function sortLevelProgression(rows: ClassLevelProgressionRow[]) {
 }
 
 function sortByName<T extends { name: string }>(items: T[]) {
-  return [...items].sort((a, b) => a.name.localeCompare(b.name));
+  return [...items].sort((a, b) =>
+    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+  );
 }
 
 function formatBonusSummary(bonuses: AttributeBonusRule[]) {

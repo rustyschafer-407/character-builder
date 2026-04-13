@@ -28,7 +28,7 @@ export default function Sidebar({
   const sortedCharacters = [...characters].sort((a, b) => {
     const aName = a.identity.name?.trim() || "Unnamed Character";
     const bName = b.identity.name?.trim() || "Unnamed Character";
-    return aName.localeCompare(bName);
+    return aName.localeCompare(bName, undefined, { sensitivity: "base" });
   });
 
   return (
