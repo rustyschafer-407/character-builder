@@ -246,6 +246,7 @@ export default function AdminScreen({
   const selectedPower = selectedCampaign?.powers.find((power) => power.id === selectedPowerId) ?? null;
   const selectedItem = selectedCampaign?.items.find((item) => item.id === selectedItemId) ?? null;
   const selectedAttack = selectedCampaign?.attackTemplates.find((attack) => attack.id === selectedAttackId) ?? null;
+  const sortedCampaignClasses = selectedCampaign ? sortByName(selectedCampaign.classes) : [];
   const sortedCampaignSkills = selectedCampaign ? sortByName(selectedCampaign.skills) : [];
   const sortedCampaignPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
   const sortedCampaignItems = selectedCampaign ? sortByName(selectedCampaign.items) : [];
@@ -773,7 +774,7 @@ export default function AdminScreen({
             <EntityListEditor
               title={`Classes (${selectedCampaign.name})`}
               helper="Classes belong to the selected campaign."
-              items={selectedCampaign.classes}
+              items={sortedCampaignClasses}
               selectedId={selectedClassId}
               onSelect={setSelectedClassId}
               onAdd={addClass}

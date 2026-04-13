@@ -25,6 +25,12 @@ export default function Sidebar({
   getCampaignName,
   getClassName,
 }: Props) {
+  const sortedCharacters = [...characters].sort((a, b) => {
+    const aName = a.identity.name?.trim() || "Unnamed Character";
+    const bName = b.identity.name?.trim() || "Unnamed Character";
+    return aName.localeCompare(bName);
+  });
+
   return (
     <aside
       style={{
@@ -64,9 +70,9 @@ export default function Sidebar({
       </div>
 
       <div style={{ marginTop: 24, display: "grid", gap: 8 }}>
-        {characters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
+        {sortedCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
 
-        {characters.map((c) => {
+        {sortedCharacters.map((c) => {
           const isSelected = c.id === selectedId;
           const displayName = c.identity.name?.trim() || "Unnamed Character";
 

@@ -27,7 +27,7 @@ export function getAttributeModifier(score: number) {
 
 export function getClassesForCampaign(gameData: GameData, campaignId: string) {
   const campaign = findCampaign(gameData, campaignId);
-  return resolveCampaignAssets(campaign).classes;
+  return [...resolveCampaignAssets(campaign).classes].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export function getClassById(gameData: GameData, classId: string) {
