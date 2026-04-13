@@ -96,7 +96,7 @@ function normalizeProgressionRows(
   const rawRows = rows && rows.length > 0
     ? rows
     : [{
-        level: 1,
+        level: 2,
         hitDiceGained: 1,
         hpGainMode: "half" as LevelProgressionHpGainMode,
         newSkillChoices: 0,
@@ -114,6 +114,9 @@ function normalizeProgressionRows(
         row.hpGainMode === "full" || row.hpGainMode === "random" || row.hpGainMode === "half"
           ? row.hpGainMode
           : "half",
+      proficiencyBonus: Number.isFinite(row.proficiencyBonus)
+        ? Math.max(0, Math.floor(Number(row.proficiencyBonus)))
+        : undefined,
       newSkillChoices: Number.isFinite(row.newSkillChoices)
         ? Math.max(0, Math.floor(row.newSkillChoices))
         : 0,

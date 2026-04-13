@@ -73,6 +73,7 @@ export interface ClassLevelProgressionRow {
   level: number;
   hitDiceGained: number;
   hpGainMode?: LevelProgressionHpGainMode;
+  proficiencyBonus?: number;
   newSkillChoices: number;
   newPowerChoices: number;
   attributeBonuses: AttributeBonusRule[];

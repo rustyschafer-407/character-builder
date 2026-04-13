@@ -26,6 +26,21 @@ import { getClassById, getClassesForCampaign } from "../lib/character";
 type AttributeGenerationMethod = "pointBuy" | "randomRoll" | "manual";
 type ClassChoiceRule = ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule;
 
+function sortByName<T extends { name: string }>(items: T[]) {
+  return [...items].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function getAttributeModifier(score: number) {
+  return Math.floor((score - 10) / 2);
+}
+
+function getDraftHpForCon(hitDie: number, conScore: number) {
+  const nextMax = Math.max(1, hitDie + getAttributeModifier(conScore));
+  return {
+    max: nextMax,
+  };
+}
+
 function getAllowedIds<T extends ClassChoiceRule>(
   rules: T[],
   selectedIds: string[],
@@ -116,7 +131,7 @@ export function useCharacterCreation({
       creationDraft.skills.filter((skill) => skill.proficient).map((skill) => skill.skillId)
     );
 
-    return wizardCampaign.skills.filter((skill) => allowedSkillIds.has(skill.id));
+    return sortByName(wizardCampaign.skills.filter((skill) => allowedSkillIds.has(skill.id)));
   }, [creationDraft, wizardCampaign, wizardSkillChoiceRules]);
 
   const wizardPowers = useMemo(() => {
@@ -128,7 +143,7 @@ export function useCharacterCreation({
       wizardClass?.defaultPowerIds ?? []
     );
 
-    return wizardCampaign.powers.filter((power) => allowedPowerIds.has(power.id));
+    return sortByName(wizardCampaign.powers.filter((power) => allowedPowerIds.has(power.id)));
   }, [creationDraft, wizardCampaign, wizardClass?.defaultPowerIds, wizardPowerChoiceRules]);
 
   const wizardItems = useMemo(() => {
@@ -140,7 +155,7 @@ export function useCharacterCreation({
       wizardClass?.defaultItemIds ?? []
     );
 
-    return wizardCampaign.items.filter((item) => allowedItemIds.has(item.id));
+    return sortByName(wizardCampaign.items.filter((item) => allowedItemIds.has(item.id)));
   }, [creationDraft, wizardCampaign, wizardClass?.defaultItemIds, wizardItemChoiceRules]);
 
   const wizardPointBuyTotal =
@@ -240,18 +255,39 @@ export function useCharacterCreation({
 
       if (spent > totalAllowed) return;
 
+      const nextHp = getDraftHpForCon(
+        wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,
+        nextAttributes.CON
+      );
+
       setCreationDraft({
         ...creationDraft,
         attributes: nextAttributes,
+        hp: {
+          ...creationDraft.hp,
+          max: nextHp.max,
+          current: Math.min(nextHp.max, creationDraft.hp.current + (nextHp.max - creationDraft.hp.max)),
+        },
       });
       return;
     }
 
+    const nextAttributes = {
+      ...creationDraft.attributes,
+      [key]: value,
+    };
+    const nextHp = getDraftHpForCon(
+      wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,
+      nextAttributes.CON
+    );
+
     setCreationDraft({
       ...creationDraft,
-      attributes: {
-        ...creationDraft.attributes,
-        [key]: value,
+      attributes: nextAttributes,
+      hp: {
+        ...creationDraft.hp,
+        max: nextHp.max,
+        current: Math.min(nextHp.max, creationDraft.hp.current + (nextHp.max - creationDraft.hp.max)),
       },
     });
   }

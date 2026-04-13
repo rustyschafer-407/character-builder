@@ -68,9 +68,10 @@ function makeBlankClass(campaignId: string): ClassDefinition {
     },
     levelProgression: [
       {
-        level: 1,
+        level: 2,
         hitDiceGained: 1,
         hpGainMode: "half",
+        proficiencyBonus: 2,
         newSkillChoices: 0,
         newPowerChoices: 0,
         attributeBonuses: [],
@@ -149,6 +150,10 @@ function gridCols(cols: number) {
 
 function sortLevelProgression(rows: ClassLevelProgressionRow[]) {
   return [...rows].sort((a, b) => a.level - b.level);
+}
+
+function sortByName<T extends { name: string }>(items: T[]) {
+  return [...items].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function formatBonusSummary(bonuses: AttributeBonusRule[]) {
@@ -241,6 +246,9 @@ export default function AdminScreen({
   const selectedPower = selectedCampaign?.powers.find((power) => power.id === selectedPowerId) ?? null;
   const selectedItem = selectedCampaign?.items.find((item) => item.id === selectedItemId) ?? null;
   const selectedAttack = selectedCampaign?.attackTemplates.find((attack) => attack.id === selectedAttackId) ?? null;
+  const sortedCampaignSkills = selectedCampaign ? sortByName(selectedCampaign.skills) : [];
+  const sortedCampaignPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
+  const sortedCampaignItems = selectedCampaign ? sortByName(selectedCampaign.items) : [];
 
   useEffect(() => {
     if (saveRequestVersion === lastHandledSaveVersion.current) return;
@@ -592,13 +600,14 @@ export default function AdminScreen({
   function addClassLevelProgressionRow() {
     if (!selectedClass) return;
     const rows = getClassLevelProgressionRows();
-    const nextLevel = Math.max(0, ...rows.map((row) => row.level)) + 1;
+    const nextLevel = rows.length === 0 ? 2 : Math.max(0, ...rows.map((row) => row.level)) + 1;
     updateClassLevelProgression([
       ...rows,
       {
         level: nextLevel,
         hitDiceGained: 1,
         hpGainMode: "half",
+        proficiencyBonus: 2,
         newSkillChoices: 0,
         newPowerChoices: 0,
         attributeBonuses: [],
@@ -922,7 +931,7 @@ export default function AdminScreen({
                                 <button
                                   type="button"
                                   style={buttonStyle}
-                                  onClick={() => setClassRuleIds("skillChoiceRules", selectedCampaign.skills.map((skill) => skill.id))}
+                                  onClick={() => setClassRuleIds("skillChoiceRules", sortedCampaignSkills.map((skill) => skill.id))}
                                 >
                                   Select All
                                 </button>
@@ -935,10 +944,10 @@ export default function AdminScreen({
                                 </button>
                               </div>
                             </div>
-                            {selectedCampaign.skills.length === 0 ? (
+                            {sortedCampaignSkills.length === 0 ? (
                               <p style={{ margin: 0, ...mutedTextStyle }}>No skills are defined for this campaign.</p>
                             ) : (
-                              selectedCampaign.skills.map((skill) => {
+                              sortedCampaignSkills.map((skill) => {
                                 const rule = getRuleFor<ClassSkillChoiceRule>("skillChoiceRules");
                                 const checked = rule?.skillIds.includes(skill.id) ?? false;
                                 return (
@@ -970,7 +979,7 @@ export default function AdminScreen({
                                 <button
                                   type="button"
                                   style={buttonStyle}
-                                  onClick={() => setClassRuleIds("powerChoiceRules", selectedCampaign.powers.map((power) => power.id))}
+                                  onClick={() => setClassRuleIds("powerChoiceRules", sortedCampaignPowers.map((power) => power.id))}
                                 >
                                   Select All
                                 </button>
@@ -983,10 +992,10 @@ export default function AdminScreen({
                                 </button>
                               </div>
                             </div>
-                            {selectedCampaign.powers.length === 0 ? (
+                            {sortedCampaignPowers.length === 0 ? (
                               <p style={{ margin: 0, ...mutedTextStyle }}>No powers are defined for this campaign.</p>
                             ) : (
-                              selectedCampaign.powers.map((power) => {
+                              sortedCampaignPowers.map((power) => {
                                 const rule = getRuleFor<ClassPowerChoiceRule>("powerChoiceRules");
                                 const checked = rule?.powerIds.includes(power.id) ?? false;
                                 return (
@@ -1021,7 +1030,7 @@ export default function AdminScreen({
                                 <button
                                   type="button"
                                   style={buttonStyle}
-                                  onClick={() => setClassRuleIds("itemChoiceRules", selectedCampaign.items.map((item) => item.id))}
+                                  onClick={() => setClassRuleIds("itemChoiceRules", sortedCampaignItems.map((item) => item.id))}
                                 >
                                   Select All
                                 </button>
@@ -1034,10 +1043,10 @@ export default function AdminScreen({
                                 </button>
                               </div>
                             </div>
-                            {selectedCampaign.items.length === 0 ? (
+                            {sortedCampaignItems.length === 0 ? (
                               <p style={{ margin: 0, ...mutedTextStyle }}>No items are defined for this campaign.</p>
                             ) : (
-                              selectedCampaign.items.map((item) => {
+                              sortedCampaignItems.map((item) => {
                                 const rule = getRuleFor<ClassItemChoiceRule>("itemChoiceRules");
                                 const checked = rule?.itemIds.includes(item.id) ?? false;
                                 return (
@@ -1113,7 +1122,7 @@ export default function AdminScreen({
                             <button
                               type="button"
                               style={buttonStyle}
-                              onClick={() => setClassFieldIds("defaultPowerIds", selectedCampaign.powers.map((power) => power.id))}
+                              onClick={() => setClassFieldIds("defaultPowerIds", sortedCampaignPowers.map((power) => power.id))}
                             >
                               Select All
                             </button>
@@ -1126,10 +1135,10 @@ export default function AdminScreen({
                             </button>
                           </div>
                         </div>
-                        {selectedCampaign.powers.length === 0 ? (
+                        {sortedCampaignPowers.length === 0 ? (
                           <p style={{ margin: 0, ...mutedTextStyle }}>No powers are defined for this campaign.</p>
                         ) : (
-                          selectedCampaign.powers.map((power) => (
+                          sortedCampaignPowers.map((power) => (
                             <label key={power.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <input
                                 type="checkbox"
@@ -1226,6 +1235,21 @@ export default function AdminScreen({
                                     </option>
                                   ))}
                                 </select>
+                              </label>
+                              <label style={labelTextStyle}>
+                                Prof Bonus
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={Number.isFinite(row.proficiencyBonus) ? row.proficiencyBonus : ""}
+                                  onChange={(e) => {
+                                    const raw = e.target.value;
+                                    updateClassLevelProgressionRow(index, {
+                                      proficiencyBonus: raw === "" ? undefined : Math.max(0, Number(raw) || 0),
+                                    });
+                                  }}
+                                  style={inputStyle}
+                                />
                               </label>
                               <label style={labelTextStyle}>
                                 New Skill Choices
@@ -1343,7 +1367,7 @@ export default function AdminScreen({
             <EntityListEditor
               title={`Skills (${selectedCampaign.name})`}
               helper="Skills belong to the selected campaign."
-              items={selectedCampaign.skills}
+              items={sortedCampaignSkills}
               selectedId={selectedSkillId}
               onSelect={setSelectedSkillId}
               onAdd={addSkill}
@@ -1410,7 +1434,7 @@ export default function AdminScreen({
             <EntityListEditor
               title={`Powers (${selectedCampaign.name})`}
               helper="Powers belong to the selected campaign."
-              items={selectedCampaign.powers}
+              items={sortedCampaignPowers}
               selectedId={selectedPowerId}
               onSelect={setSelectedPowerId}
               onAdd={addPower}
@@ -1471,7 +1495,7 @@ export default function AdminScreen({
             <EntityListEditor
               title={`Items (${selectedCampaign.name})`}
               helper="Items belong to the selected campaign."
-              items={selectedCampaign.items}
+              items={sortedCampaignItems}
               selectedId={selectedItemId}
               onSelect={setSelectedItemId}
               onAdd={addItem}

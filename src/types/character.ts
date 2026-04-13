@@ -25,6 +25,7 @@ export interface CharacterHp {
 
 export interface CharacterSkillSelection {
   skillId: string;
+  attribute?: AttributeKey;
   proficient: boolean;
   bonus: number;
   source: "campaign" | "class" | "background" | "wizard-choice" | "level-up" | "manual";

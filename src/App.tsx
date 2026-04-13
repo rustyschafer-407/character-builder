@@ -64,6 +64,10 @@ function getPointBuySpent(attributes: Record<AttributeKey, number>) {
   );
 }
 
+function sortByName<T extends { name: string }>(items: T[]) {
+  return [...items].sort((a, b) => a.name.localeCompare(b.name));
+}
+
 function makeBaseAttributes(): Record<AttributeKey, number> {
   return {
     STR: 10,
@@ -85,6 +89,10 @@ function applyClassAttributeModifiers(
     next[bonus.attribute] = (next[bonus.attribute] ?? 0) + bonus.amount;
   }
   return next;
+}
+
+function getAttributeModifier(score: number) {
+  return Math.floor((score - 10) / 2);
 }
 
 function makeDraftFromCampaignAndClass(
@@ -121,6 +129,14 @@ function makeDraftFromCampaignAndClass(
   } else {
     draft.attributes = applyClassAttributeModifiers(makeBaseAttributes(), cls);
   }
+
+  const hpMax = Math.max(1, cls.hpRule.hitDie + getAttributeModifier(draft.attributes.CON));
+  draft.hp = {
+    ...draft.hp,
+    max: hpMax,
+    current: hpMax,
+    hitDie: cls.hpRule.hitDie,
+  };
 
   return draft;
 }
@@ -468,11 +484,11 @@ export default function App() {
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
 
   const filteredCharacters = characters.filter((character) => character.campaignId === campaignId);
-  const selectedSkills = selectedCampaign ? selectedCampaign.skills : [];
+  const selectedSkills = selectedCampaign ? sortByName(selectedCampaign.skills) : [];
 
-  const selectedPowers = selectedCampaign ? selectedCampaign.powers : [];
+  const selectedPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
 
-  const selectedItems = selectedCampaign ? selectedCampaign.items : [];
+  const selectedItems = selectedCampaign ? sortByName(selectedCampaign.items) : [];
   const skillChoiceRules = selectedClass?.skillChoiceRules ?? [];
   const powerChoiceRules = selectedClass?.powerChoiceRules ?? [];
   const itemChoiceRules = selectedClass?.itemChoiceRules ?? [];
@@ -794,6 +810,7 @@ export default function App() {
               nextAttributeBonuses={nextLevelProgressionRow?.attributeBonuses ?? []}
               nextNewSkillChoices={nextLevelProgressionRow?.newSkillChoices ?? 0}
               nextNewPowerChoices={nextLevelProgressionRow?.newPowerChoices ?? 0}
+              nextProficiencyBonus={nextLevelProgressionRow?.proficiencyBonus}
               availableLevelUpSkills={availableLevelUpSkills}
               availableLevelUpPowers={availableLevelUpPowers}
               onOpenLevelUpWizard={openLevelUpWizard}

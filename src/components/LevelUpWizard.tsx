@@ -20,6 +20,7 @@ interface Props {
   attributeBonuses: AttributeBonusRule[];
   newSkillChoices: number;
   newPowerChoices: number;
+  proficiencyBonusOverride?: number;
   availableSkillChoices: SkillDefinition[];
   availablePowerChoices: PowerDefinition[];
   selectedSkillIds: string[];
@@ -48,6 +49,7 @@ export default function LevelUpWizard({
   attributeBonuses,
   newSkillChoices,
   newPowerChoices,
+  proficiencyBonusOverride,
   availableSkillChoices,
   availablePowerChoices,
   selectedSkillIds,
@@ -135,6 +137,9 @@ export default function LevelUpWizard({
               <strong>Automatic Effects</strong>
               <div style={{ marginTop: 6 }}>Level: +1</div>
               <div>Hit Dice: +{hitDiceGained}</div>
+              {Number.isFinite(proficiencyBonusOverride) && (
+                <div>Proficiency Bonus: set to {proficiencyBonusOverride}</div>
+              )}
               <div>Attribute Increases: {formatAttributeBonuses(attributeBonuses)}</div>
             </div>
 
