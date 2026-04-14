@@ -1,5 +1,7 @@
 # Character Builder
 
+[![Deploy Vercel](https://github.com/rustyschafer-407/character-builder/actions/workflows/deploy-vercel.yml/badge.svg)](https://github.com/rustyschafer-407/character-builder/actions/workflows/deploy-vercel.yml)
+
 Character Builder is a campaign-aware character management app for creating, editing, leveling, and exporting RPG characters.
 
 ## What The App Does
@@ -123,6 +125,16 @@ Recommended Vercel environment setup:
 
 - Preview environment vars point to staging Supabase (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
 - Production environment vars point to production Supabase
+
+## Release Checklist
+
+1. Push feature changes to `staging`.
+2. Confirm Deploy Vercel workflow passes for `staging`.
+3. Run [SMOKE_TEST_CHECKLIST.md](SMOKE_TEST_CHECKLIST.md) against staging.
+4. Confirm staging uses staging Supabase data only.
+5. Merge `staging` into `main`.
+6. Confirm Deploy Vercel workflow passes for `main`.
+7. Perform a quick production sanity pass.
 
 ## Developer Smoke Test
 
