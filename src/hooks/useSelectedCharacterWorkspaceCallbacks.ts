@@ -14,6 +14,12 @@ interface UseSelectedCharacterWorkspaceCallbacksParams {
     value: boolean | number
   ) => void;
   togglePowerWithRules: (character: CharacterRecord, powerId: string, nextSelected: boolean) => void;
+  updatePowerWithRules?: (
+    character: CharacterRecord,
+    field: "usesPerDay" | "description" | "saveAttribute",
+    powerId: string,
+    value: number | string | AttributeKey | undefined
+  ) => void;
   toggleItemWithRules: (character: CharacterRecord, itemId: string, nextSelected: boolean) => void;
   updateInventoryQuantity: (character: CharacterRecord, itemKey: string, quantity: number) => void;
   updateInventoryEquipped: (character: CharacterRecord, itemKey: string, equipped: boolean) => void;
@@ -28,6 +34,7 @@ export function useSelectedCharacterWorkspaceCallbacks({
   updateAttributeWithRules,
   updateSkillWithRules,
   togglePowerWithRules,
+  updatePowerWithRules,
   toggleItemWithRules,
   updateInventoryQuantity,
   updateInventoryEquipped,
@@ -166,6 +173,15 @@ export function useSelectedCharacterWorkspaceCallbacks({
     togglePowerWithRules(selected, powerId, nextSelected);
   }
 
+  function onPowerChange(
+    powerId: string,
+    field: "usesPerDay" | "description" | "saveAttribute",
+    value: number | string | AttributeKey | undefined
+  ) {
+    if (!selected || !updatePowerWithRules) return;
+    updatePowerWithRules(selected, field, powerId, value);
+  }
+
   function onToggleItem(itemId: string, nextSelected: boolean) {
     if (!selected) return;
     toggleItemWithRules(selected, itemId, nextSelected);
@@ -235,6 +251,7 @@ export function useSelectedCharacterWorkspaceCallbacks({
     onSaveBonusChange,
     onSkillChange,
     onTogglePower,
+    onPowerChange,
     onToggleItem,
     onQuantityChange,
     onEquippedChange,

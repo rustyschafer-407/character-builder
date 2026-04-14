@@ -146,6 +146,9 @@ export function useCharacterEditor({
             name: power.name,
             notes: power.description,
             source: "wizard-choice",
+            usesPerDay: power.usesPerDay,
+            description: power.description,
+            saveAttribute: power.saveAttribute,
           },
         ],
         attacks: syncDerivedAttacks(
@@ -158,6 +161,9 @@ export function useCharacterEditor({
                 name: power.name,
                 notes: power.description,
                 source: "wizard-choice",
+                usesPerDay: power.usesPerDay,
+                description: power.description,
+                saveAttribute: power.saveAttribute,
               },
             ],
           },
@@ -178,6 +184,30 @@ export function useCharacterEditor({
         },
         selectedCampaign
       ),
+    });
+  }
+
+  function updatePowerWithRules(
+    character: CharacterRecord,
+    field: "usesPerDay" | "description" | "saveAttribute",
+    powerId: string,
+    value: number | string | AttributeKey | undefined
+  ) {
+    updateCharacter({
+      ...character,
+      powers: character.powers.map((power) => {
+        if (power.powerId !== powerId) return power;
+        if (field === "usesPerDay") {
+          return { ...power, usesPerDay: value as number };
+        }
+        if (field === "description") {
+          return { ...power, description: value as string };
+        }
+        if (field === "saveAttribute") {
+          return { ...power, saveAttribute: value as AttributeKey | undefined };
+        }
+        return power;
+      }),
     });
   }
 
@@ -323,6 +353,7 @@ export function useCharacterEditor({
     updateAttributeWithRules,
     updateSkillWithRules,
     togglePowerWithRules,
+    updatePowerWithRules,
     toggleItemWithRules,
     updateInventoryQuantity,
     updateInventoryEquipped,

@@ -42,7 +42,7 @@ type ExportContext = {
   cls: ReturnType<typeof findClassInCampaign>;
   race: ReturnType<typeof findRaceInCampaign>;
   skillMap: Map<string, { id: string; name: string; attribute: AttributeKey }>;
-  powerMap: Map<string, { id: string; name: string; description?: string }>;
+  powerMap: Map<string, { id: string; name: string; description?: string; usesPerDay?: number; saveAttribute?: AttributeKey }>;
   itemMap: Map<string, { id: string; name: string; description?: string }>;
   invalidSkillIdSet: Set<string>;
   invalidPowerIdSet: Set<string>;
@@ -118,7 +118,7 @@ function getExportedSkills(character: CharacterRecord) {
 function getExportedPowers(
   character: CharacterRecord,
   gamePowerIds: Set<string>,
-  powerMap: Map<string, { id: string; name: string; description?: string }>
+  powerMap: Map<string, { id: string; name: string; description?: string; usesPerDay?: number; saveAttribute?: AttributeKey }>
 ) {
   const existingPowerIds = new Set(character.powers.map((power) => power.powerId).filter(Boolean));
   const gainedPowerIds = (character.levelProgression?.gainedPowerIds ?? []).filter(
@@ -127,12 +127,18 @@ function getExportedPowers(
 
   const missingGainedPowers = gainedPowerIds
     .filter((powerId) => !existingPowerIds.has(powerId))
-    .map((powerId) => ({
-      powerId,
-      name: powerMap.get(powerId)?.name ?? powerId,
-      notes: powerMap.get(powerId)?.description ?? "",
-      source: "level-up" as const,
-    }));
+    .map((powerId) => {
+      const definition = powerMap.get(powerId);
+      return {
+        powerId,
+        name: definition?.name ?? powerId,
+        notes: definition?.description ?? "",
+        source: "level-up" as const,
+        usesPerDay: definition?.usesPerDay,
+        description: definition?.description,
+        saveAttribute: definition?.saveAttribute,
+      };
+    });
 
   return [...character.powers, ...missingGainedPowers];
 }
@@ -153,6 +159,12 @@ function getThemeValue(campaignId: string) {
   if (normalized.includes("modern")) return "modern";
   if (normalized.includes("pulp")) return "pulp";
   return "fantasy";
+}
+
+function getSaveAttributeValue(attribute?: AttributeKey): string {
+  if (!attribute) return "none";
+  const attrLower = attribute.toLowerCase();
+  return `${attrLower}_mod`;
 }
 
 export function buildRoll20AttributeMap(
@@ -458,10 +470,16 @@ export function buildChatSetAttrPhases(
   // Repeating powers.
   for (const power of exported.powers) {
     const definition = power.powerId ? context.powerMap.get(power.powerId) : undefined;
-    const notes = clean(power.notes ?? definition?.description ?? "");
-    const text = notes ? `${power.name} - ${notes}` : power.name;
+    const usesPerDay = power.usesPerDay ?? definition?.usesPerDay ?? 0;
+    const saveAttribute = power.saveAttribute ?? definition?.saveAttribute;
+    const description = power.description ?? definition?.description ?? "";
     repeatingCommands.push(
-      `${setPrefix} ${makePair("repeating_powers_-CREATE_powertext", clean(text))}`
+      `${setPrefix} ${[
+        makePair("repeating_powers_-CREATE_powername", clean(power.name)),
+        makePair("repeating_powers_-CREATE_power_uses", clean(usesPerDay)),
+        makePair("repeating_powers_-CREATE_power_save_attr", getSaveAttributeValue(saveAttribute)),
+        makePair("repeating_powers_-CREATE_powertext", clean(description)),
+      ].join(" ")}`
     );
   }
 

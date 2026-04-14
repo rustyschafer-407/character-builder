@@ -49,6 +49,9 @@ export interface CharacterPowerSelection {
   name: string;
   notes?: string;
   source: "campaign" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
+  usesPerDay?: number;
+  description?: string;
+  saveAttribute?: AttributeKey;
 }
 
 export interface CharacterItem {

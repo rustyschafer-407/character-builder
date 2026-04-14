@@ -924,14 +924,43 @@ export default function AdminScreen({
                       {ATTRIBUTE_KEYS.map((attribute) => (
                         <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 6 }}>
                           <span>{attribute}</span>
-                          <input
-                            type="number"
-                            value={getClassAttributeBonusAmount(attribute)}
-                            onChange={(e) =>
-                              setClassAttributeBonusAmount(attribute, Number(e.target.value) || 0)
-                            }
-                            style={compactNumberInputStyle}
-                          />
+                          <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 40px", gap: 6, alignItems: "center" }}>
+                            <button
+                              type="button"
+                              style={{ ...buttonStyle, width: 40, minHeight: 36, height: 36, padding: 0 }}
+                              onClick={() =>
+                                setClassAttributeBonusAmount(
+                                  attribute,
+                                  getClassAttributeBonusAmount(attribute) - 1
+                                )
+                              }
+                              aria-label={`Decrease ${attribute} bonus`}
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              step={1}
+                              value={getClassAttributeBonusAmount(attribute)}
+                              onChange={(e) =>
+                                setClassAttributeBonusAmount(attribute, Number(e.target.value) || 0)
+                              }
+                              style={{ ...compactNumberInputStyle, maxWidth: "100%" }}
+                            />
+                            <button
+                              type="button"
+                              style={{ ...buttonStyle, width: 40, minHeight: 36, height: 36, padding: 0 }}
+                              onClick={() =>
+                                setClassAttributeBonusAmount(
+                                  attribute,
+                                  getClassAttributeBonusAmount(attribute) + 1
+                                )
+                              }
+                              aria-label={`Increase ${attribute} bonus`}
+                            >
+                              +
+                            </button>
+                          </div>
                         </label>
                       ))}
                     </div>
@@ -1496,14 +1525,43 @@ export default function AdminScreen({
                       {ATTRIBUTE_KEYS.map((attribute) => (
                         <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 6 }}>
                           <span>{attribute}</span>
-                          <input
-                            type="number"
-                            value={getRaceAttributeBonusAmount(attribute)}
-                            onChange={(e) =>
-                              setRaceAttributeBonusAmount(attribute, Number(e.target.value) || 0)
-                            }
-                            style={compactNumberInputStyle}
-                          />
+                          <div style={{ display: "grid", gridTemplateColumns: "40px 1fr 40px", gap: 6, alignItems: "center" }}>
+                            <button
+                              type="button"
+                              style={{ ...buttonStyle, width: 40, minHeight: 36, height: 36, padding: 0 }}
+                              onClick={() =>
+                                setRaceAttributeBonusAmount(
+                                  attribute,
+                                  getRaceAttributeBonusAmount(attribute) - 1
+                                )
+                              }
+                              aria-label={`Decrease ${attribute} bonus`}
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              step={1}
+                              value={getRaceAttributeBonusAmount(attribute)}
+                              onChange={(e) =>
+                                setRaceAttributeBonusAmount(attribute, Number(e.target.value) || 0)
+                              }
+                              style={{ ...compactNumberInputStyle, maxWidth: "100%" }}
+                            />
+                            <button
+                              type="button"
+                              style={{ ...buttonStyle, width: 40, minHeight: 36, height: 36, padding: 0 }}
+                              onClick={() =>
+                                setRaceAttributeBonusAmount(
+                                  attribute,
+                                  getRaceAttributeBonusAmount(attribute) + 1
+                                )
+                              }
+                              aria-label={`Increase ${attribute} bonus`}
+                            >
+                              +
+                            </button>
+                          </div>
                         </label>
                       ))}
                     </div>
@@ -1737,6 +1795,32 @@ export default function AdminScreen({
                         />
                       </label>
                       <label style={labelTextStyle}>
+                        Uses Per Day
+                        <input
+                          type="number"
+                          min={0}
+                          value={selectedPower.usesPerDay ?? 0}
+                          onChange={(e) => updatePower({ ...selectedPower, usesPerDay: Math.max(0, Number(e.target.value) || 0) })}
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={labelTextStyle}>
+                        Save Attribute
+                        <select
+                          value={selectedPower.saveAttribute ?? "none"}
+                          onChange={(e) => updatePower({ ...selectedPower, saveAttribute: e.target.value === "none" ? undefined : (e.target.value as AttributeKey) })}
+                          style={inputStyle}
+                        >
+                          <option value="none">None</option>
+                          <option value="STR">STR</option>
+                          <option value="DEX">DEX</option>
+                          <option value="CON">CON</option>
+                          <option value="INT">INT</option>
+                          <option value="WIS">WIS</option>
+                          <option value="CHA">CHA</option>
+                        </select>
+                      </label>
+                      <label style={labelTextStyle}>
                         Is Attack
                         <input
                           type="checkbox"
@@ -1746,6 +1830,18 @@ export default function AdminScreen({
                         />
                       </label>
                     </div>
+                  </section>
+
+                  <section style={cardStyle()}>
+                    <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Description</h3>
+                    <label style={labelTextStyle}>
+                      <textarea
+                        value={selectedPower.description ?? ""}
+                        onChange={(e) => updatePower({ ...selectedPower, description: e.target.value })}
+                        style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
+                        placeholder="Enter power description..."
+                      />
+                    </label>
                   </section>
                 </div>
               )}

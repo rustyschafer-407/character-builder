@@ -68,6 +68,11 @@ interface SelectedCharacterWorkspaceProps {
   onSaveBonusChange: (attr: AttributeKey, value: number) => void;
   onSkillChange: (id: string, field: "proficient" | "bonus", value: boolean | number) => void;
   onTogglePower: (powerId: string, nextSelected: boolean) => void;
+  onPowerChange?: (
+    powerId: string,
+    field: "usesPerDay" | "description" | "saveAttribute",
+    value: number | string | AttributeKey | undefined
+  ) => void;
   onToggleItem: (itemId: string, nextSelected: boolean) => void;
   onQuantityChange: (itemKey: string, quantity: number) => void;
   onEquippedChange: (itemKey: string, equipped: boolean) => void;
@@ -125,6 +130,7 @@ export default function SelectedCharacterWorkspace({
   onSaveBonusChange,
   onSkillChange,
   onTogglePower,
+  onPowerChange,
   onToggleItem,
   onQuantityChange,
   onEquippedChange,
@@ -210,6 +216,7 @@ export default function SelectedCharacterWorkspace({
         label={labels.powers}
         powerChoiceRules={powerChoiceRules}
         onTogglePower={onTogglePower}
+        onPowerChange={onPowerChange}
       />
 
       <InventorySection

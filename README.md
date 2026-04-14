@@ -111,6 +111,8 @@ Hosted staging deploy:
 
 This repo includes [deploy-vercel workflow](.github/workflows/deploy-vercel.yml):
 
+Detailed setup and repeatable deploy steps live in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 - Push to `staging` deploys to Vercel preview (staging)
 - Push to `main` deploys to Vercel production
 - You can also run it manually with `workflow_dispatch`

@@ -1,6 +1,6 @@
 import type { CharacterRecord } from "../types/character";
-import type { ClassPowerChoiceRule, PowerDefinition } from "../types/gameData";
-import { cardStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
+import type { ClassPowerChoiceRule, PowerDefinition, AttributeKey } from "../types/gameData";
+import { cardStyle, panelStyle, sectionTitleStyle, inputStyle, labelTextStyle } from "./uiStyles";
 
 interface Props {
   character: CharacterRecord;
@@ -8,6 +8,11 @@ interface Props {
   label: string;
   powerChoiceRules: ClassPowerChoiceRule[];
   onTogglePower: (powerId: string, nextSelected: boolean) => void;
+  onPowerChange?: (
+    powerId: string,
+    field: "usesPerDay" | "description" | "saveAttribute",
+    value: number | string | AttributeKey | undefined
+  ) => void;
 }
 
 function getRuleForPower(
@@ -32,6 +37,7 @@ export default function PowersSection({
   label,
   powerChoiceRules,
   onTogglePower,
+  onPowerChange,
 }: Props) {
   const hasChoiceRules = powerChoiceRules.length > 0;
 
@@ -89,29 +95,100 @@ export default function PowersSection({
               style={{
                 ...cardStyle,
                 display: "grid",
-                gridTemplateColumns: "1fr auto",
+                gridTemplateColumns: isSelected ? "1fr" : "1fr auto",
                 gap: 12,
                 alignItems: "start",
                 opacity: canBeChosen ? 1 : 0.7,
               }}
             >
               <div>
-                <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>{power.name}</div>
-                <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>
-                  {power.description || "No description."}
-                </div>
-              </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr auto",
+                    gap: 12,
+                    alignItems: "center",
+                    marginBottom: isSelected ? 12 : 0,
+                  }}
+                >
+                  <div>
+                    <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>{power.name}</div>
+                    <div style={{ color: "var(--text-secondary)", fontSize: 14, marginTop: 4 }}>
+                      {power.description || "No description."}
+                    </div>
+                  </div>
 
-              <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
-                Select
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  disabled={disableCheckbox}
-                  onChange={(e) => onTogglePower(power.id, e.target.checked)}
-                  style={{ marginLeft: 8 }}
-                />
-              </label>
+                  <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
+                    Select
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      disabled={disableCheckbox}
+                      onChange={(e) => onTogglePower(power.id, e.target.checked)}
+                      style={{ marginLeft: 8 }}
+                    />
+                  </label>
+                </div>
+
+                {isSelected && onPowerChange && selectedPower && (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, 1fr)",
+                      gap: 12,
+                      borderTop: "1px solid rgba(255,255,255,0.1)",
+                      paddingTop: 12,
+                    }}
+                  >
+                    <label style={labelTextStyle}>
+                      Uses/Day
+                      <input
+                        type="number"
+                        min={0}
+                        value={selectedPower.usesPerDay ?? power.usesPerDay ?? 0}
+                        onChange={(e) =>
+                          onPowerChange(power.id, "usesPerDay", Math.max(0, Number(e.target.value) || 0))
+                        }
+                        style={{ ...inputStyle, marginTop: 4 }}
+                      />
+                    </label>
+
+                    <label style={labelTextStyle}>
+                      Save Attribute
+                      <select
+                        value={selectedPower.saveAttribute ?? power.saveAttribute ?? "none"}
+                        onChange={(e) =>
+                          onPowerChange(
+                            power.id,
+                            "saveAttribute",
+                            e.target.value === "none" ? undefined : (e.target.value as AttributeKey)
+                          )
+                        }
+                        style={{ ...inputStyle, marginTop: 4 }}
+                      >
+                        <option value="none">None</option>
+                        <option value="STR">STR</option>
+                        <option value="DEX">DEX</option>
+                        <option value="CON">CON</option>
+                        <option value="INT">INT</option>
+                        <option value="WIS">WIS</option>
+                        <option value="CHA">CHA</option>
+                      </select>
+                    </label>
+
+                    <label style={labelTextStyle}>
+                      Description
+                      <input
+                        type="text"
+                        value={selectedPower.description ?? power.description ?? ""}
+                        onChange={(e) => onPowerChange(power.id, "description", e.target.value)}
+                        placeholder="Power description"
+                        style={{ ...inputStyle, marginTop: 4 }}
+                      />
+                    </label>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}

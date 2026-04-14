@@ -125,6 +125,8 @@ export interface PowerDefinition {
   tags?: string[];
   isAttack?: boolean;
   sourceText?: string;
+  usesPerDay?: number;
+  saveAttribute?: AttributeKey;
 }
 
 export interface ItemDefinition {
