@@ -105,6 +105,25 @@ Hosted staging deploy:
 2. Push to `staging`.
 3. Validate in staging, then promote by merging `staging` into `main`.
 
+## Automated Deploys (GitHub Actions + Vercel)
+
+This repo includes [deploy-vercel workflow](.github/workflows/deploy-vercel.yml):
+
+- Push to `staging` deploys to Vercel preview (staging)
+- Push to `main` deploys to Vercel production
+- You can also run it manually with `workflow_dispatch`
+
+Set these GitHub repository secrets:
+
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+
+Recommended Vercel environment setup:
+
+- Preview environment vars point to staging Supabase (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+- Production environment vars point to production Supabase
+
 ## Developer Smoke Test
 
 Use [SMOKE_TEST_CHECKLIST.md](SMOKE_TEST_CHECKLIST.md) for a quick manual validation pass after changes.
