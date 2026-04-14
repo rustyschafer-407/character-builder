@@ -484,19 +484,56 @@
       return 0;
     }
 
+    const repeatingSortConfig = {
+      skills: {
+        key: "skillname",
+        fields: ["skillname", "skillattr", "skillprof", "skillbonus"]
+      },
+      attacks: {
+        key: "attackname",
+        fields: ["attackname", "attackattr", "attackprof", "attackbonus", "damagedice", "damagebonus"]
+      },
+      powers: {
+        key: "powertext",
+        fields: ["powertext"]
+      },
+      inventory: {
+        key: "itemname",
+        fields: ["itemname", "itemqty", "itemnotes"]
+      }
+    };
+
+    const activeRepeatingSorts = {};
+
     function sortRepeatingSection(sectionName, fieldName) {
+      if (activeRepeatingSorts[sectionName]) return;
+
       const sectionKey = "repeating_" + sectionName;
+      const config = repeatingSortConfig[sectionName];
+      if (!config) return;
+
       getSectionIDs(sectionKey, function(ids) {
         if (!ids || ids.length < 2) return;
 
-        const fields = ids.map(function(id) {
-          return sectionKey + "_" + id + "_" + fieldName;
+        const fields = [];
+        ids.forEach(function(id) {
+          config.fields.forEach(function(field) {
+            fields.push(sectionKey + "_" + id + "_" + field);
+          });
         });
 
         getAttrs(fields, function(v) {
-          const sorted = ids.slice().sort(function(a, b) {
-            const aText = normalizedSortValue(v[sectionKey + "_" + a + "_" + fieldName]);
-            const bText = normalizedSortValue(v[sectionKey + "_" + b + "_" + fieldName]);
+          const rows = ids.map(function(id) {
+            const rowData = { id: id };
+            config.fields.forEach(function(field) {
+              rowData[field] = v[sectionKey + "_" + id + "_" + field] || "";
+            });
+            return rowData;
+          });
+
+          const sortedRows = rows.slice().sort(function(a, b) {
+            const aText = normalizedSortValue(a[config.key]);
+            const bText = normalizedSortValue(b[config.key]);
 
             if (!aText && !bText) return 0;
             if (!aText) return 1;
@@ -505,7 +542,28 @@
             return compareSortText(aText, bText);
           });
 
-          setSectionOrder(sectionKey, sorted);
+          let changed = false;
+          for (let i = 0; i < rows.length; i += 1) {
+            if (rows[i].id !== sortedRows[i].id) {
+              changed = true;
+              break;
+            }
+          }
+
+          if (!changed) return;
+
+          const update = {};
+          ids.forEach(function(targetId, index) {
+            const sourceRow = sortedRows[index];
+            config.fields.forEach(function(field) {
+              update[sectionKey + "_" + targetId + "_" + field] = sourceRow[field];
+            });
+          });
+
+          activeRepeatingSorts[sectionName] = true;
+          setAttrs(update, { silent: true }, function() {
+            activeRepeatingSorts[sectionName] = false;
+          });
         });
       });
     }
