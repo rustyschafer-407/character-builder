@@ -397,7 +397,7 @@
 
   <script type="text/worker">
     function calcMod(score) {
-      var n = parseInt(score, 10) || 0;
+      const n = parseInt(score, 10) || 0;
       return Math.floor((n - 10) / 2);
     }
 
@@ -407,8 +407,8 @@
 
     function syncThemeUI() {
       getAttrs(["sheet_theme"], function(v) {
-        var allowed = ["fantasy", "scifi", "horror", "modern", "pulp"];
-        var theme = allowed.indexOf(v.sheet_theme) !== -1 ? v.sheet_theme : "fantasy";
+        const allowed = ["fantasy", "scifi", "horror", "modern", "pulp"];
+        const theme = allowed.includes(v.sheet_theme) ? v.sheet_theme : "fantasy";
         setAttrs({ theme_ui: theme });
       });
     }
@@ -427,8 +427,8 @@
     }
 
     function recalcPCSaves() {
-      var abilities = ["str","dex","con","int","wis","cha"];
-      var fields = [
+      const abilities = ["str","dex","con","int","wis","cha"];
+      const fields = [
         "pb",
         "str_mod","dex_mod","con_mod","int_mod","wis_mod","cha_mod",
         "str_saveprof","dex_saveprof","con_saveprof","int_saveprof","wis_saveprof","cha_saveprof",
@@ -436,13 +436,13 @@
       ];
 
       getAttrs(fields, function(v) {
-        var pb = parseInt(v.pb, 10) || 0;
-        var update = {};
+        const pb = parseInt(v.pb, 10) || 0;
+        const update = {};
 
         abilities.forEach(function(a) {
-          var mod = parseInt(v[a + "_mod"], 10) || 0;
-          var profChecked = checkedToNumber(v[a + "_saveprof"]);
-          var misc = parseInt(v[a + "_savebonus"], 10) || 0;
+          const mod = parseInt(v[a + "_mod"], 10) || 0;
+          const profChecked = checkedToNumber(v[a + "_saveprof"]);
+          const misc = parseInt(v[a + "_savebonus"], 10) || 0;
           update[a + "_save_total"] = mod + (profChecked ? pb : 0) + misc;
         });
 
@@ -452,18 +452,18 @@
 
     function recalcInit() {
       getAttrs(["dex_mod","init_misc"], function(v) {
-        var dex = parseInt(v.dex_mod, 10) || 0;
-        var misc = parseInt(v.init_misc, 10) || 0;
+        const dex = parseInt(v.dex_mod, 10) || 0;
+        const misc = parseInt(v.init_misc, 10) || 0;
         setAttrs({ initiative: dex + misc });
       });
     }
 
     function recalcAC() {
       getAttrs(["ac_base","ac_bonus","ac_use_dex","dex_mod"], function(v) {
-        var base = parseInt(v.ac_base, 10) || 0;
-        var bonus = parseInt(v.ac_bonus, 10) || 0;
-        var dex = parseInt(v.dex_mod, 10) || 0;
-        var useDex = checkedToNumber(v.ac_use_dex);
+        const base = parseInt(v.ac_base, 10) || 0;
+        const bonus = parseInt(v.ac_bonus, 10) || 0;
+        const dex = parseInt(v.dex_mod, 10) || 0;
+        const useDex = checkedToNumber(v.ac_use_dex);
         setAttrs({ ac: base + bonus + (useDex ? dex : 0) });
       });
     }
@@ -473,8 +473,8 @@
     }
 
     function compareSortText(aText, bText) {
-      var aLower = aText.toLowerCase();
-      var bLower = bText.toLowerCase();
+      const aLower = aText.toLowerCase();
+      const bLower = bText.toLowerCase();
 
       if (aLower < bLower) return -1;
       if (aLower > bLower) return 1;
@@ -484,7 +484,7 @@
       return 0;
     }
 
-    var repeatingSortConfig = {
+    const repeatingSortConfig = {
       skills: {
         key: "skillname",
         fields: ["skillname", "skillattr", "skillprof", "skillbonus"]
@@ -503,19 +503,19 @@
       }
     };
 
-    var activeRepeatingSorts = {};
+    const activeRepeatingSorts = {};
 
     function sortRepeatingSection(sectionName, fieldName) {
       if (activeRepeatingSorts[sectionName]) return;
 
-      var sectionKey = "repeating_" + sectionName;
-      var config = repeatingSortConfig[sectionName];
+      const sectionKey = "repeating_" + sectionName;
+      const config = repeatingSortConfig[sectionName];
       if (!config) return;
 
       getSectionIDs(sectionKey, function(ids) {
         if (!ids || ids.length < 2) return;
 
-        var fields = [];
+        const fields = [];
         ids.forEach(function(id) {
           config.fields.forEach(function(field) {
             fields.push(sectionKey + "_" + id + "_" + field);
@@ -523,17 +523,17 @@
         });
 
         getAttrs(fields, function(v) {
-          var rows = ids.map(function(id) {
-            var rowData = { id: id };
+          const rows = ids.map(function(id) {
+            const rowData = { id: id };
             config.fields.forEach(function(field) {
               rowData[field] = v[sectionKey + "_" + id + "_" + field] || "";
             });
             return rowData;
           });
 
-          var sortedRows = rows.slice().sort(function(a, b) {
-            var aText = normalizedSortValue(a[config.key]);
-            var bText = normalizedSortValue(b[config.key]);
+          const sortedRows = rows.slice().sort(function(a, b) {
+            const aText = normalizedSortValue(a[config.key]);
+            const bText = normalizedSortValue(b[config.key]);
 
             if (!aText && !bText) return 0;
             if (!aText) return 1;
@@ -542,8 +542,8 @@
             return compareSortText(aText, bText);
           });
 
-          var changed = false;
-          for (var i = 0; i < rows.length; i += 1) {
+          let changed = false;
+          for (let i = 0; i < rows.length; i += 1) {
             if (rows[i].id !== sortedRows[i].id) {
               changed = true;
               break;
@@ -552,9 +552,9 @@
 
           if (!changed) return;
 
-          var update = {};
+          const update = {};
           ids.forEach(function(targetId, index) {
-            var sourceRow = sortedRows[index];
+            const sourceRow = sortedRows[index];
             config.fields.forEach(function(field) {
               update[sectionKey + "_" + targetId + "_" + field] = sourceRow[field];
             });
