@@ -472,18 +472,6 @@
       return (v || "").toString().trim();
     }
 
-    function compareSortText(aText, bText) {
-      const aLower = aText.toLowerCase();
-      const bLower = bText.toLowerCase();
-
-      if (aLower < bLower) return -1;
-      if (aLower > bLower) return 1;
-
-      if (aText < bText) return -1;
-      if (aText > bText) return 1;
-      return 0;
-    }
-
     function sortRepeatingSection(sectionName, fieldName) {
       const sectionKey = "repeating_" + sectionName;
       getSectionIDs(sectionKey, function(ids) {
@@ -502,7 +490,10 @@
             if (!aText) return 1;
             if (!bText) return -1;
 
-            return compareSortText(aText, bText);
+            return aText.localeCompare(bText, undefined, {
+              sensitivity: "base",
+              numeric: true
+            });
           });
 
           setSectionOrder(sectionKey, sorted);
@@ -532,12 +523,6 @@
         recalcAC();
         sortAllRepeatingSections();
       }, 0);
-      setTimeout(function() {
-        sortAllRepeatingSections();
-      }, 200);
-      setTimeout(function() {
-        sortAllRepeatingSections();
-      }, 800);
     });
 
     on("change:sheet_theme", function() {
