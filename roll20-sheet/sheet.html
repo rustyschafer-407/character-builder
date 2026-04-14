@@ -505,7 +505,11 @@
 
     var activeRepeatingSorts = {};
 
-    function sortRepeatingSection(sectionName, fieldName) {
+    function releaseSortLock(sectionName) {
+      activeRepeatingSorts[sectionName] = false;
+    }
+
+    function sortRepeatingSection(sectionName) {
       if (activeRepeatingSorts[sectionName]) return;
 
       var sectionKey = "repeating_" + sectionName;
@@ -561,24 +565,29 @@
           });
 
           activeRepeatingSorts[sectionName] = true;
-          setAttrs(update, { silent: true }, function() {
-            activeRepeatingSorts[sectionName] = false;
+          setAttrs(update, function() {
+            releaseSortLock(sectionName);
           });
+
+          // Fallback unlock for runtimes that ignore the setAttrs callback.
+          setTimeout(function() {
+            releaseSortLock(sectionName);
+          }, 300);
         });
       });
     }
 
     function sortAllRepeatingSections() {
-      sortRepeatingSection("skills", "skillname");
-      sortRepeatingSection("attacks", "attackname");
-      sortRepeatingSection("powers", "powertext");
-      sortRepeatingSection("inventory", "itemname");
+      sortRepeatingSection("skills");
+      sortRepeatingSection("attacks");
+      sortRepeatingSection("powers");
+      sortRepeatingSection("inventory");
     }
 
-    function scheduleRepeatingSort(sectionName, fieldName) {
+    function scheduleRepeatingSort(sectionName) {
       setTimeout(function() {
-        sortRepeatingSection(sectionName, fieldName);
-      }, 0);
+        sortRepeatingSection(sectionName);
+      }, 60);
     }
 
     on("sheet:opened", function() {
@@ -624,19 +633,19 @@
     });
 
     on("change:repeating_skills change:repeating_skills:skillname remove:repeating_skills", function() {
-      scheduleRepeatingSort("skills", "skillname");
+      scheduleRepeatingSort("skills");
     });
 
     on("change:repeating_attacks change:repeating_attacks:attackname remove:repeating_attacks", function() {
-      scheduleRepeatingSort("attacks", "attackname");
+      scheduleRepeatingSort("attacks");
     });
 
     on("change:repeating_powers change:repeating_powers:powertext remove:repeating_powers", function() {
-      scheduleRepeatingSort("powers", "powertext");
+      scheduleRepeatingSort("powers");
     });
 
     on("change:repeating_inventory change:repeating_inventory:itemname remove:repeating_inventory", function() {
-      scheduleRepeatingSort("inventory", "itemname");
+      scheduleRepeatingSort("inventory");
     });
   </script>
 </div>
