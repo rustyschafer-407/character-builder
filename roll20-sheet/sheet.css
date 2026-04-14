@@ -418,7 +418,7 @@
 .charsheet .sheet-power-head,
 .charsheet .sheet-power-item {
   display: grid;
-  grid-template-columns: minmax(170px,1fr) 96px 140px 88px 92px;
+  grid-template-columns: minmax(170px,1fr) 96px 140px 88px 76px;
   gap: 8px;
   align-items: center;
 }
@@ -434,30 +434,37 @@
 }
 
 .charsheet .sheet-power-expand-toggle {
-  width: 88px !important;
-  min-width: 88px;
-  min-height: 34px;
-  height: 34px;
+  width: 72px !important;
+  min-width: 72px;
+  min-height: 28px;
+  height: 28px;
   justify-self: start;
-  border: 1px solid var(--button-border);
-  border-radius: 999px;
+  border: 0;
+  border-radius: 6px;
   background: transparent;
-  color: var(--text);
+  color: var(--accent);
   cursor: pointer;
   appearance: none;
+  padding: 0;
 }
 
 .charsheet .sheet-power-expand-toggle::before {
-  content: "Details";
+  content: "+ Details";
   display: block;
-  text-align: center;
-  font-size: 14px;
+  text-align: left;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 32px;
+  line-height: 28px;
+  text-decoration: underline;
 }
 
 .charsheet .sheet-power-expand-toggle:checked::before {
-  content: "Hide";
+  content: "- Hide";
+}
+
+.charsheet .sheet-power-expand-toggle:focus-visible {
+  outline: 2px solid var(--highlight-border);
+  outline-offset: 1px;
 }
 
 .charsheet .sheet-effect-head,
