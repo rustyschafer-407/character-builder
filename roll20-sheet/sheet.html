@@ -278,9 +278,31 @@
     <div class="sheet-tab-panel sheet-panel-powers">
       <div class="sheet-section">
         <div class="sheet-section-title">Powers</div>
+
+        <div class="sheet-power-head">
+          <div>Power Name</div>
+          <div>Uses/Day</div>
+          <div>Save Attr</div>
+          <div>Save DC</div>
+        </div>
+
         <fieldset class="repeating_powers">
-          <div class="sheet-power-row">
-            <input type="text" name="attr_powertext" placeholder="Power / note">
+          <div class="sheet-power-row-compact">
+            <input class="sheet-highlight-name" type="text" name="attr_powername" placeholder="Power Name">
+            <input type="number" name="attr_power_uses" value="0">
+            <select name="attr_power_save_attr">
+              <option value="none" selected>None</option>
+              <option value="str_mod">STR</option>
+              <option value="dex_mod">DEX</option>
+              <option value="con_mod">CON</option>
+              <option value="int_mod">INT</option>
+              <option value="wis_mod">WIS</option>
+              <option value="cha_mod">CHA</option>
+            </select>
+            <input class="sheet-highlight-total" type="number" name="attr_power_dc" value="" readonly>
+          </div>
+          <div class="sheet-power-desc-row">
+            <input type="text" name="attr_powertext" placeholder="Description">
           </div>
         </fieldset>
       </div>
@@ -477,6 +499,41 @@
       });
     }
 
+    function recalcPowerDCs() {
+      const baseFields = ["pb", "str_mod", "dex_mod", "con_mod", "int_mod", "wis_mod", "cha_mod"];
+
+      getAttrs(baseFields, function(base) {
+        getSectionIDs("repeating_powers", function(ids) {
+          if (!ids || !ids.length) return;
+
+          const saveAttrFields = ids.map(function(id) {
+            return "repeating_powers_" + id + "_power_save_attr";
+          });
+
+          getAttrs(saveAttrFields, function(rowValues) {
+            const pb = parseInt(base.pb, 10) || 0;
+            const update = {};
+
+            ids.forEach(function(id) {
+              const rowSaveField = "repeating_powers_" + id + "_power_save_attr";
+              const rowDcField = "repeating_powers_" + id + "_power_dc";
+              const selected = rowValues[rowSaveField] || "none";
+
+              if (selected === "none") {
+                update[rowDcField] = "";
+                return;
+              }
+
+              const mod = parseInt(base[selected], 10) || 0;
+              update[rowDcField] = 8 + pb + mod;
+            });
+
+            setAttrs(update);
+          });
+        });
+      });
+    }
+
     on("sheet:opened", function() {
       syncThemeUI();
       recalcAbilityMods();
@@ -484,6 +541,7 @@
         recalcPCSaves();
         recalcInit();
         recalcAC();
+        recalcPowerDCs();
       }, 0);
     });
 
@@ -497,11 +555,13 @@
         recalcPCSaves();
         recalcInit();
         recalcAC();
+        recalcPowerDCs();
       }, 0);
     });
 
     on("change:pb change:str_saveprof change:dex_saveprof change:con_saveprof change:int_saveprof change:wis_saveprof change:cha_saveprof change:str_savebonus change:dex_savebonus change:con_savebonus change:int_savebonus change:wis_savebonus change:cha_savebonus", function() {
       recalcPCSaves();
+      recalcPowerDCs();
     });
 
     on("change:init_misc", function() {
@@ -510,6 +570,10 @@
 
     on("change:ac_base change:ac_bonus change:ac_use_dex", function() {
       recalcAC();
+    });
+
+    on("change:repeating_powers:power_save_attr change:repeating_powers add:repeating_powers remove:repeating_powers", function() {
+      recalcPowerDCs();
     });
   </script>
 </div>

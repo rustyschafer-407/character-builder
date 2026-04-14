@@ -379,6 +379,7 @@
 .charsheet .sheet-attrsave-head,
 .charsheet .sheet-skill-head,
 .charsheet .sheet-attack-head,
+.charsheet .sheet-power-head,
 .charsheet .sheet-effect-head,
 .charsheet .sheet-inventory-head {
   font-weight: 700;
@@ -413,6 +414,18 @@
   align-items: center;
 }
 
+.charsheet .sheet-power-head,
+.charsheet .sheet-power-row-compact {
+  display: grid;
+  grid-template-columns: minmax(170px,1fr) 96px 140px 88px;
+  gap: 8px;
+  align-items: center;
+}
+
+.charsheet .sheet-power-desc-row {
+  padding-top: 8px;
+}
+
 .charsheet .sheet-effect-head,
 .charsheet .sheet-effect-row-compact {
   display: grid;
@@ -432,6 +445,7 @@
 .charsheet .sheet-attrsave-row,
 .charsheet .sheet-skill-row-compact,
 .charsheet .sheet-attack-row-compact,
+.charsheet .sheet-power-row-compact,
 .charsheet .sheet-effect-row-compact,
 .charsheet .sheet-inventory-row {
   padding: 8px 0;
@@ -509,6 +523,8 @@
   .charsheet .sheet-skill-row-compact,
   .charsheet .sheet-attack-head,
   .charsheet .sheet-attack-row-compact,
+  .charsheet .sheet-power-head,
+  .charsheet .sheet-power-row-compact,
   .charsheet .sheet-effect-head,
   .charsheet .sheet-effect-row-compact,
   .charsheet .sheet-inventory-head,
