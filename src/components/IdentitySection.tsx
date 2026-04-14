@@ -5,6 +5,7 @@ import { buttonStyle, inputStyle, labelTextStyle, panelStyle } from "./uiStyles"
 interface Props {
   character: CharacterRecord;
   campaignName: string;
+  raceName: string;
   classLabel: string;
   className: string;
   levelLabel: string;
@@ -16,6 +17,7 @@ interface Props {
 export default function IdentitySection({
   character,
   campaignName,
+  raceName,
   classLabel,
   className,
   levelLabel,
@@ -111,6 +113,10 @@ export default function IdentitySection({
 
         <div style={{ color: "#b9cdf0" }}>
           <strong>Campaign:</strong> {campaignName}
+        </div>
+
+        <div style={{ color: "#b9cdf0" }}>
+          <strong>Race:</strong> {raceName}
         </div>
 
         <div style={{ color: "#b9cdf0" }}>

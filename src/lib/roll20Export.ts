@@ -3,6 +3,7 @@ import type { AttributeKey, GameData } from "../types/gameData";
 import {
   findCampaign,
   findClassInCampaign,
+  findRaceInCampaign,
   resolveCampaignAssets,
   validateCharacterReferences,
 } from "./domain";
@@ -39,6 +40,7 @@ const LEGACY_SHEET_DEFAULTS = {
 type ExportContext = {
   campaign: ReturnType<typeof findCampaign>;
   cls: ReturnType<typeof findClassInCampaign>;
+  race: ReturnType<typeof findRaceInCampaign>;
   skillMap: Map<string, { id: string; name: string; attribute: AttributeKey }>;
   powerMap: Map<string, { id: string; name: string; description?: string }>;
   itemMap: Map<string, { id: string; name: string; description?: string }>;
@@ -87,12 +89,14 @@ function getEffectiveSheetState(character: CharacterRecord) {
 function buildExportContext(character: CharacterRecord, gameData: GameData): ExportContext {
   const campaign = findCampaign(gameData, character.campaignId);
   const cls = findClassInCampaign(campaign, character.classId);
+  const race = findRaceInCampaign(campaign, character.raceId ?? "");
   const assets = resolveCampaignAssets(campaign);
   const referenceValidation = validateCharacterReferences(character, campaign);
 
   return {
     campaign,
     cls,
+    race,
     skillMap: new Map(assets.skills.map((skill) => [skill.id, skill])),
     powerMap: new Map(assets.powers.map((power) => [power.id, power])),
     itemMap: new Map(assets.items.map((item) => [item.id, item])),
@@ -167,7 +171,8 @@ export function buildRoll20AttributeMap(
 
   // Header / top section
   result["attr_character_name"] = clean(character.identity.name);
-  result["attr_class_race"] = clean(context.cls?.name ?? character.classId);
+  result["attr_class"] = clean(context.cls?.name ?? character.classId);
+  result["attr_race"] = clean(context.race?.name ?? character.raceId ?? "");
   result["attr_sheet_theme"] = clean(getThemeValue(character.campaignId));
 
   // Core stats

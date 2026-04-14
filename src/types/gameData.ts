@@ -33,11 +33,13 @@ export interface CampaignDefinition {
   labels: CampaignLabels;
   attributeRules: AttributeRules;
   classes: ClassDefinition[];
+  races?: RaceDefinition[];
   skills: SkillDefinition[];
   powers: PowerDefinition[];
   items: ItemDefinition[];
   attackTemplates: AttackTemplateDefinition[];
   availableClassIds?: string[];
+  availableRaceIds?: string[];
   availableSkillIds?: string[];
   availablePowerIds?: string[];
   availableItemIds?: string[];
@@ -98,6 +100,16 @@ export interface ClassDefinition {
   levelUpItemChoiceRules?: ClassItemChoiceRule[];
 }
 
+export interface RaceDefinition {
+  id: string;
+  campaignId: string;
+  name: string;
+  description?: string;
+  attributeBonuses: AttributeBonusRule[];
+  defaultPowerIds?: string[];
+  availableClassIds?: string[];
+}
+
 export interface SkillDefinition {
   id: string;
   name: string;
@@ -140,6 +152,7 @@ export interface AttackTemplateDefinition {
 export interface GameData {
   campaigns: CampaignDefinition[];
   classes: ClassDefinition[];
+  races: RaceDefinition[];
   skills: SkillDefinition[];
   powers: PowerDefinition[];
   items: ItemDefinition[];

@@ -7,6 +7,7 @@ import type {
   ClassPowerChoiceRule,
   ClassSkillChoiceRule,
   GameData,
+  RaceDefinition,
 } from "../types/gameData";
 import type { CharacterCreationDraft } from "../components/CharacterCreationWizard";
 import {
@@ -21,7 +22,12 @@ import {
   getSelectedCountForSkillRule,
 } from "../lib/creationChoiceRules";
 import { syncDerivedAttacks } from "../lib/attackSync";
-import { getClassById, getClassesForCampaign } from "../lib/character";
+import {
+  getClassById,
+  getClassesForCampaignAndRace,
+  getRaceById,
+  getRacesForCampaign,
+} from "../lib/character";
 
 type AttributeGenerationMethod = "pointBuy" | "randomRoll" | "manual";
 type ClassChoiceRule = ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule;
@@ -68,18 +74,21 @@ function ruleIds(rule: ClassChoiceRule) {
 interface UseCharacterCreationParams {
   gameData: GameData;
   campaignId: string;
+  raceId: string;
   classId: string;
   getCampaignName: (id: string) => string;
-  makeDraftFromCampaignAndClass: (
+  makeDraftFromCampaignClassAndRace: (
     gameData: GameData,
     campaignId: string,
+    raceId: string,
     classId: string,
     name: string
   ) => CharacterCreationDraft | null;
   makeBaseAttributes: () => Record<AttributeKey, number>;
   applyClassAttributeModifiers: (
     attributes: Record<AttributeKey, number>,
-    cls: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null
+    cls: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null,
+    race: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null
   ) => Record<AttributeKey, number>;
   getPointBuySpent: (attributes: Record<AttributeKey, number>) => number;
   onFinishDraft: (draft: CharacterCreationDraft) => void;
@@ -88,9 +97,10 @@ interface UseCharacterCreationParams {
 export function useCharacterCreation({
   gameData,
   campaignId,
+  raceId,
   classId,
   getCampaignName,
-  makeDraftFromCampaignAndClass,
+  makeDraftFromCampaignClassAndRace,
   makeBaseAttributes,
   applyClassAttributeModifiers,
   getPointBuySpent,
@@ -113,10 +123,20 @@ export function useCharacterCreation({
     [creationDraft, gameData]
   );
 
+  const wizardRace: RaceDefinition | null = useMemo(
+    () => (creationDraft ? getRaceById(gameData, creationDraft.raceId) ?? null : null),
+    [creationDraft, gameData]
+  );
+
+  const wizardRacesForCampaign = useMemo(
+    () => (creationDraft ? getRacesForCampaign(gameData, creationDraft.campaignId) : []),
+    [creationDraft, gameData]
+  );
+
   const wizardClassesForCampaign = useMemo(
     () =>
       creationDraft
-        ? getClassesForCampaign(gameData, creationDraft.campaignId)
+        ? getClassesForCampaignAndRace(gameData, creationDraft.campaignId, creationDraft.raceId)
         : [],
     [creationDraft, gameData]
   );
@@ -170,15 +190,21 @@ export function useCharacterCreation({
 
   function openWizard() {
     const defaultCampaignId = campaignId || gameData.campaigns[0]?.id || "";
-    const classesInCampaign = getClassesForCampaign(gameData, defaultCampaignId);
+    const racesInCampaign = getRacesForCampaign(gameData, defaultCampaignId);
+    const selectedRaceInCampaign = racesInCampaign.some((race) => race.id === raceId)
+      ? raceId
+      : "";
+    const defaultRaceId = selectedRaceInCampaign || racesInCampaign[0]?.id || "";
+    const classesInCampaign = getClassesForCampaignAndRace(gameData, defaultCampaignId, defaultRaceId);
     const selectedClassInCampaign = classesInCampaign.some((cls) => cls.id === classId)
       ? classId
       : "";
     const defaultClassId = selectedClassInCampaign || classesInCampaign[0]?.id || "";
 
-    const draft = makeDraftFromCampaignAndClass(
+    const draft = makeDraftFromCampaignClassAndRace(
       gameData,
       defaultCampaignId,
+      defaultRaceId,
       defaultClassId,
       `${getCampaignName(defaultCampaignId)} Character`
     );
@@ -210,18 +236,22 @@ export function useCharacterCreation({
     }
 
     if (wizardStep === 1) {
+      return Boolean(creationDraft.raceId);
+    }
+
+    if (wizardStep === 2) {
       return Boolean(creationDraft.classId);
     }
 
-    if (wizardStep === 3) {
+    if (wizardStep === 4) {
       return areSkillRulesSatisfiedExactly(wizardSkillChoiceRules, creationDraft.skills);
     }
 
-    if (wizardStep === 4) {
+    if (wizardStep === 5) {
       return arePowerRulesSatisfiedExactly(wizardPowerChoiceRules, creationDraft.powers);
     }
 
-    if (wizardStep === 5) {
+    if (wizardStep === 6) {
       return areItemRulesSatisfiedAtMost(wizardItemChoiceRules, creationDraft.inventory);
     }
 
@@ -234,7 +264,7 @@ export function useCharacterCreation({
       return;
     }
 
-    setWizardStep((prev) => Math.min(prev + 1, 6));
+    setWizardStep((prev) => Math.min(prev + 1, 7));
   }
 
   function previousWizardStep() {
@@ -464,10 +494,27 @@ export function useCharacterCreation({
 
   function handleWizardCampaignChange(nextCampaignId: string) {
     if (!creationDraft) return;
-    const nextClassId = getClassesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
-    const nextDraft = makeDraftFromCampaignAndClass(
+    const nextRaceId = getRacesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
+    const nextClassId = getClassesForCampaignAndRace(gameData, nextCampaignId, nextRaceId)[0]?.id ?? "";
+    const nextDraft = makeDraftFromCampaignClassAndRace(
       gameData,
       nextCampaignId,
+      nextRaceId,
+      nextClassId,
+      creationDraft.identity.name
+    );
+    if (nextDraft) {
+      setCreationDraft(nextDraft);
+    }
+  }
+
+  function handleWizardRaceChange(nextRaceId: string) {
+    if (!creationDraft) return;
+    const nextClassId = getClassesForCampaignAndRace(gameData, creationDraft.campaignId, nextRaceId)[0]?.id ?? "";
+    const nextDraft = makeDraftFromCampaignClassAndRace(
+      gameData,
+      creationDraft.campaignId,
+      nextRaceId,
       nextClassId,
       creationDraft.identity.name
     );
@@ -478,9 +525,10 @@ export function useCharacterCreation({
 
   function handleWizardClassChange(nextClassId: string) {
     if (!creationDraft) return;
-    const nextDraft = makeDraftFromCampaignAndClass(
+    const nextDraft = makeDraftFromCampaignClassAndRace(
       gameData,
       creationDraft.campaignId,
+      creationDraft.raceId,
       nextClassId,
       creationDraft.identity.name
     );
@@ -496,7 +544,7 @@ export function useCharacterCreation({
       attributes:
         method === "manual"
           ? creationDraft.attributes
-          : applyClassAttributeModifiers(makeBaseAttributes(), wizardClass),
+          : applyClassAttributeModifiers(makeBaseAttributes(), wizardClass, wizardRace),
       attributeGeneration: {
         ...creationDraft.attributeGeneration,
         method,
@@ -520,7 +568,7 @@ export function useCharacterCreation({
       rolledAttributes[attr] = values[i];
     });
 
-    const newAttributes = applyClassAttributeModifiers(rolledAttributes, wizardClass);
+    const newAttributes = applyClassAttributeModifiers(rolledAttributes, wizardClass, wizardRace);
 
     setCreationDraft({
       ...creationDraft,
@@ -549,6 +597,8 @@ export function useCharacterCreation({
     wizardStep,
     creationDraft,
     wizardCampaign,
+    wizardRace,
+    wizardRacesForCampaign,
     wizardClass,
     wizardClassesForCampaign,
     wizardSkills,
@@ -569,6 +619,7 @@ export function useCharacterCreation({
     toggleWizardPower,
     toggleWizardItem,
     handleWizardCampaignChange,
+    handleWizardRaceChange,
     handleWizardClassChange,
     handleWizardAttributeGenerationChange,
     handleWizardRollAttributes,

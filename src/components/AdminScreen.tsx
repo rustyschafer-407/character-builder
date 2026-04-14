@@ -13,6 +13,7 @@ import type {
   CampaignDefinition,
   ItemDefinition,
   PowerDefinition,
+  RaceDefinition,
   SkillDefinition,
 } from "../types/gameData";
 import {
@@ -36,7 +37,7 @@ interface Props {
   onSave: (gameData: GameData) => void;
 }
 
-type AdminTab = "campaign" | "classes" | "skills" | "powers" | "items" | "attacks";
+type AdminTab = "campaign" | "classes" | "races" | "skills" | "powers" | "items" | "attacks";
 const HIT_DIE_OPTIONS = [4, 6, 8, 10, 12, 20] as const;
 const ATTRIBUTE_KEYS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 const compactNumberInputStyle = {
@@ -95,6 +96,18 @@ function makeBlankSkill(): SkillDefinition {
     attribute: "STR",
     description: "",
     tags: [],
+  };
+}
+
+function makeBlankRace(campaignId: string): RaceDefinition {
+  return {
+    id: `race-${Date.now()}`,
+    campaignId,
+    name: "New Race",
+    description: "",
+    attributeBonuses: [],
+    defaultPowerIds: [],
+    availableClassIds: [],
   };
 }
 
@@ -234,6 +247,7 @@ export default function AdminScreen({
   const [workingData, setWorkingData] = useState<GameData>(gameData);
   const [tab, setTab] = useState<AdminTab>("campaign");
   const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [selectedRaceId, setSelectedRaceId] = useState<string>("");
   const [selectedSkillId, setSelectedSkillId] = useState<string>("");
   const [selectedPowerId, setSelectedPowerId] = useState<string>("");
   const [selectedItemId, setSelectedItemId] = useState<string>("");
@@ -244,11 +258,13 @@ export default function AdminScreen({
   const selectedCampaign =
     workingData.campaigns.find((campaign) => campaign.id === activeCampaignId) ?? null;
   const selectedClass = selectedCampaign?.classes.find((cls) => cls.id === selectedClassId) ?? null;
+  const selectedRace = selectedCampaign?.races?.find((race) => race.id === selectedRaceId) ?? null;
   const selectedSkill = selectedCampaign?.skills.find((skill) => skill.id === selectedSkillId) ?? null;
   const selectedPower = selectedCampaign?.powers.find((power) => power.id === selectedPowerId) ?? null;
   const selectedItem = selectedCampaign?.items.find((item) => item.id === selectedItemId) ?? null;
   const selectedAttack = selectedCampaign?.attackTemplates.find((attack) => attack.id === selectedAttackId) ?? null;
   const sortedCampaignClasses = selectedCampaign ? sortByName(selectedCampaign.classes) : [];
+  const sortedCampaignRaces = selectedCampaign ? sortByName(selectedCampaign.races ?? []) : [];
   const sortedCampaignSkills = selectedCampaign ? sortByName(selectedCampaign.skills) : [];
   const sortedCampaignPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
   const sortedCampaignItems = selectedCampaign ? sortByName(selectedCampaign.items) : [];
@@ -276,11 +292,13 @@ export default function AdminScreen({
       id: `campaign-${generateId()}`,
       name: `${selectedCampaign.name} Copy`,
       classes: selectedCampaign.classes.map((cls) => ({ ...cls })),
+      races: (selectedCampaign.races ?? []).map((race) => ({ ...race })),
       skills: selectedCampaign.skills.map((skill) => ({ ...skill })),
       powers: selectedCampaign.powers.map((power) => ({ ...power })),
       items: selectedCampaign.items.map((item) => ({ ...item })),
       attackTemplates: selectedCampaign.attackTemplates.map((attack) => ({ ...attack })),
       availableClassIds: [...(selectedCampaign.availableClassIds ?? [])],
+      availableRaceIds: [...(selectedCampaign.availableRaceIds ?? [])],
       availableSkillIds: [...(selectedCampaign.availableSkillIds ?? [])],
       availablePowerIds: [...(selectedCampaign.availablePowerIds ?? [])],
       availableItemIds: [...(selectedCampaign.availableItemIds ?? [])],
@@ -329,6 +347,7 @@ export default function AdminScreen({
 
     onCampaignContextChange(fallbackCampaignId);
     setSelectedClassId("");
+    setSelectedRaceId("");
     setSelectedSkillId("");
     setSelectedPowerId("");
     setSelectedItemId("");
@@ -364,8 +383,59 @@ export default function AdminScreen({
     updateCampaign({
       ...selectedCampaign,
       classes: selectedCampaign.classes.filter((value) => value.id !== id),
+      // Remove the deleted class from all races
+      races: (selectedCampaign.races ?? []).map((race) => ({
+        ...race,
+        availableClassIds: (race.availableClassIds ?? []).filter((cId) => cId !== id),
+      })),
     });
     setSelectedClassId("");
+  }
+
+  function updateRace(updatedRace: RaceDefinition) {
+    if (!selectedCampaign) return;
+    updateCampaign({
+      ...selectedCampaign,
+      races: (selectedCampaign.races ?? []).map((race) =>
+        race.id === updatedRace.id ? updatedRace : race
+      ),
+    });
+  }
+
+  function addRace() {
+    if (!selectedCampaign) return;
+    const newRace = makeBlankRace(selectedCampaign.id);
+    updateCampaign({
+      ...selectedCampaign,
+      races: [...(selectedCampaign.races ?? []), newRace],
+    });
+    setSelectedRaceId(newRace.id);
+    setTab("races");
+  }
+
+  function deleteRace(id: string) {
+    if (!selectedCampaign) return;
+    const race = (selectedCampaign.races ?? []).find((value) => value.id === id);
+    const displayName = race?.name || "this race";
+    if (!window.confirm(`Delete ${displayName}?`)) return;
+    updateCampaign({
+      ...selectedCampaign,
+      races: (selectedCampaign.races ?? []).filter((value) => value.id !== id),
+    });
+    setSelectedRaceId("");
+  }
+
+  function getRaceAttributeBonusAmount(attribute: AttributeKey) {
+    if (!selectedRace) return 0;
+    return selectedRace.attributeBonuses.find((bonus) => bonus.attribute === attribute)?.amount ?? 0;
+  }
+
+  function setRaceAttributeBonusAmount(attribute: AttributeKey, amount: number) {
+    if (!selectedRace) return;
+    const existing = selectedRace.attributeBonuses.filter((bonus) => bonus.attribute !== attribute);
+    const nextBonuses: AttributeBonusRule[] =
+      amount === 0 ? existing : [...existing, { attribute, amount }];
+    updateRace({ ...selectedRace, attributeBonuses: nextBonuses });
   }
 
   function updateSkill(updatedSkill: SkillDefinition) {
@@ -698,6 +768,9 @@ export default function AdminScreen({
         </button>
         <button onClick={() => setTab("classes")} style={{ ...buttonStyle, background: tab === "classes" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Classes
+        </button>
+        <button onClick={() => setTab("races")} style={{ ...buttonStyle, background: tab === "races" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+          Races
         </button>
         </div>
 
@@ -1352,6 +1425,199 @@ export default function AdminScreen({
                         ))}
                       </div>
                     )}
+                  </section>
+                </div>
+              )}
+            </main>
+          </div>
+        )
+      )}
+
+      {tab === "races" && (
+        !selectedCampaign ? (
+          <div style={cardStyle()}>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign first to manage races.</p>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
+            <EntityListEditor
+              title={`Races (${selectedCampaign.name})`}
+              helper="Races belong to the selected campaign."
+              items={sortedCampaignRaces}
+              selectedId={selectedRaceId}
+              onSelect={setSelectedRaceId}
+              onAdd={addRace}
+              onDelete={deleteRace}
+              subtitle={() => ""}
+            />
+            <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
+              {!selectedRace ? (
+                <div style={cardStyle()}>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Select a race to edit.</p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 16 }}>
+                  <section style={cardStyle()}>
+                    <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Race Details</h3>
+                    <div style={gridCols(2)}>
+                      <label style={labelTextStyle}>
+                        Internal ID
+                        <input
+                          value={selectedRace.id}
+                          onChange={(e) => updateRace({ ...selectedRace, id: e.target.value })}
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={labelTextStyle}>
+                        Name
+                        <input
+                          value={selectedRace.name}
+                          onChange={(e) => updateRace({ ...selectedRace, name: e.target.value })}
+                          style={inputStyle}
+                        />
+                      </label>
+                      <label style={labelTextStyle}>
+                        Description
+                        <input
+                          value={selectedRace.description ?? ""}
+                          onChange={(e) => updateRace({ ...selectedRace, description: e.target.value })}
+                          style={inputStyle}
+                        />
+                      </label>
+                    </div>
+                  </section>
+
+                  <section style={cardStyle()}>
+                    <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Attribute Modifiers</h3>
+                    <p style={{ marginTop: 0, ...mutedTextStyle }}>
+                      Set racial attribute bonuses and penalties (e.g. CON +2, INT +1).
+                    </p>
+                    <div style={gridCols(3)}>
+                      {ATTRIBUTE_KEYS.map((attribute) => (
+                        <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 6 }}>
+                          <span>{attribute}</span>
+                          <input
+                            type="number"
+                            value={getRaceAttributeBonusAmount(attribute)}
+                            onChange={(e) =>
+                              setRaceAttributeBonusAmount(attribute, Number(e.target.value) || 0)
+                            }
+                            style={compactNumberInputStyle}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section style={cardStyle()}>
+                    <div style={{ ...panelStyle, padding: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        <h4 style={{ margin: 0 }}>Default Powers</h4>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            type="button"
+                            style={buttonStyle}
+                            onClick={() =>
+                              updateRace({
+                                ...selectedRace,
+                                defaultPowerIds: sortedCampaignPowers.map((power) => power.id),
+                              })
+                            }
+                          >
+                            Select All
+                          </button>
+                          <button
+                            type="button"
+                            style={buttonStyle}
+                            onClick={() => updateRace({ ...selectedRace, defaultPowerIds: [] })}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      {sortedCampaignPowers.length === 0 ? (
+                        <p style={{ margin: 0, ...mutedTextStyle }}>No powers defined for this campaign.</p>
+                      ) : (
+                        sortedCampaignPowers.map((power) => {
+                          const checked = (selectedRace.defaultPowerIds ?? []).includes(power.id);
+                          return (
+                            <label key={power.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  const current = selectedRace.defaultPowerIds ?? [];
+                                  updateRace({
+                                    ...selectedRace,
+                                    defaultPowerIds: checked
+                                      ? current.filter((id) => id !== power.id)
+                                      : [...current, power.id],
+                                  });
+                                }}
+                              />
+                              {power.name}
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
+                  </section>
+
+                  <section style={cardStyle()}>
+                    <div style={{ ...panelStyle, padding: 12 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        <h4 style={{ margin: 0 }}>Available Classes</h4>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <button
+                            type="button"
+                            style={buttonStyle}
+                            onClick={() =>
+                              updateRace({
+                                ...selectedRace,
+                                availableClassIds: sortedCampaignClasses.map((cls) => cls.id),
+                              })
+                            }
+                          >
+                            Select All
+                          </button>
+                          <button
+                            type="button"
+                            style={buttonStyle}
+                            onClick={() => updateRace({ ...selectedRace, availableClassIds: [] })}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      <p style={{ margin: "0 0 10px 0", ...mutedTextStyle, fontSize: 13 }}>
+                        Leave all unchecked to allow all classes.
+                      </p>
+                      {sortedCampaignClasses.length === 0 ? (
+                        <p style={{ margin: 0, ...mutedTextStyle }}>No classes defined for this campaign.</p>
+                      ) : (
+                        sortedCampaignClasses.map((cls) => {
+                          const checked = (selectedRace.availableClassIds ?? []).includes(cls.id);
+                          return (
+                            <label key={cls.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => {
+                                  const current = selectedRace.availableClassIds ?? [];
+                                  updateRace({
+                                    ...selectedRace,
+                                    availableClassIds: checked
+                                      ? current.filter((id) => id !== cls.id)
+                                      : [...current, cls.id],
+                                  });
+                                }}
+                              />
+                              {cls.name}
+                            </label>
+                          );
+                        })
+                      )}
+                    </div>
                   </section>
                 </div>
               )}

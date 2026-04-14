@@ -23,6 +23,7 @@ import Roll20ExportPanel from "./Roll20ExportPanel";
 interface SelectedCharacterWorkspaceProps {
   character: CharacterRecord;
   selectedCampaignName: string;
+  selectedRaceName: string;
   selectedClassName: string;
   labels: CampaignLabels;
   pointBuyTotal: number;
@@ -79,6 +80,7 @@ interface SelectedCharacterWorkspaceProps {
 export default function SelectedCharacterWorkspace({
   character,
   selectedCampaignName,
+  selectedRaceName,
   selectedClassName,
   labels,
   pointBuyTotal,
@@ -164,6 +166,7 @@ export default function SelectedCharacterWorkspace({
       <IdentitySection
         character={character}
         campaignName={selectedCampaignName}
+        raceName={selectedRaceName}
         classLabel={labels.className}
         className={selectedClassName}
         levelLabel={labels.level}

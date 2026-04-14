@@ -82,6 +82,7 @@ export interface CharacterRecord {
   id: string;
   identity: CharacterIdentity;
   campaignId: string;
+  raceId?: string;
   classId: string;
   level: number;
   proficiencyBonus: number;

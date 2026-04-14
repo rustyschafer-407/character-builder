@@ -13,9 +13,10 @@ import type {
   CampaignDefinition,
   ClassDefinition,
   GameData,
+  RaceDefinition,
 } from "../types/gameData";
 import { syncDerivedAttacks } from "./attackSync";
-import { findCampaign, findClassInCampaign, resolveCampaignAssets } from "./domain";
+import { findCampaign, findClassInCampaign, findRaceInCampaign, resolveCampaignAssets } from "./domain";
 
 export function generateId() {
   return crypto.randomUUID();
@@ -32,10 +33,51 @@ export function getClassesForCampaign(gameData: GameData, campaignId: string) {
   );
 }
 
+export function getRacesForCampaign(gameData: GameData, campaignId: string) {
+  const campaign = findCampaign(gameData, campaignId);
+  return [...resolveCampaignAssets(campaign).races].sort((a, b) =>
+    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+  );
+}
+
+export function getClassesForCampaignAndRace(
+  gameData: GameData,
+  campaignId: string,
+  raceId?: string
+) {
+  const campaign = findCampaign(gameData, campaignId);
+  const classes = [...resolveCampaignAssets(campaign).classes];
+  if (!raceId) {
+    return classes.sort((a, b) =>
+      a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+    );
+  }
+
+  const race = findRaceInCampaign(campaign, raceId);
+  const allowedClassIds = race?.availableClassIds ?? [];
+  if (allowedClassIds.length === 0) {
+    return classes.sort((a, b) =>
+      a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+    );
+  }
+
+  return classes
+    .filter((cls) => allowedClassIds.includes(cls.id))
+    .sort((a, b) => a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" }));
+}
+
 export function getClassById(gameData: GameData, classId: string) {
   for (const campaign of gameData.campaigns) {
     const cls = findClassInCampaign(campaign, classId);
     if (cls) return cls;
+  }
+  return undefined;
+}
+
+export function getRaceById(gameData: GameData, raceId: string) {
+  for (const campaign of gameData.campaigns) {
+    const race = findRaceInCampaign(campaign, raceId);
+    if (race) return race;
   }
   return undefined;
 }
@@ -53,11 +95,11 @@ function makeBaseAttributes(): Record<AttributeKey, number> {
 
 function applyAttributeBonuses(
   attributes: Record<AttributeKey, number>,
-  cls: ClassDefinition
+  bonuses: Array<{ attribute: AttributeKey; amount: number }> | undefined
 ): Record<AttributeKey, number> {
   const next = { ...attributes };
 
-  for (const bonus of cls.attributeBonuses ?? []) {
+  for (const bonus of bonuses ?? []) {
     next[bonus.attribute] += bonus.amount;
   }
 
@@ -158,15 +200,21 @@ function makeSkills(campaign: CampaignDefinition): CharacterSkillSelection[] {
   }));
 }
 
-function makePowers(campaign: CampaignDefinition, cls: ClassDefinition): CharacterPowerSelection[] {
-  return (cls.defaultPowerIds ?? [])
+function makePowers(
+  campaign: CampaignDefinition,
+  cls: ClassDefinition,
+  race: RaceDefinition | null
+): CharacterPowerSelection[] {
+  const defaultPowerIds = new Set([...(cls.defaultPowerIds ?? []), ...(race?.defaultPowerIds ?? [])]);
+
+  return [...defaultPowerIds]
     .map((powerId) => campaign.powers.find((power) => power.id === powerId))
     .filter((power): power is NonNullable<typeof power> => Boolean(power))
     .map((power) => ({
       powerId: power.id,
       name: power.name,
       notes: power.description ?? "",
-      source: "class",
+      source: race?.defaultPowerIds?.includes(power.id) ? "background" : "class",
     }));
 }
 
@@ -194,14 +242,16 @@ function makeAttacks(campaign: CampaignDefinition, cls: ClassDefinition): Charac
 export function createCharacterFromCampaignAndClass(
   campaign: CampaignDefinition,
   cls: ClassDefinition,
-  name: string
+  name: string,
+  race: RaceDefinition | null = null
 ): CharacterRecord {
   const baseAttributes = makeBaseAttributes();
-  const attributes = applyAttributeBonuses(baseAttributes, cls);
+  const classAdjusted = applyAttributeBonuses(baseAttributes, cls.attributeBonuses);
+  const attributes = applyAttributeBonuses(classAdjusted, race?.attributeBonuses);
 
   const createdAt = new Date().toISOString();
 
-  const powers = makePowers(campaign, cls);
+  const powers = makePowers(campaign, cls, race);
   const inventory = makeItems();
   const baseAttacks = makeAttacks(campaign, cls);
 
@@ -209,6 +259,7 @@ export function createCharacterFromCampaignAndClass(
     id: generateId(),
     identity: makeIdentity(name),
     campaignId: campaign.id,
+    raceId: race?.id,
     classId: cls.id,
     level: 1,
     proficiencyBonus: 2,

@@ -8,6 +8,7 @@ function normalizeGameData(value: { campaigns: CampaignDefinition[] }): GameData
   return {
     campaigns,
     classes: campaigns.flatMap((campaign) => campaign.classes).filter(Boolean),
+    races: campaigns.flatMap((campaign) => campaign.races ?? []).filter(Boolean),
     skills: campaigns.flatMap((campaign) => campaign.skills).filter(Boolean),
     powers: campaigns.flatMap((campaign) => campaign.powers).filter(Boolean),
     items: campaigns.flatMap((campaign) => campaign.items).filter(Boolean),

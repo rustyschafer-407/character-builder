@@ -12,12 +12,14 @@ import type {
   ItemDefinition,
   LevelProgressionHpGainMode,
   PowerDefinition,
+  RaceDefinition,
   SkillDefinition,
 } from "../types/gameData";
 import type { CharacterRecord } from "../types/character";
 
 type CampaignAssets = {
   classes: ClassDefinition[];
+  races: RaceDefinition[];
   skills: SkillDefinition[];
   powers: PowerDefinition[];
   items: ItemDefinition[];
@@ -179,8 +181,29 @@ function normalizeClassForCampaign(
   };
 }
 
+function normalizeRaceForCampaign(
+  campaignId: string,
+  race: RaceDefinition,
+  classIds: Set<string>,
+  powerIds: Set<string>
+) {
+  return {
+    ...race,
+    campaignId,
+    attributeBonuses: (race.attributeBonuses ?? [])
+      .filter((bonus) => ATTRIBUTE_KEYS.includes(bonus.attribute))
+      .map((bonus) => ({
+        attribute: bonus.attribute,
+        amount: Number.isFinite(bonus.amount) ? Number(bonus.amount) : 0,
+      })),
+    defaultPowerIds: (race.defaultPowerIds ?? []).filter((id) => powerIds.has(id)),
+    availableClassIds: (race.availableClassIds ?? []).filter((id) => classIds.has(id)),
+  };
+}
+
 export function normalizeCampaignDefinition(campaign: CampaignDefinition): CampaignDefinition {
   const baseAssets = {
+    races: campaign.races ?? [],
     skills: campaign.skills ?? [],
     powers: (campaign.powers ?? []).map((power) => ({
       ...power,
@@ -195,6 +218,11 @@ export function normalizeCampaignDefinition(campaign: CampaignDefinition): Campa
 
   const classes = (campaign.classes ?? []).map((cls) =>
     normalizeClassForCampaign(campaign.id, cls, baseAssets)
+  );
+  const classIds = new Set(classes.map((cls) => cls.id));
+  const powerIds = new Set(baseAssets.powers.map((power) => power.id));
+  const races = baseAssets.races.map((race) =>
+    normalizeRaceForCampaign(campaign.id, race, classIds, powerIds)
   );
 
   return {
@@ -228,12 +256,16 @@ export function normalizeCampaignDefinition(campaign: CampaignDefinition): Campa
         : 18,
     },
     classes,
+    races,
     skills: baseAssets.skills,
     powers: baseAssets.powers,
     items: baseAssets.items,
     attackTemplates: baseAssets.attacks,
     availableClassIds: (campaign.availableClassIds ?? classes.map((cls) => cls.id)).filter((id) =>
       classes.some((cls) => cls.id === id)
+    ),
+    availableRaceIds: (campaign.availableRaceIds ?? races.map((race) => race.id)).filter((id) =>
+      races.some((race) => race.id === id)
     ),
     availableSkillIds: (campaign.availableSkillIds ?? baseAssets.skills.map((skill) => skill.id)).filter((id) =>
       baseAssets.skills.some((skill) => skill.id === id)
@@ -303,6 +335,7 @@ export function applySafeCampaignDefaults(
   if (!campaign) {
     return {
       classes: [],
+      races: [],
       skills: [],
       powers: [],
       items: [],
@@ -312,6 +345,7 @@ export function applySafeCampaignDefaults(
 
   return {
     classes: campaign.classes ?? [],
+    races: campaign.races ?? [],
     skills: campaign.skills ?? [],
     powers: campaign.powers ?? [],
     items: campaign.items ?? [],
@@ -329,6 +363,14 @@ export function findClassInCampaign(
 ) {
   if (!campaign) return undefined;
   return (campaign.classes ?? []).find((cls) => cls.id === classId);
+}
+
+export function findRaceInCampaign(
+  campaign: CampaignDefinition | null | undefined,
+  raceId: string
+) {
+  if (!campaign) return undefined;
+  return (campaign.races ?? []).find((race) => race.id === raceId);
 }
 
 export function resolveCampaignAssets(campaign: CampaignDefinition | null | undefined) {
@@ -353,6 +395,7 @@ export function validateCharacterReferences(
   const safeCharacter = applySafeCharacterDefaults(character);
   const assets = resolveCampaignAssets(campaign);
   const classValid = assets.classes.some((cls) => cls.id === safeCharacter.classId);
+  const raceValid = !safeCharacter.raceId || assets.races.some((race) => race.id === safeCharacter.raceId);
   const skillIdSet = new Set(assets.skills.map((skill) => skill.id));
   const powerIdSet = new Set(assets.powers.map((power) => power.id));
   const itemIdSet = new Set(assets.items.map((item) => item.id));
@@ -360,6 +403,7 @@ export function validateCharacterReferences(
 
   return {
     classValid,
+    raceValid,
     invalidSkillIds: safeCharacter.skills
       .map((skill) => skill.skillId)
       .filter((skillId) => !skillIdSet.has(skillId)),

@@ -18,6 +18,7 @@ import type {
   CampaignLabels,
   ItemDefinition,
   PowerDefinition,
+  RaceDefinition,
   SkillDefinition,
 } from "../types/gameData";
 import {
@@ -33,6 +34,7 @@ import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyl
 export interface CharacterCreationDraft {
   identity: CharacterIdentity;
   campaignId: string;
+  raceId: string;
   classId: string;
   level: number;
   proficiencyBonus: number;
@@ -50,8 +52,10 @@ interface Props {
   step: number;
   draft: CharacterCreationDraft;
   campaigns: CampaignDefinition[];
+  racesForCampaign: RaceDefinition[];
   classesForCampaign: ClassDefinition[];
   selectedCampaign: CampaignDefinition | null;
+  selectedRace: RaceDefinition | null;
   selectedClass: ClassDefinition | null;
   skills: SkillDefinition[];
   powers: PowerDefinition[];
@@ -64,6 +68,7 @@ interface Props {
   labels: CampaignLabels;
   onNameChange: (name: string) => void;
   onCampaignChange: (campaignId: string) => void;
+  onRaceChange: (raceId: string) => void;
   onClassChange: (classId: string) => void;
   onAttributeGenerationChange: (method: "pointBuy" | "randomRoll" | "manual") => void;
   onAttributeChange: (key: AttributeKey, value: number) => void;
@@ -82,6 +87,7 @@ const ATTRS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 function getStepTitles(labels: CampaignLabels) {
   return [
     "Campaign",
+    "Race",
     labels.className,
     labels.attributes,
     labels.skills,
@@ -112,12 +118,23 @@ function formatClassAttributeModifiers(
     .join(", ");
 }
 
+function formatRaceAttributeModifiers(selectedRace: RaceDefinition | null) {
+  if (!selectedRace) return "";
+  const modifiers = (selectedRace.attributeBonuses ?? []).filter((bonus) => bonus.amount !== 0);
+  if (modifiers.length === 0) return "None";
+  return modifiers
+    .map((bonus) => `${bonus.attribute} ${formatSignedNumber(bonus.amount)}`)
+    .join(", ");
+}
+
 export default function CharacterCreationWizard({
   step,
   draft,
   campaigns,
+  racesForCampaign,
   classesForCampaign,
   selectedCampaign,
+  selectedRace,
   selectedClass,
   skills,
   powers,
@@ -130,6 +147,7 @@ export default function CharacterCreationWizard({
   labels,
   onNameChange,
   onCampaignChange,
+  onRaceChange,
   onClassChange,
   onAttributeGenerationChange,
   onAttributeChange,
@@ -145,6 +163,7 @@ export default function CharacterCreationWizard({
   const method = draft.attributeGeneration?.method ?? "manual";
   const stepTitles = getStepTitles(labels);
   const classModifiersText = formatClassAttributeModifiers(selectedClass);
+  const raceModifiersText = formatRaceAttributeModifiers(selectedRace);
 
   return (
     <section style={panelStyle}>
@@ -250,6 +269,47 @@ export default function CharacterCreationWizard({
       {step === 1 && (
         <div style={{ display: "grid", gap: 14 }}>
           <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+            Race
+            <select
+              value={draft.raceId}
+              onChange={(e) => onRaceChange(e.target.value)}
+              style={inputStyle}
+            >
+              {racesForCampaign.map((race) => (
+                <option key={race.id} value={race.id}>
+                  {race.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {selectedRace && (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                background: "rgba(10, 20, 39, 0.78)",
+                border: "1px solid var(--border-soft)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <div>
+                <strong>{selectedRace.name}</strong>
+              </div>
+              <div style={{ marginTop: 4 }}>
+                {selectedRace.description || "No description."}
+              </div>
+              <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
+                Modifiers: {raceModifiersText}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {step === 2 && (
+        <div style={{ display: "grid", gap: 14 }}>
+          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             {labels.className}
             <select
               value={draft.classId}
@@ -291,7 +351,7 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 2 && (
+      {step === 3 && (
         <div style={{ display: "grid", gap: 14 }}>
           {selectedClass && (
             <div
@@ -369,7 +429,7 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <div style={{ display: "grid", gap: 10 }}>
           {skillChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForSkillRule(rule, draft.skills);
@@ -448,7 +508,7 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <div style={{ display: "grid", gap: 10 }}>
           {powerChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForPowerRule(rule, draft.powers);
@@ -524,7 +584,7 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 5 && (
+      {step === 6 && (
         <div style={{ display: "grid", gap: 10 }}>
           {itemChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForItemRule(rule, draft.inventory);
@@ -600,13 +660,16 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 6 && (
+      {step === 7 && (
         <div style={{ display: "grid", gap: 14 }}>
           <div style={{ color: "#b9cdf0" }}>
             <strong>Name:</strong> {draft.identity.name}
           </div>
           <div style={{ color: "#b9cdf0" }}>
             <strong>Campaign:</strong> {selectedCampaign?.name}
+          </div>
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>Race:</strong> {selectedRace?.name}
           </div>
           <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.className}:</strong> {selectedClass?.name}

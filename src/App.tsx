@@ -4,7 +4,9 @@ import {
   createCharacterFromCampaignAndClass,
   generateId,
   getClassById,
-  getClassesForCampaign,
+  getClassesForCampaignAndRace,
+  getRaceById,
+  getRacesForCampaign,
   touchCharacter,
 } from "./lib/character";
 import {
@@ -83,11 +85,14 @@ function makeBaseAttributes(): Record<AttributeKey, number> {
 
 function applyClassAttributeModifiers(
   attributes: Record<AttributeKey, number>,
-  cls: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null
+  cls: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null,
+  race: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null
 ) {
-  if (!cls) return attributes;
   const next = { ...attributes };
-  for (const bonus of cls.attributeBonuses ?? []) {
+  for (const bonus of cls?.attributeBonuses ?? []) {
+    next[bonus.attribute] = (next[bonus.attribute] ?? 0) + bonus.amount;
+  }
+  for (const bonus of race?.attributeBonuses ?? []) {
     next[bonus.attribute] = (next[bonus.attribute] ?? 0) + bonus.amount;
   }
   return next;
@@ -97,21 +102,24 @@ function getAttributeModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
-function makeDraftFromCampaignAndClass(
+function makeDraftFromCampaignClassAndRace(
   gameData: GameData,
   campaignId: string,
+  raceId: string,
   classId: string,
   name: string
 ) {
   const campaign = gameData.campaigns.find((g) => g.id === campaignId);
+  const race = campaign?.races?.find((r) => r.id === raceId) ?? null;
   const cls = campaign?.classes.find((c) => c.id === classId);
   if (!campaign || !cls) return null;
 
-  const base = createCharacterFromCampaignAndClass(campaign, cls, name);
+  const base = createCharacterFromCampaignAndClass(campaign, cls, name, race);
 
   const draft: CharacterCreationDraft = {
     identity: base.identity,
     campaignId: base.campaignId,
+    raceId: base.raceId ?? raceId,
     classId: base.classId,
     level: base.level,
     proficiencyBonus: base.proficiencyBonus,
@@ -129,7 +137,7 @@ function makeDraftFromCampaignAndClass(
   if (method === "manual") {
     draft.attributes = makeBaseAttributes();
   } else {
-    draft.attributes = applyClassAttributeModifiers(makeBaseAttributes(), cls);
+    draft.attributes = applyClassAttributeModifiers(makeBaseAttributes(), cls, race);
   }
 
   const hpMax = Math.max(1, cls.hpRule.hitDie + getAttributeModifier(draft.attributes.CON));
@@ -181,6 +189,7 @@ export default function App() {
   const [characters, setCharacters] = useState<CharacterRecord[]>(() => loadCharactersWithDefaultSheets());
   const [selectedId, setSelectedId] = useState("");
   const [campaignId, setCampaignId] = useState(() => appStorage.loadGameData(seedGameData).campaigns[0]?.id ?? "");
+  const [raceId, setRaceId] = useState("");
   const [classId, setClassId] = useState("");
   const [cloudReady, setCloudReady] = useState(!cloudEnabled);
   const [cloudStatus, setCloudStatus] = useState(
@@ -373,7 +382,9 @@ export default function App() {
 
   function handleCampaignChange(nextCampaignId: string) {
     setCampaignId(nextCampaignId);
-    const nextClassId = getClassesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
+    const nextRaceId = getRacesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
+    setRaceId(nextRaceId);
+    const nextClassId = getClassesForCampaignAndRace(gameData, nextCampaignId, nextRaceId)[0]?.id ?? "";
     setClassId(nextClassId);
 
     const currentlyVisible = characters.some(
@@ -391,6 +402,7 @@ export default function App() {
       id: generateId(),
       identity: draft.identity,
       campaignId: draft.campaignId,
+      raceId: draft.raceId,
       classId: draft.classId,
       level: draft.level,
       proficiencyBonus: draft.proficiencyBonus,
@@ -438,6 +450,8 @@ export default function App() {
     wizardStep,
     creationDraft,
     wizardCampaign,
+    wizardRace,
+    wizardRacesForCampaign,
     wizardClass,
     wizardClassesForCampaign,
     wizardSkills,
@@ -458,6 +472,7 @@ export default function App() {
     toggleWizardPower,
     toggleWizardItem,
     handleWizardCampaignChange,
+    handleWizardRaceChange,
     handleWizardClassChange,
     handleWizardAttributeGenerationChange,
     handleWizardRollAttributes,
@@ -465,9 +480,10 @@ export default function App() {
   } = useCharacterCreation({
     gameData,
     campaignId,
+    raceId,
     classId,
     getCampaignName,
-    makeDraftFromCampaignAndClass,
+    makeDraftFromCampaignClassAndRace,
     makeBaseAttributes,
     applyClassAttributeModifiers,
     getPointBuySpent,
@@ -482,6 +498,8 @@ export default function App() {
   const selectedCampaign = selected
     ? gameData.campaigns.find((g) => g.id === selected.campaignId) ?? null
     : null;
+
+  const selectedRace = selected ? getRaceById(gameData, selected.raceId ?? "") ?? null : null;
 
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
 
@@ -736,8 +754,10 @@ export default function App() {
                 step={wizardStep}
                 draft={creationDraft}
                 campaigns={gameData.campaigns}
+                racesForCampaign={wizardRacesForCampaign}
                 classesForCampaign={wizardClassesForCampaign}
                 selectedCampaign={wizardCampaign}
+                selectedRace={wizardRace}
                 selectedClass={wizardClass}
                 skills={wizardSkills}
                 powers={wizardPowers}
@@ -761,6 +781,7 @@ export default function App() {
                 }
                 onNameChange={setWizardName}
                 onCampaignChange={handleWizardCampaignChange}
+                onRaceChange={handleWizardRaceChange}
                 onClassChange={handleWizardClassChange}
                 onAttributeGenerationChange={handleWizardAttributeGenerationChange}
                 onAttributeChange={(key, value) => updateWizardAttributeWithRules(key, value)}
@@ -789,6 +810,7 @@ export default function App() {
             <SelectedCharacterWorkspace
               character={selected}
               selectedCampaignName={selectedCampaign.name}
+              selectedRaceName={selectedRace?.name ?? "Unassigned"}
               selectedClassName={selectedClass?.name ?? "Unassigned"}
               labels={labels}
               pointBuyTotal={pointBuyTotal}
