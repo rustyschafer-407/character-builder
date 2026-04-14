@@ -88,3 +88,9 @@ Use [SMOKE_TEST_CHECKLIST.md](SMOKE_TEST_CHECKLIST.md) for a quick manual valida
 - `src/storage/` localStorage load/save and migration defaults.
 - `src/types/` shared TypeScript domain models.
 - `src/App.tsx` top-level app orchestration and workflows.
+
+## Repository Layout
+
+- `src/` Character generator web app (React + Vite).
+- `supabase/` SQL migrations and backend schema assets.
+- `roll20-sheet/` Roll20 character sheet source files (`sheet.html`, `sheet.css`).

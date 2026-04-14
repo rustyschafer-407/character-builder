@@ -1,0 +1,475 @@
+.charsheet {
+  --bg: #efe6d2;
+  --panel: #fbf6ea;
+  --line: #ab9670;
+  --text: #2b2115;
+  --accent: #6c4b1f;
+  --accent2: #c9b07a;
+  --button: #e7d5ae;
+  --button-border: #9c7e46;
+  --input-bg: #fffdf8;
+  --readonly-bg: #f4ecd8;
+  --shadow: rgba(87, 60, 18, .16);
+  --title-text: #fffaf0;
+  --highlight-bg: rgba(255,248,232,.95);
+  --highlight-border: #8f6730;
+  font-size: 18px;
+  color: var(--text);
+}
+
+/* hidden radios */
+.charsheet input[type="radio"][name="attr_theme_ui"],
+.charsheet input[type="radio"][name="sheet_tab"] {
+  position: absolute;
+  left: -9999px;
+}
+
+/* theme switching via helper attr */
+.charsheet #sheet-theme-ui-fantasy:checked ~ .sheet-wrapper {
+  --bg: #efe6d2;
+  --panel: #fbf6ea;
+  --line: #ab9670;
+  --text: #2b2115;
+  --accent: #6c4b1f;
+  --accent2: #c9b07a;
+  --button: #e7d5ae;
+  --button-border: #9c7e46;
+  --input-bg: #fffdf8;
+  --readonly-bg: #f4ecd8;
+  --shadow: rgba(87, 60, 18, .16);
+  --title-text: #fffaf0;
+  --highlight-bg: rgba(255,248,232,.95);
+  --highlight-border: #8f6730;
+}
+
+.charsheet #sheet-theme-ui-scifi:checked ~ .sheet-wrapper {
+  --bg: #0d1821;
+  --panel: #132330;
+  --line: #4fa3c7;
+  --text: #eaf7ff;
+  --accent: #35d8ff;
+  --accent2: #16384a;
+  --button: #173243;
+  --button-border: #4ec6f5;
+  --input-bg: #0f1c26;
+  --readonly-bg: #152733;
+  --shadow: rgba(0,180,255,.14);
+  --title-text: #f2fcff;
+  --highlight-bg: rgba(17,49,68,.95);
+  --highlight-border: #35d8ff;
+}
+
+.charsheet #sheet-theme-ui-horror:checked ~ .sheet-wrapper {
+  --bg: #1b1517;
+  --panel: #261d20;
+  --line: #8f5d63;
+  --text: #f3e9e9;
+  --accent: #c44a4a;
+  --accent2: #43272b;
+  --button: #3a272b;
+  --button-border: #b06d74;
+  --input-bg: #1f1719;
+  --readonly-bg: #2a2023;
+  --shadow: rgba(90,10,10,.20);
+  --title-text: #fff3f3;
+  --highlight-bg: rgba(67,30,34,.96);
+  --highlight-border: #c44a4a;
+}
+
+.charsheet #sheet-theme-ui-modern:checked ~ .sheet-wrapper {
+  --bg: #e9ecef;
+  --panel: #f8f9fb;
+  --line: #a3aab3;
+  --text: #20252b;
+  --accent: #475865;
+  --accent2: #d7dde3;
+  --button: #e3e8ec;
+  --button-border: #8e99a4;
+  --input-bg: #ffffff;
+  --readonly-bg: #eef1f4;
+  --shadow: rgba(40,50,60,.10);
+  --title-text: #ffffff;
+  --highlight-bg: rgba(255,255,255,.98);
+  --highlight-border: #6c7a87;
+}
+
+.charsheet #sheet-theme-ui-pulp:checked ~ .sheet-wrapper {
+  --bg: #f3ddb3;
+  --panel: #fff3d7;
+  --line: #a66a2c;
+  --text: #3b2412;
+  --accent: #bf3f1f;
+  --accent2: #d89b3c;
+  --button: #f3c976;
+  --button-border: #9d511b;
+  --input-bg: #fffaf0;
+  --readonly-bg: #f5e4bd;
+  --shadow: rgba(140,60,0,.18);
+  --title-text: #fff7eb;
+  --highlight-bg: rgba(255,247,225,.96);
+  --highlight-border: #bf3f1f;
+}
+
+.charsheet .sheet-wrapper {
+  background: linear-gradient(to bottom, rgba(255,255,255,.08), rgba(0,0,0,.02)), var(--bg);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  max-width: 1120px;
+  box-shadow: 0 4px 14px var(--shadow);
+  color: var(--text);
+}
+
+.charsheet input,
+.charsheet select,
+.charsheet textarea,
+.charsheet button {
+  box-sizing: border-box;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.charsheet input,
+.charsheet select,
+.charsheet textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+/* taller selects */
+.charsheet select {
+  min-height: 50px !important;
+  height: 50px !important;
+  line-height: 1.2 !important;
+  padding: 10px 40px 10px 12px !important;
+  white-space: nowrap;
+  appearance: auto;
+}
+
+.charsheet input[readonly] {
+  background: var(--readonly-bg);
+  font-weight: 700;
+}
+
+.charsheet input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  display: inline-block;
+}
+
+.charsheet textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.charsheet button {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--button-border);
+  border-radius: 10px;
+  background: linear-gradient(to bottom, rgba(255,255,255,.15), rgba(0,0,0,.03)), var(--button);
+  font-weight: 700;
+  min-height: 42px;
+  height: 42px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.charsheet .sheet-header {
+  display: grid;
+  grid-template-columns: minmax(0,2fr) minmax(260px,1fr);
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.charsheet .sheet-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.charsheet .sheet-character-name {
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.charsheet .sheet-class-race {
+  font-size: 18px;
+}
+
+.charsheet .sheet-header-right {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.charsheet .sheet-theme-dropdown span,
+.charsheet label span {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+/* tabs as horizontal chips */
+.charsheet .sheet-tab-bar {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 0 18px 0 !important;
+}
+
+.charsheet .sheet-tab-label {
+  display: inline-flex !important;
+  width: auto !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 8px 14px !important;
+  border: 2px solid var(--button-border) !important;
+  border-radius: 999px !important;
+  background: var(--button) !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  min-width: 92px !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+}
+
+.charsheet .sheet-tab-panel {
+  display: none;
+}
+
+.charsheet #sheet-tab-character:checked ~ .sheet-wrapper .sheet-panel-character,
+.charsheet #sheet-tab-skillssaves:checked ~ .sheet-wrapper .sheet-panel-skillssaves,
+.charsheet #sheet-tab-combat:checked ~ .sheet-wrapper .sheet-panel-combat,
+.charsheet #sheet-tab-powers:checked ~ .sheet-wrapper .sheet-panel-powers,
+.charsheet #sheet-tab-effects:checked ~ .sheet-wrapper .sheet-panel-effects,
+.charsheet #sheet-tab-inventory:checked ~ .sheet-wrapper .sheet-panel-inventory {
+  display: block;
+}
+
+.charsheet #sheet-tab-character:checked ~ .sheet-wrapper label[for="sheet-tab-character"],
+.charsheet #sheet-tab-skillssaves:checked ~ .sheet-wrapper label[for="sheet-tab-skillssaves"],
+.charsheet #sheet-tab-combat:checked ~ .sheet-wrapper label[for="sheet-tab-combat"],
+.charsheet #sheet-tab-powers:checked ~ .sheet-wrapper label[for="sheet-tab-powers"],
+.charsheet #sheet-tab-effects:checked ~ .sheet-wrapper label[for="sheet-tab-effects"],
+.charsheet #sheet-tab-inventory:checked ~ .sheet-wrapper label[for="sheet-tab-inventory"] {
+  border-color: var(--highlight-border) !important;
+  background: var(--highlight-bg) !important;
+}
+
+.charsheet .sheet-core-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 16px 18px;
+  margin-bottom: 14px;
+  align-items: end;
+}
+
+.charsheet .sheet-core-grid label,
+.charsheet .sheet-checkbox-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.charsheet .sheet-combat-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 16px 18px;
+  align-items: end;
+}
+
+.charsheet .sheet-combat-summary-grid label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.charsheet .sheet-action-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 14px 0 0 0;
+}
+
+.charsheet .sheet-init-button {
+  width: 180px;
+  font-size: 16px;
+}
+
+.charsheet .sheet-section {
+  background: linear-gradient(to bottom, rgba(255,255,255,.08), rgba(0,0,0,.015)), var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.charsheet .sheet-section-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--title-text);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: linear-gradient(to right, rgba(255,255,255,.10), rgba(0,0,0,.08)), var(--accent2);
+}
+
+.charsheet .sheet-attr-head,
+.charsheet .sheet-attr-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0,1fr));
+  gap: 8px;
+  align-items: center;
+}
+
+.charsheet .sheet-attr-head,
+.charsheet .sheet-attrsave-head,
+.charsheet .sheet-skill-head,
+.charsheet .sheet-attack-head,
+.charsheet .sheet-effect-head,
+.charsheet .sheet-inventory-head {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.charsheet .sheet-attr-row {
+  margin-bottom: 12px;
+}
+
+.charsheet .sheet-attrsave-head,
+.charsheet .sheet-attrsave-row {
+  display: grid;
+  grid-template-columns: 64px 78px 78px 64px 84px 84px 92px;
+  gap: 8px;
+  align-items: center;
+}
+
+.charsheet .sheet-skill-head,
+.charsheet .sheet-skill-row-compact {
+  display: grid;
+  grid-template-columns: minmax(150px,1fr) 128px 64px 84px 92px;
+  gap: 8px;
+  align-items: center;
+}
+
+.charsheet .sheet-attack-head,
+.charsheet .sheet-attack-row-compact {
+  display: grid;
+  grid-template-columns: minmax(130px,1fr) 128px 64px 72px 90px 84px 64px 64px;
+  gap: 8px;
+  align-items: center;
+}
+
+.charsheet .sheet-effect-head,
+.charsheet .sheet-effect-row-compact {
+  display: grid;
+  grid-template-columns: 90px 64px 128px 84px 92px;
+  gap: 8px;
+  align-items: center;
+}
+
+.charsheet .sheet-inventory-head,
+.charsheet .sheet-inventory-row {
+  display: grid;
+  grid-template-columns: minmax(160px,1fr) 80px minmax(180px,1.2fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.charsheet .sheet-attrsave-row,
+.charsheet .sheet-skill-row-compact,
+.charsheet .sheet-attack-row-compact,
+.charsheet .sheet-effect-row-compact,
+.charsheet .sheet-inventory-row {
+  padding: 8px 0;
+  border-top: 1px solid rgba(0,0,0,.08);
+}
+
+.charsheet .sheet-attr-name,
+.charsheet .sheet-effect-label,
+.charsheet .sheet-effect-die-label {
+  font-weight: 700;
+  text-align: center;
+}
+
+.charsheet .sheet-check-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.charsheet .sheet-highlight-stat {
+  background: var(--highlight-bg) !important;
+  border-color: var(--highlight-border) !important;
+  font-weight: 800;
+  font-size: 20px;
+  text-align: center;
+}
+
+.charsheet .sheet-highlight-total {
+  background: var(--highlight-bg) !important;
+  border-color: var(--highlight-border) !important;
+  font-weight: 800;
+  text-align: center;
+}
+
+.charsheet .sheet-highlight-name {
+  font-weight: 800;
+  border-color: var(--highlight-border);
+  background: var(--highlight-bg);
+}
+
+.charsheet .sheet-icon-action {
+  padding: 0;
+  min-height: 42px;
+  height: 42px;
+  font-size: 0;
+  line-height: 0;
+}
+
+/* dark theme text safety */
+.charsheet #sheet-theme-ui-scifi:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-scifi:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-horror:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-horror:checked ~ .sheet-wrapper * {
+  color: var(--text);
+}
+
+@media screen and (max-width: 760px) {
+  .charsheet .sheet-header,
+  .charsheet .sheet-core-grid,
+  .charsheet .sheet-combat-summary-grid,
+  .charsheet .sheet-attr-head,
+  .charsheet .sheet-attr-row,
+  .charsheet .sheet-attrsave-head,
+  .charsheet .sheet-attrsave-row,
+  .charsheet .sheet-skill-head,
+  .charsheet .sheet-skill-row-compact,
+  .charsheet .sheet-attack-head,
+  .charsheet .sheet-attack-row-compact,
+  .charsheet .sheet-effect-head,
+  .charsheet .sheet-effect-row-compact,
+  .charsheet .sheet-inventory-head,
+  .charsheet .sheet-inventory-row {
+    grid-template-columns: 1fr;
+  }
+
+  .charsheet .sheet-action-row {
+    justify-content: stretch;
+  }
+
+  .charsheet .sheet-init-button {
+    width: 100%;
+  }
+}

@@ -1,0 +1,506 @@
+<div class="charsheet">
+
+  <!-- Hidden helper radios for theme styling -->
+  <input type="radio" id="sheet-theme-ui-fantasy" name="attr_theme_ui" value="fantasy" checked>
+  <input type="radio" id="sheet-theme-ui-scifi" name="attr_theme_ui" value="scifi">
+  <input type="radio" id="sheet-theme-ui-horror" name="attr_theme_ui" value="horror">
+  <input type="radio" id="sheet-theme-ui-modern" name="attr_theme_ui" value="modern">
+  <input type="radio" id="sheet-theme-ui-pulp" name="attr_theme_ui" value="pulp">
+
+  <!-- Tabs -->
+  <input type="radio" id="sheet-tab-character" name="sheet_tab" checked>
+  <input type="radio" id="sheet-tab-skillssaves" name="sheet_tab">
+  <input type="radio" id="sheet-tab-combat" name="sheet_tab">
+  <input type="radio" id="sheet-tab-powers" name="sheet_tab">
+  <input type="radio" id="sheet-tab-effects" name="sheet_tab">
+  <input type="radio" id="sheet-tab-inventory" name="sheet_tab">
+
+  <div class="sheet-wrapper">
+
+    <div class="sheet-header">
+      <div class="sheet-name-block">
+        <input class="sheet-character-name" type="text" name="attr_character_name" placeholder="Character Name">
+        <input class="sheet-class-race" type="text" name="attr_class_race" placeholder="Class / Race / Type">
+      </div>
+
+      <div class="sheet-header-right">
+        <label class="sheet-theme-dropdown">
+          <span>Theme</span>
+          <select name="attr_sheet_theme">
+            <option value="fantasy" selected>Fantasy</option>
+            <option value="scifi">Sci-Fi</option>
+            <option value="horror">Horror</option>
+            <option value="modern">Modern</option>
+            <option value="pulp">Pulp</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div class="sheet-tab-bar">
+      <label for="sheet-tab-character" class="sheet-tab-label">Character</label>
+      <label for="sheet-tab-skillssaves" class="sheet-tab-label">Skills/Saves</label>
+      <label for="sheet-tab-combat" class="sheet-tab-label">Combat</label>
+      <label for="sheet-tab-powers" class="sheet-tab-label">Powers</label>
+      <label for="sheet-tab-effects" class="sheet-tab-label">Effects</label>
+      <label for="sheet-tab-inventory" class="sheet-tab-label">Inventory</label>
+    </div>
+
+    <!-- CHARACTER -->
+    <div class="sheet-tab-panel sheet-panel-character">
+      <div class="sheet-section">
+        <div class="sheet-section-title">Core</div>
+
+        <div class="sheet-core-grid">
+          <label><span>Level / CR</span><input type="text" name="attr_level" value="1"></label>
+          <label><span>Prof. Bonus</span><input type="number" name="attr_pb" value="2"></label>
+          <label><span>Base AC</span><input type="number" name="attr_ac_base" value="10"></label>
+          <label><span>AC Bonus</span><input type="number" name="attr_ac_bonus" value="0"></label>
+          <label class="sheet-checkbox-label">
+            <span>Use DEX in AC</span>
+            <input type="checkbox" name="attr_ac_use_dex" value="1">
+          </label>
+          <label><span>Speed</span><input type="text" name="attr_speed" placeholder="30 ft"></label>
+          <label><span>HP Max</span><input type="number" name="attr_hp_max" value="0"></label>
+          <label><span>Init Bonus</span><input type="number" name="attr_init_misc" value="0"></label>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-section-title">Attributes</div>
+
+        <div class="sheet-attr-head">
+          <div>STR</div>
+          <div>DEX</div>
+          <div>CON</div>
+          <div>INT</div>
+          <div>WIS</div>
+          <div>CHA</div>
+        </div>
+
+        <div class="sheet-attr-row">
+          <input type="number" name="attr_str" value="10">
+          <input type="number" name="attr_dex" value="10">
+          <input type="number" name="attr_con" value="10">
+          <input type="number" name="attr_int" value="10">
+          <input type="number" name="attr_wis" value="10">
+          <input type="number" name="attr_cha" value="10">
+        </div>
+
+        <div class="sheet-attr-head">
+          <div>STR Mod</div>
+          <div>DEX Mod</div>
+          <div>CON Mod</div>
+          <div>INT Mod</div>
+          <div>WIS Mod</div>
+          <div>CHA Mod</div>
+        </div>
+
+        <div class="sheet-attr-row">
+          <input class="sheet-highlight-total" type="number" name="attr_str_mod" value="0" readonly>
+          <input class="sheet-highlight-total" type="number" name="attr_dex_mod" value="0" readonly>
+          <input class="sheet-highlight-total" type="number" name="attr_con_mod" value="0" readonly>
+          <input class="sheet-highlight-total" type="number" name="attr_int_mod" value="0" readonly>
+          <input class="sheet-highlight-total" type="number" name="attr_wis_mod" value="0" readonly>
+          <input class="sheet-highlight-total" type="number" name="attr_cha_mod" value="0" readonly>
+        </div>
+      </div>
+    </div>
+
+    <!-- SKILLS / SAVES -->
+    <div class="sheet-tab-panel sheet-panel-skillssaves">
+      <div class="sheet-section">
+        <div class="sheet-section-title">Attributes &amp; Saves</div>
+
+        <div class="sheet-attrsave-head">
+          <div>Attr</div>
+          <div>Score</div>
+          <div>Mod</div>
+          <div>Prof</div>
+          <div>Misc</div>
+          <div>Total</div>
+          <div>Roll</div>
+        </div>
+
+        <div class="sheet-attrsave-row">
+          <div class="sheet-attr-name">STR</div>
+          <input type="number" name="attr_str" value="10">
+          <input type="number" name="attr_str_mod" value="0" readonly>
+          <div class="sheet-check-cell"><input type="checkbox" name="attr_str_saveprof" value="1"></div>
+          <input type="number" name="attr_str_savebonus" value="0">
+          <input class="sheet-highlight-total" type="number" name="attr_str_save_total" value="0" readonly>
+          <button type="roll" name="roll_str_save" value="&{template:default} {{name=STR Save}} {{Roll=[[1d20 + @{str_save_total}]]}}">Save</button>
+        </div>
+
+        <div class="sheet-attrsave-row">
+          <div class="sheet-attr-name">DEX</div>
+          <input type="number" name="attr_dex" value="10">
+          <input type="number" name="attr_dex_mod" value="0" readonly>
+          <div class="sheet-check-cell"><input type="checkbox" name="attr_dex_saveprof" value="1"></div>
+          <input type="number" name="attr_dex_savebonus" value="0">
+          <input class="sheet-highlight-total" type="number" name="attr_dex_save_total" value="0" readonly>
+          <button type="roll" name="roll_dex_save" value="&{template:default} {{name=DEX Save}} {{Roll=[[1d20 + @{dex_save_total}]]}}">Save</button>
+        </div>
+
+        <div class="sheet-attrsave-row">
+          <div class="sheet-attr-name">CON</div>
+          <input type="number" name="attr_con" value="10">
+          <input type="number" name="attr_con_mod" value="0" readonly>
+          <div class="sheet-check-cell"><input type="checkbox" name="attr_con_saveprof" value="1"></div>
+          <input type="number" name="attr_con_savebonus" value="0">
+          <input class="sheet-highlight-total" type="number" name="attr_con_save_total" value="0" readonly>
+          <button type="roll" name="roll_con_save" value="&{template:default} {{name=CON Save}} {{Roll=[[1d20 + @{con_save_total}]]}}">Save</button>
+        </div>
+
+        <div class="sheet-attrsave-row">
+          <div class="sheet-attr-name">INT</div>
+          <input type="number" name="attr_int" value="10">
+          <input type="number" name="attr_int_mod" value="0" readonly>
+          <div class="sheet-check-cell"><input type="checkbox" name="attr_int_saveprof" value="1"></div>
+          <input type="number" name="attr_int_savebonus" value="0">
+          <input class="sheet-highlight-total" type="number" name="attr_int_save_total" value="0" readonly>
+          <button type="roll" name="roll_int_save" value="&{template:default} {{name=INT Save}} {{Roll=[[1d20 + @{int_save_total}]]}}">Save</button>
+        </div>
+
+        <div class="sheet-attrsave-row">
+          <div class="sheet-attr-name">WIS</div>
+          <input type="number" name="attr_wis" value="10">
+          <input type="number" name="attr_wis_mod" value="0" readonly>
+          <div class="sheet-check-cell"><input type="checkbox" name="attr_wis_saveprof" value="1"></div>
+          <input type="number" name="attr_wis_savebonus" value="0">
+          <input class="sheet-highlight-total" type="number" name="attr_wis_save_total" value="0" readonly>
+          <button type="roll" name="roll_wis_save" value="&{template:default} {{name=WIS Save}} {{Roll=[[1d20 + @{wis_save_total}]]}}">Save</button>
+        </div>
+
+        <div class="sheet-attrsave-row">
+          <div class="sheet-attr-name">CHA</div>
+          <input type="number" name="attr_cha" value="10">
+          <input type="number" name="attr_cha_mod" value="0" readonly>
+          <div class="sheet-check-cell"><input type="checkbox" name="attr_cha_saveprof" value="1"></div>
+          <input type="number" name="attr_cha_savebonus" value="0">
+          <input class="sheet-highlight-total" type="number" name="attr_cha_save_total" value="0" readonly>
+          <button type="roll" name="roll_cha_save" value="&{template:default} {{name=CHA Save}} {{Roll=[[1d20 + @{cha_save_total}]]}}">Save</button>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-section-title">Skills</div>
+
+        <div class="sheet-skill-head">
+          <div>Skill</div>
+          <div>Attr</div>
+          <div>Prof</div>
+          <div>Bonus</div>
+          <div>Roll</div>
+        </div>
+
+        <fieldset class="repeating_skills">
+          <div class="sheet-skill-row-compact">
+            <input type="text" name="attr_skillname" placeholder="Skill Name">
+            <select name="attr_skillattr">
+              <option value="@{str_mod}">STR</option>
+              <option value="@{dex_mod}">DEX</option>
+              <option value="@{con_mod}">CON</option>
+              <option value="@{int_mod}">INT</option>
+              <option value="@{wis_mod}">WIS</option>
+              <option value="@{cha_mod}">CHA</option>
+            </select>
+            <div class="sheet-check-cell"><input type="checkbox" name="attr_skillprof" value="@{pb}"></div>
+            <input type="number" name="attr_skillbonus" value="0">
+            <button type="roll" name="roll_skill" value="&{template:default} {{name=@{skillname}}} {{Roll=[[1d20 + @{skillattr} + @{skillprof} + @{skillbonus}]]}}">Roll</button>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- COMBAT -->
+    <div class="sheet-tab-panel sheet-panel-combat">
+      <div class="sheet-section">
+        <div class="sheet-section-title">Combat Summary</div>
+
+        <div class="sheet-combat-summary-grid">
+          <label><span>Total AC</span><input class="sheet-highlight-stat" type="number" name="attr_ac" value="10" readonly></label>
+          <label><span>Current HP</span><input class="sheet-highlight-stat" type="number" name="attr_hp_current" value="0"></label>
+          <label><span>Initiative</span><input class="sheet-highlight-stat" type="number" name="attr_initiative" value="0" readonly></label>
+        </div>
+
+        <div class="sheet-action-row">
+          <button type="roll" class="sheet-init-button" name="roll_initiative" value="[[1d20 + @{initiative} &{tracker}]]">Init Roll</button>
+        </div>
+      </div>
+
+      <div class="sheet-section">
+        <div class="sheet-section-title">Attacks</div>
+
+        <div class="sheet-attack-head">
+          <div>Name</div>
+          <div>Attr</div>
+          <div>Prof</div>
+          <div>Atk</div>
+          <div>Dmg Dice</div>
+          <div>Dmg Bonus</div>
+          <div>Att</div>
+          <div>DMG</div>
+        </div>
+
+        <fieldset class="repeating_attacks">
+          <div class="sheet-attack-row-compact">
+            <input class="sheet-highlight-name" type="text" name="attr_attackname" placeholder="Attack Name">
+            <select name="attr_attackattr">
+              <option value="@{str_mod}">STR</option>
+              <option value="@{dex_mod}">DEX</option>
+              <option value="@{con_mod}">CON</option>
+              <option value="@{int_mod}">INT</option>
+              <option value="@{wis_mod}">WIS</option>
+              <option value="@{cha_mod}">CHA</option>
+            </select>
+            <div class="sheet-check-cell"><input type="checkbox" name="attr_attackprof" value="@{pb}"></div>
+            <input type="number" name="attr_attackbonus" value="0">
+            <input type="text" name="attr_damagedice" placeholder="1d8">
+            <input type="number" name="attr_damagebonus" value="0">
+            <button type="roll" class="sheet-icon-action" name="roll_attack" value="&{template:default} {{name=@{attackname}}} {{Attack=[[1d20 + @{attackattr} + @{attackprof} + @{attackbonus}]]}}"></button>
+            <button type="roll" class="sheet-icon-action" name="roll_damage" value="&{template:default} {{name=@{attackname} Damage}} {{Damage=[[@{damagedice} + @{damagebonus}]]}}"></button>
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- POWERS -->
+    <div class="sheet-tab-panel sheet-panel-powers">
+      <div class="sheet-section">
+        <div class="sheet-section-title">Powers</div>
+        <fieldset class="repeating_powers">
+          <div class="sheet-power-row">
+            <input type="text" name="attr_powertext" placeholder="Power / note">
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+    <!-- EFFECTS -->
+    <div class="sheet-tab-panel sheet-panel-effects">
+      <div class="sheet-section">
+        <div class="sheet-section-title">Effects</div>
+
+        <div class="sheet-effect-head">
+          <div>Effect</div>
+          <div>Die</div>
+          <div>Attr</div>
+          <div>Bonus</div>
+          <div>Roll</div>
+        </div>
+
+        <div class="sheet-effect-row-compact">
+          <div class="sheet-effect-label">Small</div>
+          <div class="sheet-effect-die-label">d4</div>
+          <select name="attr_effect_small_attr">
+            <option value="0">—</option>
+            <option value="@{str_mod}">STR</option>
+            <option value="@{dex_mod}">DEX</option>
+            <option value="@{con_mod}">CON</option>
+            <option value="@{int_mod}">INT</option>
+            <option value="@{wis_mod}">WIS</option>
+            <option value="@{cha_mod}">CHA</option>
+          </select>
+          <input type="number" name="attr_effect_small_bonus" value="0">
+          <button type="roll" name="roll_effect_small" value="&{template:default} {{name=Small Effect}} {{Roll=[[1d4 + @{effect_small_attr} + @{effect_small_bonus}]]}}">Roll</button>
+        </div>
+
+        <div class="sheet-effect-row-compact">
+          <div class="sheet-effect-label">Medium</div>
+          <div class="sheet-effect-die-label">d6</div>
+          <select name="attr_effect_medium_attr">
+            <option value="0">—</option>
+            <option value="@{str_mod}">STR</option>
+            <option value="@{dex_mod}">DEX</option>
+            <option value="@{con_mod}">CON</option>
+            <option value="@{int_mod}">INT</option>
+            <option value="@{wis_mod}">WIS</option>
+            <option value="@{cha_mod}">CHA</option>
+          </select>
+          <input type="number" name="attr_effect_medium_bonus" value="0">
+          <button type="roll" name="roll_effect_medium" value="&{template:default} {{name=Medium Effect}} {{Roll=[[1d6 + @{effect_medium_attr} + @{effect_medium_bonus}]]}}">Roll</button>
+        </div>
+
+        <div class="sheet-effect-row-compact">
+          <div class="sheet-effect-label">Large</div>
+          <div class="sheet-effect-die-label">d8</div>
+          <select name="attr_effect_large_attr">
+            <option value="0">—</option>
+            <option value="@{str_mod}">STR</option>
+            <option value="@{dex_mod}">DEX</option>
+            <option value="@{con_mod}">CON</option>
+            <option value="@{int_mod}">INT</option>
+            <option value="@{wis_mod}">WIS</option>
+            <option value="@{cha_mod}">CHA</option>
+          </select>
+          <input type="number" name="attr_effect_large_bonus" value="0">
+          <button type="roll" name="roll_effect_large" value="&{template:default} {{name=Large Effect}} {{Roll=[[1d8 + @{effect_large_attr} + @{effect_large_bonus}]]}}">Roll</button>
+        </div>
+
+        <div class="sheet-effect-row-compact">
+          <div class="sheet-effect-label">Major</div>
+          <div class="sheet-effect-die-label">d10</div>
+          <select name="attr_effect_major_attr">
+            <option value="0">—</option>
+            <option value="@{str_mod}">STR</option>
+            <option value="@{dex_mod}">DEX</option>
+            <option value="@{con_mod}">CON</option>
+            <option value="@{int_mod}">INT</option>
+            <option value="@{wis_mod}">WIS</option>
+            <option value="@{cha_mod}">CHA</option>
+          </select>
+          <input type="number" name="attr_effect_major_bonus" value="0">
+          <button type="roll" name="roll_effect_major" value="&{template:default} {{name=Major Effect}} {{Roll=[[1d10 + @{effect_major_attr} + @{effect_major_bonus}]]}}">Roll</button>
+        </div>
+
+        <div class="sheet-effect-row-compact">
+          <div class="sheet-effect-label">Extreme</div>
+          <div class="sheet-effect-die-label">d12</div>
+          <select name="attr_effect_extreme_attr">
+            <option value="0">—</option>
+            <option value="@{str_mod}">STR</option>
+            <option value="@{dex_mod}">DEX</option>
+            <option value="@{con_mod}">CON</option>
+            <option value="@{int_mod}">INT</option>
+            <option value="@{wis_mod}">WIS</option>
+            <option value="@{cha_mod}">CHA</option>
+          </select>
+          <input type="number" name="attr_effect_extreme_bonus" value="0">
+          <button type="roll" name="roll_effect_extreme" value="&{template:default} {{name=Extreme Effect}} {{Roll=[[1d12 + @{effect_extreme_attr} + @{effect_extreme_bonus}]]}}">Roll</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div class="sheet-tab-panel sheet-panel-inventory">
+      <div class="sheet-section">
+        <div class="sheet-section-title">Inventory</div>
+
+        <div class="sheet-inventory-head">
+          <div>Item</div>
+          <div>Qty</div>
+          <div>Notes</div>
+        </div>
+
+        <fieldset class="repeating_inventory">
+          <div class="sheet-inventory-row">
+            <input class="sheet-highlight-name" type="text" name="attr_itemname" placeholder="Item">
+            <input type="number" name="attr_itemqty" value="1">
+            <input type="text" name="attr_itemnotes" placeholder="Notes">
+          </div>
+        </fieldset>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="text/worker">
+    function calcMod(score) {
+      const n = parseInt(score, 10) || 0;
+      return Math.floor((n - 10) / 2);
+    }
+
+    function checkedToNumber(v) {
+      return (parseInt(v, 10) || 0) ? 1 : 0;
+    }
+
+    function syncThemeUI() {
+      getAttrs(["sheet_theme"], function(v) {
+        const allowed = ["fantasy", "scifi", "horror", "modern", "pulp"];
+        const theme = allowed.includes(v.sheet_theme) ? v.sheet_theme : "fantasy";
+        setAttrs({ theme_ui: theme });
+      });
+    }
+
+    function recalcAbilityMods() {
+      getAttrs(["str","dex","con","int","wis","cha"], function(v) {
+        setAttrs({
+          str_mod: calcMod(v.str),
+          dex_mod: calcMod(v.dex),
+          con_mod: calcMod(v.con),
+          int_mod: calcMod(v.int),
+          wis_mod: calcMod(v.wis),
+          cha_mod: calcMod(v.cha)
+        });
+      });
+    }
+
+    function recalcPCSaves() {
+      const abilities = ["str","dex","con","int","wis","cha"];
+      const fields = [
+        "pb",
+        "str_mod","dex_mod","con_mod","int_mod","wis_mod","cha_mod",
+        "str_saveprof","dex_saveprof","con_saveprof","int_saveprof","wis_saveprof","cha_saveprof",
+        "str_savebonus","dex_savebonus","con_savebonus","int_savebonus","wis_savebonus","cha_savebonus"
+      ];
+
+      getAttrs(fields, function(v) {
+        const pb = parseInt(v.pb, 10) || 0;
+        const update = {};
+
+        abilities.forEach(function(a) {
+          const mod = parseInt(v[a + "_mod"], 10) || 0;
+          const profChecked = checkedToNumber(v[a + "_saveprof"]);
+          const misc = parseInt(v[a + "_savebonus"], 10) || 0;
+          update[a + "_save_total"] = mod + (profChecked ? pb : 0) + misc;
+        });
+
+        setAttrs(update);
+      });
+    }
+
+    function recalcInit() {
+      getAttrs(["dex_mod","init_misc"], function(v) {
+        const dex = parseInt(v.dex_mod, 10) || 0;
+        const misc = parseInt(v.init_misc, 10) || 0;
+        setAttrs({ initiative: dex + misc });
+      });
+    }
+
+    function recalcAC() {
+      getAttrs(["ac_base","ac_bonus","ac_use_dex","dex_mod"], function(v) {
+        const base = parseInt(v.ac_base, 10) || 0;
+        const bonus = parseInt(v.ac_bonus, 10) || 0;
+        const dex = parseInt(v.dex_mod, 10) || 0;
+        const useDex = checkedToNumber(v.ac_use_dex);
+        setAttrs({ ac: base + bonus + (useDex ? dex : 0) });
+      });
+    }
+
+    on("sheet:opened", function() {
+      syncThemeUI();
+      recalcAbilityMods();
+      setTimeout(function() {
+        recalcPCSaves();
+        recalcInit();
+        recalcAC();
+      }, 0);
+    });
+
+    on("change:sheet_theme", function() {
+      syncThemeUI();
+    });
+
+    on("change:str change:dex change:con change:int change:wis change:cha", function() {
+      recalcAbilityMods();
+      setTimeout(function() {
+        recalcPCSaves();
+        recalcInit();
+        recalcAC();
+      }, 0);
+    });
+
+    on("change:pb change:str_saveprof change:dex_saveprof change:con_saveprof change:int_saveprof change:wis_saveprof change:cha_saveprof change:str_savebonus change:dex_savebonus change:con_savebonus change:int_savebonus change:wis_savebonus change:cha_savebonus", function() {
+      recalcPCSaves();
+    });
+
+    on("change:init_misc", function() {
+      recalcInit();
+    });
+
+    on("change:ac_base change:ac_bonus change:ac_use_dex", function() {
+      recalcAC();
+    });
+  </script>
+</div>
