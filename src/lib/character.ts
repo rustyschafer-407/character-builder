@@ -26,6 +26,12 @@ export function getAttributeModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
+export function sortByName<T extends { name: string }>(items: T[]) {
+  return [...items].sort((a, b) =>
+    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+  );
+}
+
 export function getClassesForCampaign(gameData: GameData, campaignId: string) {
   const campaign = findCampaign(gameData, campaignId);
   return [...resolveCampaignAssets(campaign).classes].sort((a, b) =>
@@ -82,7 +88,7 @@ export function getRaceById(gameData: GameData, raceId: string) {
   return undefined;
 }
 
-function makeBaseAttributes(): Record<AttributeKey, number> {
+export function makeBaseAttributes(): Record<AttributeKey, number> {
   return {
     STR: 10,
     DEX: 10,

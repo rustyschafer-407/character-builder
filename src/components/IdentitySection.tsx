@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CharacterRecord } from "../types/character";
 import { buttonStyle, inputStyle, labelTextStyle, panelStyle } from "./uiStyles";
 
@@ -27,12 +27,6 @@ export default function IdentitySection({
 }: Props) {
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState(character.identity.name);
-
-  useEffect(() => {
-    if (!editingName) {
-      setDraftName(character.identity.name);
-    }
-  }, [character.identity.name, editingName]);
 
   function startNameEdit() {
     setDraftName(character.identity.name);

@@ -43,8 +43,18 @@ function normalizePowers(value: unknown) {
   );
 }
 
-function normalizeCharacter(character: CharacterRecord): CharacterRecord {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
+
+function normalizeCharacter(character: CharacterRecord): {
+  character: CharacterRecord;
+  droppedSkills: number;
+  droppedPowers: number;
+} {
   const safeCharacter = applySafeCharacterDefaults(character);
+  const originalSkills = Array.isArray(safeCharacter.skills) ? safeCharacter.skills.length : 0;
+  const originalPowers = Array.isArray(safeCharacter.powers) ? safeCharacter.powers.length : 0;
   const skills = normalizeSkills(safeCharacter.skills);
   const powers = normalizePowers(safeCharacter.powers);
 
@@ -71,29 +81,33 @@ function normalizeCharacter(character: CharacterRecord): CharacterRecord {
   }
 
   return {
-    ...safeCharacter,
-    level,
-    skills,
-    powers,
-    levelProgression: {
-      totalHitDice: Number.isFinite(progression?.totalHitDice)
-        ? Math.max(0, Math.floor(progression.totalHitDice))
-        : level,
-      gainedSkillIds: Array.from(
-        new Set(normalizeStringArray(progression?.gainedSkillIds).concat(fromSkills))
-      ),
-      gainedPowerIds: Array.from(
-        new Set(normalizeStringArray(progression?.gainedPowerIds).concat(fromPowers))
-      ),
-      appliedLevels: Array.from(
-        new Set(
-          normalizeNumberArray(progression?.appliedLevels).concat(
-            Array.from({ length: level }, (_value, index) => index + 1)
+    character: {
+      ...safeCharacter,
+      level,
+      skills,
+      powers,
+      levelProgression: {
+        totalHitDice: Number.isFinite(progression?.totalHitDice)
+          ? Math.max(0, Math.floor(progression.totalHitDice))
+          : level,
+        gainedSkillIds: Array.from(
+          new Set(normalizeStringArray(progression?.gainedSkillIds).concat(fromSkills))
+        ),
+        gainedPowerIds: Array.from(
+          new Set(normalizeStringArray(progression?.gainedPowerIds).concat(fromPowers))
+        ),
+        appliedLevels: Array.from(
+          new Set(
+            normalizeNumberArray(progression?.appliedLevels).concat(
+              Array.from({ length: level }, (_value, index) => index + 1)
+            )
           )
-        )
-      ).sort((a, b) => a - b),
-      appliedAttributeIncreases: normalizedAttributeIncreases,
+        ).sort((a, b) => a - b),
+        appliedAttributeIncreases: normalizedAttributeIncreases,
+      },
     },
+    droppedSkills: Math.max(0, originalSkills - skills.length),
+    droppedPowers: Math.max(0, originalPowers - powers.length),
   };
 }
 
@@ -109,7 +123,41 @@ export function loadCharacters(): CharacterRecord[] {
     if (!Array.isArray(parsed)) {
       return [];
     }
-    return (parsed as CharacterRecord[]).map(normalizeCharacter);
+
+    const nextCharacters: CharacterRecord[] = [];
+    let skippedRecords = 0;
+    let droppedSkills = 0;
+    let droppedPowers = 0;
+
+    for (const item of parsed) {
+      if (!isRecord(item)) {
+        skippedRecords += 1;
+        continue;
+      }
+
+      try {
+        const normalized = normalizeCharacter(item as unknown as CharacterRecord);
+        nextCharacters.push(normalized.character);
+        droppedSkills += normalized.droppedSkills;
+        droppedPowers += normalized.droppedPowers;
+      } catch (error) {
+        skippedRecords += 1;
+        console.warn("Skipped invalid character record while loading storage", error);
+      }
+    }
+
+    if (skippedRecords > 0) {
+      console.warn("Skipped invalid character records while loading storage", { skippedRecords });
+    }
+
+    if (droppedSkills > 0 || droppedPowers > 0) {
+      console.warn("Dropped invalid nested character fields while loading storage", {
+        droppedSkills,
+        droppedPowers,
+      });
+    }
+
+    return nextCharacters;
   } catch (error) {
     console.error("Failed to parse saved characters", error);
     return [];

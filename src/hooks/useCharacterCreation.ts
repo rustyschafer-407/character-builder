@@ -27,20 +27,12 @@ import {
   getClassesForCampaignAndRace,
   getRaceById,
   getRacesForCampaign,
+  sortByName,
+  getAttributeModifier,
 } from "../lib/character";
 
 type AttributeGenerationMethod = "pointBuy" | "randomRoll" | "manual";
 type ClassChoiceRule = ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule;
-
-function sortByName<T extends { name: string }>(items: T[]) {
-  return [...items].sort((a, b) =>
-    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
-  );
-}
-
-function getAttributeModifier(score: number) {
-  return Math.floor((score - 10) / 2);
-}
 
 function getDraftHpForCon(hitDie: number, conScore: number) {
   const nextMax = Math.max(1, hitDie + getAttributeModifier(conScore));
@@ -141,9 +133,18 @@ export function useCharacterCreation({
     [creationDraft, gameData]
   );
 
-  const wizardSkillChoiceRules = wizardClass?.skillChoiceRules ?? [];
-  const wizardPowerChoiceRules = wizardClass?.powerChoiceRules ?? [];
-  const wizardItemChoiceRules = wizardClass?.itemChoiceRules ?? [];
+  const wizardSkillChoiceRules = useMemo(
+    () => wizardClass?.skillChoiceRules ?? [],
+    [wizardClass?.skillChoiceRules]
+  );
+  const wizardPowerChoiceRules = useMemo(
+    () => wizardClass?.powerChoiceRules ?? [],
+    [wizardClass?.powerChoiceRules]
+  );
+  const wizardItemChoiceRules = useMemo(
+    () => wizardClass?.itemChoiceRules ?? [],
+    [wizardClass?.itemChoiceRules]
+  );
 
   const wizardSkills = useMemo(() => {
     if (!wizardCampaign || !creationDraft) return [];

@@ -6,6 +6,7 @@ import {
   getLevelUpHpGain,
   getNextLevelProgressionRow,
 } from "../lib/progression";
+import { sortByName } from "../lib/character";
 import { syncDerivedAttacks } from "../lib/attackSync";
 import type { CharacterRecord } from "../types/character";
 import type {
@@ -15,12 +16,6 @@ import type {
   PowerDefinition,
   SkillDefinition,
 } from "../types/gameData";
-
-function sortByName<T extends { name: string }>(items: T[]) {
-  return [...items].sort((a, b) =>
-    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
-  );
-}
 
 interface UseLevelUpWorkflowParams {
   selected: CharacterRecord | null;

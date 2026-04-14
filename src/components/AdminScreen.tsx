@@ -24,7 +24,7 @@ import {
   panelStyle,
   sectionTitleStyle,
 } from "./uiStyles";
-import { generateId } from "../lib/character";
+import { generateId, sortByName } from "../lib/character";
 import { syncCampaignDerivedAttackTemplates } from "../lib/derivedAttacks";
 
 interface Props {
@@ -163,12 +163,6 @@ function gridCols(cols: number) {
 
 function sortLevelProgression(rows: ClassLevelProgressionRow[]) {
   return [...rows].sort((a, b) => a.level - b.level);
-}
-
-function sortByName<T extends { name: string }>(items: T[]) {
-  return [...items].sort((a, b) =>
-    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
-  );
 }
 
 function formatBonusSummary(bonuses: AttributeBonusRule[]) {

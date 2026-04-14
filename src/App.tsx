@@ -3,16 +3,19 @@ import { createGameData, gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
   generateId,
+  getAttributeModifier,
   getClassById,
   getClassesForCampaignAndRace,
   getRaceById,
   getRacesForCampaign,
+  makeBaseAttributes,
+  sortByName,
   touchCharacter,
 } from "./lib/character";
 import {
   getFirstVisibleCharacterId,
 } from "./lib/campaigns";
-import { buildChatSetAttrPhases } from "./lib/roll20Export";
+import { DEFAULT_EXPORTER_ID, exportCharacter } from "./lib/exporters";
 import {
   deleteCampaignById,
   deleteCharacterRow,
@@ -66,23 +69,6 @@ function getPointBuySpent(attributes: Record<AttributeKey, number>) {
   );
 }
 
-function sortByName<T extends { name: string }>(items: T[]) {
-  return [...items].sort((a, b) =>
-    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
-  );
-}
-
-function makeBaseAttributes(): Record<AttributeKey, number> {
-  return {
-    STR: 10,
-    DEX: 10,
-    CON: 10,
-    INT: 10,
-    WIS: 10,
-    CHA: 10,
-  };
-}
-
 function applyClassAttributeModifiers(
   attributes: Record<AttributeKey, number>,
   cls: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null,
@@ -96,10 +82,6 @@ function applyClassAttributeModifiers(
     next[bonus.attribute] = (next[bonus.attribute] ?? 0) + bonus.amount;
   }
   return next;
-}
-
-function getAttributeModifier(score: number) {
-  return Math.floor((score - 10) / 2);
 }
 
 function makeDraftFromCampaignClassAndRace(
@@ -287,7 +269,7 @@ export default function App() {
     return () => {
       isCancelled = true;
     };
-  }, [cloudEnabled]);
+  }, [cloudEnabled, gameData.campaigns]);
 
   useEffect(() => {
     if (!cloudEnabled || !cloudReady) return;
@@ -344,9 +326,32 @@ export default function App() {
 
     async function syncCharactersToCloud() {
       try {
+        const syncStartedAt = Date.now();
+        const remoteBeforeSync = await listAllCharacterRows();
+        const remoteById = new Map(remoteBeforeSync.map((row) => [row.id, row]));
+        let conflictCount = 0;
+
         for (const character of characters) {
           const campaignRowId = campaignRowIdsByAppId[character.campaignId];
           if (!campaignRowId) continue;
+
+          const remoteRow = remoteById.get(character.id);
+          if (remoteRow) {
+            const remoteUpdatedAt = Date.parse(
+              remoteRow.data?.updatedAt ?? remoteRow.updated_at ?? ""
+            );
+            const localUpdatedAt = Date.parse(character.updatedAt ?? "");
+
+            if (
+              Number.isFinite(remoteUpdatedAt) &&
+              Number.isFinite(localUpdatedAt) &&
+              remoteUpdatedAt > localUpdatedAt
+            ) {
+              conflictCount += 1;
+              continue;
+            }
+          }
+
           await upsertCharacterRow({
             campaignId: campaignRowId,
             character,
@@ -356,8 +361,25 @@ export default function App() {
         const remoteRows = await listAllCharacterRows();
         const localCharacterIds = new Set(characters.map((character) => character.id));
 
+        if (conflictCount > 0) {
+          if (!isCancelled) {
+            setCloudStatus(
+              `Cloud sync conflict detected for ${conflictCount} character${conflictCount === 1 ? "" : "s"}; remote kept`
+            );
+          }
+          return;
+        }
+
         for (const row of remoteRows) {
-          if (knownCampaignRowIds.has(row.campaign_id) && !localCharacterIds.has(row.id)) {
+          const remoteUpdatedAt = Date.parse(row.data?.updatedAt ?? row.updated_at ?? "");
+          const updatedAfterSyncStarted =
+            Number.isFinite(remoteUpdatedAt) && remoteUpdatedAt > syncStartedAt;
+
+          if (
+            knownCampaignRowIds.has(row.campaign_id) &&
+            !localCharacterIds.has(row.id) &&
+            !updatedAfterSyncStarted
+          ) {
             await deleteCharacterRow(row.id);
           }
         }
@@ -535,8 +557,9 @@ export default function App() {
   const pointBuySpent = selected ? getPointBuySpent(selected.attributes) : 0;
   const pointBuyRemaining = pointBuyTotal - pointBuySpent;
 
+  // Export calls now route through an exporter boundary so new exporters can be added safely.
   const roll20Commands = selected
-    ? buildChatSetAttrPhases(selected, gameData)
+    ? exportCharacter(selected, gameData, DEFAULT_EXPORTER_ID)
     : { phase1: "", phase2: "", combined: "" };
   const chatSetAttrCommand = roll20Commands.combined;
 
