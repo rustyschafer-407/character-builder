@@ -76,6 +76,35 @@ Run lint:
 npm run lint
 ```
 
+Build with staging mode (reads `.env.staging` / `.env.staging.local`):
+
+```bash
+npm run build:staging
+```
+
+## Staging And Production
+
+This app uses Vite environment variables:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+Recommended branch strategy:
+
+- `staging` branch deploys to staging host and uses staging Supabase project
+- `main` branch deploys to production host and uses production Supabase project
+
+Local staging test:
+
+1. Create `.env.staging.local` with staging Supabase values.
+2. Run `npm run dev:staging` or `npm run build:staging`.
+
+Hosted staging deploy:
+
+1. In your hosting provider, set staging environment variables for branch `staging`.
+2. Push to `staging`.
+3. Validate in staging, then promote by merging `staging` into `main`.
+
 ## Developer Smoke Test
 
 Use [SMOKE_TEST_CHECKLIST.md](SMOKE_TEST_CHECKLIST.md) for a quick manual validation pass after changes.
