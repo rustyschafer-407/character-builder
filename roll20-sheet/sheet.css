@@ -439,10 +439,10 @@
   min-height: 28px;
   height: 28px;
   justify-self: start;
-  border: 0;
+  border: 1px solid var(--button-border);
   border-radius: 6px;
-  background: transparent;
-  color: var(--accent);
+  background: linear-gradient(to bottom, rgba(255,255,255,.15), rgba(0,0,0,.03)), var(--button);
+  color: var(--text);
   cursor: pointer;
   appearance: none;
   padding: 0;
@@ -451,11 +451,10 @@
 .charsheet .sheet-power-expand-toggle::before {
   content: "+ Details";
   display: block;
-  text-align: left;
+  text-align: center;
   font-size: 13px;
   font-weight: 700;
   line-height: 28px;
-  text-decoration: underline;
 }
 
 .charsheet .sheet-power-expand-toggle:checked::before {
