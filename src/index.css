@@ -100,6 +100,16 @@ textarea {
   font-family: var(--font-body);
 }
 
+input[type="number"] {
+  color-scheme: dark;
+  padding-right: 10px;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  opacity: 1;
+}
+
 button {
   will-change: transform;
 }
