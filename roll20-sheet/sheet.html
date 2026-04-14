@@ -284,10 +284,11 @@
           <div>Uses/Day</div>
           <div>Save Attr</div>
           <div>Save DC</div>
+          <div>Details</div>
         </div>
 
         <fieldset class="repeating_powers">
-          <div class="sheet-power-row-compact">
+          <div class="sheet-power-item">
             <input class="sheet-highlight-name" type="text" name="attr_powername" placeholder="Power Name">
             <input type="number" name="attr_power_uses" value="0">
             <select name="attr_power_save_attr">
@@ -300,9 +301,11 @@
               <option value="cha_mod">CHA</option>
             </select>
             <input class="sheet-highlight-total" type="number" name="attr_power_dc" value="" readonly>
-          </div>
-          <div class="sheet-power-desc-row">
-            <input type="text" name="attr_powertext" placeholder="Description">
+            <input class="sheet-power-expand-toggle" type="checkbox" name="attr_power_expanded" value="1">
+
+            <div class="sheet-power-details">
+              <input type="text" name="attr_powertext" placeholder="Description">
+            </div>
           </div>
         </fieldset>
       </div>

@@ -142,10 +142,11 @@
 
 /* taller selects */
 .charsheet select {
-  min-height: 50px !important;
-  height: 50px !important;
-  line-height: 1.2 !important;
-  padding: 10px 40px 10px 12px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 6px 10px !important;
+  font-size: 16px;
+  line-height: 1.2;
   white-space: nowrap;
   appearance: auto;
 }
@@ -415,15 +416,48 @@
 }
 
 .charsheet .sheet-power-head,
-.charsheet .sheet-power-row-compact {
+.charsheet .sheet-power-item {
   display: grid;
-  grid-template-columns: minmax(170px,1fr) 96px 140px 88px;
+  grid-template-columns: minmax(170px,1fr) 96px 140px 88px 92px;
   gap: 8px;
   align-items: center;
 }
 
-.charsheet .sheet-power-desc-row {
+.charsheet .sheet-power-details {
+  display: none;
+  grid-column: 1 / -1;
   padding-top: 8px;
+}
+
+.charsheet input[name="attr_power_expanded"]:checked ~ .sheet-power-details {
+  display: block;
+}
+
+.charsheet .sheet-power-expand-toggle {
+  width: 88px !important;
+  min-width: 88px;
+  min-height: 34px;
+  height: 34px;
+  justify-self: start;
+  border: 1px solid var(--button-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  appearance: none;
+}
+
+.charsheet .sheet-power-expand-toggle::before {
+  content: "Details";
+  display: block;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 32px;
+}
+
+.charsheet .sheet-power-expand-toggle:checked::before {
+  content: "Hide";
 }
 
 .charsheet .sheet-effect-head,
@@ -445,7 +479,7 @@
 .charsheet .sheet-attrsave-row,
 .charsheet .sheet-skill-row-compact,
 .charsheet .sheet-attack-row-compact,
-.charsheet .sheet-power-row-compact,
+.charsheet .sheet-power-item,
 .charsheet .sheet-effect-row-compact,
 .charsheet .sheet-inventory-row {
   padding: 8px 0;
@@ -524,7 +558,7 @@
   .charsheet .sheet-attack-head,
   .charsheet .sheet-attack-row-compact,
   .charsheet .sheet-power-head,
-  .charsheet .sheet-power-row-compact,
+  .charsheet .sheet-power-item,
   .charsheet .sheet-effect-head,
   .charsheet .sheet-effect-row-compact,
   .charsheet .sheet-inventory-head,
