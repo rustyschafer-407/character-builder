@@ -236,6 +236,19 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  align-self: start;
+}
+
+.charsheet .sheet-theme-dropdown {
+  display: grid;
+  grid-template-columns: auto minmax(170px,1fr);
+  align-items: center;
+  column-gap: 10px;
+}
+
+.charsheet .sheet-theme-dropdown span {
+  margin-bottom: 0;
+  white-space: nowrap;
 }
 
 .charsheet .sheet-theme-dropdown span,
@@ -476,6 +489,14 @@
 }
 
 @media screen and (max-width: 760px) {
+  .charsheet .sheet-theme-dropdown {
+    display: block;
+  }
+
+  .charsheet .sheet-theme-dropdown span {
+    margin-bottom: 6px;
+  }
+
   .charsheet .sheet-class-race-row,
   .charsheet .sheet-header,
   .charsheet .sheet-core-grid,
