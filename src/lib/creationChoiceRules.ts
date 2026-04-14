@@ -56,7 +56,12 @@ export function getSelectedCountForPowerRule(
   rule: ClassPowerChoiceRule,
   powers: CharacterPowerSelection[]
 ) {
-  return powers.filter((power) => power.powerId && rule.powerIds.includes(power.powerId)).length;
+  return powers.filter(
+    (power) =>
+      power.source === "wizard-choice" &&
+      power.powerId &&
+      rule.powerIds.includes(power.powerId)
+  ).length;
 }
 
 export function getPowerChoiceState(

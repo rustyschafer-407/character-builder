@@ -364,17 +364,19 @@ export function useCharacterCreation({
       const alreadySelected = creationDraft.powers.some((p) => p.powerId === powerId);
       if (alreadySelected) return;
 
-      const rule = getRuleForPower(powerId, wizardPowerChoiceRules);
-      if (!rule) {
-        alert("That power cannot be chosen for this class.");
-        return;
-      }
+      if (wizardPowerChoiceRules.length > 0) {
+        const rule = getRuleForPower(powerId, wizardPowerChoiceRules);
+        if (!rule) {
+          alert("That power cannot be chosen for this class.");
+          return;
+        }
 
-      const selectedCount = getSelectedCountForPowerRule(rule, creationDraft.powers);
+        const selectedCount = getSelectedCountForPowerRule(rule, creationDraft.powers);
 
-      if (selectedCount >= rule.choose) {
-        alert("You have already selected the maximum number of powers for that group.");
-        return;
+        if (selectedCount >= rule.choose) {
+          alert("You have already selected the maximum number of powers for that group.");
+          return;
+        }
       }
 
       setCreationDraft({

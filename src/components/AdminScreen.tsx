@@ -1749,7 +1749,7 @@ export default function AdminScreen({
                         />
                       </label>
                       <label style={labelTextStyle}>
-                        Save Attribute
+                        Power Attribute
                         <select
                           value={selectedPower.saveAttribute ?? "none"}
                           onChange={(e) => updatePower({ ...selectedPower, saveAttribute: e.target.value === "none" ? undefined : (e.target.value as AttributeKey) })}

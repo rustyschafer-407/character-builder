@@ -154,7 +154,7 @@ export default function PowersSection({
                     </label>
 
                     <label style={labelTextStyle}>
-                      Save Attribute
+                      Power Attribute
                       <select
                         value={selectedPower.saveAttribute ?? power.saveAttribute ?? "none"}
                         onChange={(e) =>
