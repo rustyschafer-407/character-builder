@@ -204,14 +204,18 @@
 }
 
 .charsheet .sheet-class-race-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start;
   gap: 12px;
 }
 
 .charsheet .sheet-header-field {
   display: flex;
   flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .charsheet .sheet-header-field span {
