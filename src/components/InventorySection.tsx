@@ -1,12 +1,11 @@
 import type { CharacterRecord } from "../types/character";
-import type { ClassItemChoiceRule, ItemDefinition } from "../types/gameData";
+import type { ItemDefinition } from "../types/gameData";
 import { buttonStyle, cardStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
 
 interface Props {
   character: CharacterRecord;
   items: ItemDefinition[];
   label: string;
-  itemChoiceRules: ClassItemChoiceRule[];
   onToggleItem: (itemId: string, nextSelected: boolean) => void;
   onQuantityChange: (itemId: string, quantity: number) => void;
   onEquippedChange: (itemId: string, equipped: boolean) => void;
@@ -14,29 +13,16 @@ interface Props {
   onAddManualItem: () => void;
 }
 
-function getRuleForItem(itemId: string, rules: ClassItemChoiceRule[]) {
-  return rules.find((rule) => rule.itemIds.includes(itemId));
-}
-
-function getSelectedCountForRule(rule: ClassItemChoiceRule, character: CharacterRecord) {
-  return character.inventory.filter(
-    (item) => item.itemId && rule.itemIds.includes(item.itemId)
-  ).length;
-}
-
 export default function InventorySection({
   character,
   items,
   label,
-  itemChoiceRules,
   onToggleItem,
   onQuantityChange,
   onEquippedChange,
   onRemoveManualItem,
   onAddManualItem,
 }: Props) {
-  const hasChoiceRules = itemChoiceRules.length > 0;
-
   return (
     <section style={panelStyle}>
       <div
@@ -53,49 +39,10 @@ export default function InventorySection({
         </button>
       </div>
 
-      {hasChoiceRules && (
-        <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
-          {itemChoiceRules.map((rule, index) => {
-            const selectedCount = getSelectedCountForRule(rule, character);
-            const remaining = rule.choose - selectedCount;
-
-            return (
-              <div
-                key={`${index}-${rule.itemIds.join("-")}`}
-                style={{
-                  padding: 10,
-                  borderRadius: 8,
-                  background: "#eff6ff",
-                  color: "#1e3a8a",
-                  fontSize: 14,
-                }}
-              >
-                <strong>Item Picks:</strong> choose {rule.choose} from{" "}
-                {rule.itemIds
-                  .map((id) => items.find((i) => i.id === id)?.name ?? id)
-                  .join(", ")}
-                <div style={{ marginTop: 4 }}>
-                  Remaining: <strong>{remaining}</strong>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       <div style={{ display: "grid", gap: 8 }}>
         {items.map((item) => {
           const selectedItem = character.inventory.find((i) => i.itemId === item.id);
           const isSelected = Boolean(selectedItem);
-
-          const rule = getRuleForItem(item.id, itemChoiceRules);
-          const selectedCount = rule ? getSelectedCountForRule(rule, character) : 0;
-          const remaining = rule ? rule.choose - selectedCount : 0;
-
-          const canBeChosen = !hasChoiceRules || Boolean(rule) || isSelected;
-          const disableCheckbox =
-            !isSelected &&
-            ((hasChoiceRules && !canBeChosen) || (rule ? remaining <= 0 : false));
 
           return (
             <div
@@ -106,7 +53,6 @@ export default function InventorySection({
                 gridTemplateColumns: "1.5fr auto auto auto",
                 gap: 12,
                 alignItems: "center",
-                opacity: canBeChosen ? 1 : 0.7,
               }}
             >
               <div>
@@ -121,7 +67,6 @@ export default function InventorySection({
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  disabled={disableCheckbox}
                   onChange={(e) => onToggleItem(item.id, e.target.checked)}
                   style={{ marginLeft: 8 }}
                 />

@@ -1,10 +1,9 @@
 import { generateId } from "../lib/character";
 import type { CharacterRecord } from "../types/character";
-import type { AttributeKey, CampaignDefinition } from "../types/gameData";
+import type { AttributeKey } from "../types/gameData";
 
 interface UseSelectedCharacterWorkspaceCallbacksParams {
   selected: CharacterRecord | null;
-  selectedCampaign: CampaignDefinition | null;
   updateCharacter: (updated: CharacterRecord) => void;
   updateAttributeWithRules: (character: CharacterRecord, key: AttributeKey, value: number) => void;
   updateSkillWithRules: (
@@ -29,7 +28,6 @@ interface UseSelectedCharacterWorkspaceCallbacksParams {
 
 export function useSelectedCharacterWorkspaceCallbacks({
   selected,
-  selectedCampaign,
   updateCharacter,
   updateAttributeWithRules,
   updateSkillWithRules,
@@ -56,43 +54,6 @@ export function useSelectedCharacterWorkspaceCallbacks({
   function onAttributeChange(key: AttributeKey, value: number) {
     if (!selected) return;
     updateAttributeWithRules(selected, key, value);
-  }
-
-  function onAttributeGenerationChange(method: "pointBuy" | "randomRoll" | "manual") {
-    if (!selected || !selectedCampaign) return;
-
-    updateCharacter({
-      ...selected,
-      attributeGeneration: {
-        ...selected.attributeGeneration,
-        method,
-        pointBuyTotal:
-          selected.attributeGeneration?.pointBuyTotal ??
-          selectedCampaign.attributeRules.pointBuyTotal ??
-          27,
-      },
-    });
-  }
-
-  function onApplyAttributeRolls(values: number[]) {
-    if (!selected) return;
-
-    const attrs: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
-    const newAttributes = { ...selected.attributes };
-
-    attrs.forEach((attr, index) => {
-      newAttributes[attr] = values[index];
-    });
-
-    updateCharacter({
-      ...selected,
-      attributes: newAttributes,
-      attributeGeneration: {
-        ...selected.attributeGeneration,
-        method: "randomRoll",
-        rolls: values,
-      },
-    });
   }
 
   function onSpeedChange(value: string) {
@@ -240,8 +201,6 @@ export function useSelectedCharacterWorkspaceCallbacks({
   return {
     onNameChange,
     onAttributeChange,
-    onAttributeGenerationChange,
-    onApplyAttributeRolls,
     onSpeedChange,
     onAcBaseChange,
     onAcBonusChange,

@@ -29,6 +29,7 @@ import {
   getSelectedCountForSkillRule,
   getSkillChoiceState,
 } from "../lib/creationChoiceRules";
+import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
 import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
 
 export interface CharacterCreationDraft {
@@ -164,6 +165,7 @@ export default function CharacterCreationWizard({
   const stepTitles = getStepTitles(labels);
   const classModifiersText = formatClassAttributeModifiers(selectedClass);
   const raceModifiersText = formatRaceAttributeModifiers(selectedRace);
+  const attributeBonusTotals = getAttributeBonusTotals(selectedClass, selectedRace);
 
   return (
     <section style={panelStyle}>
@@ -414,17 +416,63 @@ export default function CharacterCreationWizard({
               gap: 12,
             }}
           >
-            {ATTRS.map((attr) => (
+            {ATTRS.map((attr) => {
+              const baseScore = getPointBuyBaseScore(draft.attributes[attr], attributeBonusTotals[attr]);
+              const pointBuyCost = method === "pointBuy" ? getPointBuyCost(baseScore) : null;
+              const combinedModifier = attributeBonusTotals[attr];
+
+              return (
               <label key={attr} style={{ fontWeight: 600, color: "#b9cdf0" }}>
-                {attr}
+                <span
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "baseline",
+                    gap: 8,
+                    marginBottom: 4,
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span>{attr}</span>
+                    {combinedModifier !== 0 && (
+                      <span
+                        style={{
+                          fontWeight: 500,
+                          fontSize: 12,
+                          color: "var(--text-secondary)",
+                          background: "rgba(255,255,255,0.08)",
+                          border: "1px solid var(--border-soft)",
+                          borderRadius: 999,
+                          padding: "1px 7px",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {formatSignedNumber(combinedModifier)}
+                      </span>
+                    )}
+                  </span>
+                  {pointBuyCost !== null && (
+                    <span style={{ fontWeight: 500, fontSize: 12, color: "var(--text-secondary)" }}>
+                      {pointBuyCost} pts
+                    </span>
+                  )}
+                </span>
                 <input
                   type="number"
-                  value={draft.attributes[attr]}
+                  value={method === "pointBuy" || method === "randomRoll" ? baseScore : draft.attributes[attr]}
+                  min={method === "pointBuy" ? 8 : undefined}
+                  max={method === "pointBuy" ? 15 : undefined}
                   onChange={(e) => onAttributeChange(attr, Number(e.target.value) || 0)}
                   style={inputStyle}
                 />
+                {(method === "pointBuy" || (method === "randomRoll" && combinedModifier !== 0)) && (
+                  <div style={{ marginTop: 4, fontWeight: 400, fontSize: 12, color: "var(--text-secondary)" }}>
+                    Total: {draft.attributes[attr]}
+                  </div>
+                )}
               </label>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

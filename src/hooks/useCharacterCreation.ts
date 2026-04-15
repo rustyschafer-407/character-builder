@@ -30,6 +30,11 @@ import {
   sortByName,
   getAttributeModifier,
 } from "../lib/character";
+import {
+  getAttributeBonusTotals,
+  getPointBuySpentFromTotals,
+  makePointBuyBaseAttributes,
+} from "../lib/pointBuy";
 
 type AttributeGenerationMethod = "pointBuy" | "randomRoll" | "manual";
 type ClassChoiceRule = ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule;
@@ -82,7 +87,6 @@ interface UseCharacterCreationParams {
     cls: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null,
     race: { attributeBonuses?: Array<{ attribute: AttributeKey; amount: number }> } | null
   ) => Record<AttributeKey, number>;
-  getPointBuySpent: (attributes: Record<AttributeKey, number>) => number;
   onFinishDraft: (draft: CharacterCreationDraft) => void;
 }
 
@@ -95,7 +99,6 @@ export function useCharacterCreation({
   makeDraftFromCampaignClassAndRace,
   makeBaseAttributes,
   applyClassAttributeModifiers,
-  getPointBuySpent,
   onFinishDraft,
 }: UseCharacterCreationParams) {
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -181,12 +184,19 @@ export function useCharacterCreation({
     return sortByName(wizardCampaign.items.filter((item) => allowedItemIds.has(item.id)));
   }, [creationDraft, wizardCampaign, wizardClass?.defaultItemIds, wizardItemChoiceRules]);
 
+  const wizardAttributeBonusTotals = useMemo(
+    () => getAttributeBonusTotals(wizardClass, wizardRace),
+    [wizardClass, wizardRace]
+  );
+
   const wizardPointBuyTotal =
     creationDraft?.attributeGeneration?.pointBuyTotal ??
     wizardCampaign?.attributeRules.pointBuyTotal ??
     27;
 
-  const wizardPointBuySpent = creationDraft ? getPointBuySpent(creationDraft.attributes) : 0;
+  const wizardPointBuySpent = creationDraft
+    ? getPointBuySpentFromTotals(creationDraft.attributes, wizardAttributeBonusTotals)
+    : 0;
   const wizardPointBuyRemaining = wizardPointBuyTotal - wizardPointBuySpent;
 
   function openWizard() {
@@ -278,16 +288,40 @@ export function useCharacterCreation({
     const method = creationDraft.attributeGeneration?.method ?? "manual";
 
     if (method === "pointBuy") {
-      const clamped = Math.max(8, Math.min(15, value));
+      const bonus = wizardAttributeBonusTotals[key];
+      const clampedBase = Math.max(8, Math.min(15, value));
       const nextAttributes = {
         ...creationDraft.attributes,
-        [key]: clamped,
+        [key]: clampedBase + bonus,
       };
       const totalAllowed = creationDraft.attributeGeneration?.pointBuyTotal ?? 27;
-      const spent = getPointBuySpent(nextAttributes);
+      const spent = getPointBuySpentFromTotals(nextAttributes, wizardAttributeBonusTotals);
 
       if (spent > totalAllowed) return;
 
+      const nextHp = getDraftHpForCon(
+        wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,
+        nextAttributes.CON
+      );
+
+      setCreationDraft({
+        ...creationDraft,
+        attributes: nextAttributes,
+        hp: {
+          ...creationDraft.hp,
+          max: nextHp.max,
+          current: Math.min(nextHp.max, creationDraft.hp.current + (nextHp.max - creationDraft.hp.max)),
+        },
+      });
+      return;
+    }
+
+    if (method === "randomRoll") {
+      const bonus = wizardAttributeBonusTotals[key];
+      const nextAttributes = {
+        ...creationDraft.attributes,
+        [key]: value + bonus,
+      };
       const nextHp = getDraftHpForCon(
         wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,
         nextAttributes.CON
@@ -542,12 +576,17 @@ export function useCharacterCreation({
 
   function handleWizardAttributeGenerationChange(method: AttributeGenerationMethod) {
     if (!creationDraft) return;
+
+    const nextAttributes =
+      method === "manual"
+        ? creationDraft.attributes
+        : method === "pointBuy"
+        ? applyClassAttributeModifiers(makePointBuyBaseAttributes(), wizardClass, wizardRace)
+        : applyClassAttributeModifiers(makeBaseAttributes(), wizardClass, wizardRace);
+
     setCreationDraft({
       ...creationDraft,
-      attributes:
-        method === "manual"
-          ? creationDraft.attributes
-          : applyClassAttributeModifiers(makeBaseAttributes(), wizardClass, wizardRace),
+      attributes: nextAttributes,
       attributeGeneration: {
         ...creationDraft.attributeGeneration,
         method,

@@ -1,16 +1,13 @@
-import { getRuleForItem, getRuleForPower, getRuleForSkill, getSelectedCountForItemRule, getSelectedCountForPowerRule, getSelectedCountForSkillRule } from "../lib/creationChoiceRules";
 import { syncDerivedAttacks } from "../lib/attackSync";
 import { getFirstVisibleCharacterId } from "../lib/campaigns";
 import type { CharacterRecord } from "../types/character";
-import type { AttributeKey, CampaignDefinition, ClassDefinition } from "../types/gameData";
+import type { AttributeKey, CampaignDefinition } from "../types/gameData";
 
 interface UseCharacterEditorParams {
   characters: CharacterRecord[];
   selectedId: string;
   campaignId: string;
   selectedCampaign: CampaignDefinition | null;
-  selectedClass: ClassDefinition | null;
-  getPointBuySpent: (attributes: Record<AttributeKey, number>) => number;
   updateCharacter: (updated: CharacterRecord) => void;
   setCharacters: (updater: (previous: CharacterRecord[]) => CharacterRecord[]) => void;
   setSelectedId: (nextId: string) => void;
@@ -21,35 +18,11 @@ export function useCharacterEditor({
   selectedId,
   campaignId,
   selectedCampaign,
-  selectedClass,
-  getPointBuySpent,
   updateCharacter,
   setCharacters,
   setSelectedId,
 }: UseCharacterEditorParams) {
   function updateAttributeWithRules(character: CharacterRecord, key: AttributeKey, value: number) {
-    const method = character.attributeGeneration?.method ?? "manual";
-
-    if (method === "pointBuy") {
-      const clamped = Math.max(8, Math.min(15, value));
-
-      const nextAttributes = {
-        ...character.attributes,
-        [key]: clamped,
-      };
-
-      const totalAllowed = character.attributeGeneration?.pointBuyTotal ?? 27;
-      const spent = getPointBuySpent(nextAttributes);
-
-      if (spent > totalAllowed) return;
-
-      updateCharacter({
-        ...character,
-        attributes: nextAttributes,
-      });
-      return;
-    }
-
     updateCharacter({
       ...character,
       attributes: {
@@ -75,39 +48,14 @@ export function useCharacterEditor({
       return;
     }
 
-    const nextProficient = value as boolean;
-    const rules = selectedClass?.skillChoiceRules ?? [];
-
-    if (nextProficient) {
-      if (rules.length > 0) {
-        const rule = getRuleForSkill(skillId, rules);
-        if (!rule) {
-          alert("That skill cannot be chosen for this class.");
-          return;
-        }
-
-        const selectedCount = getSelectedCountForSkillRule(rule, character.skills);
-        if (selectedCount >= rule.choose) {
-          alert("You have already selected the maximum number of skill proficiencies for that group.");
-          return;
-        }
-      }
-
-      updateCharacter({
-        ...character,
-        skills: character.skills.map((skill) =>
-          skill.skillId === skillId
-            ? { ...skill, proficient: true, source: "wizard-choice" }
-            : skill
-        ),
-      });
-      return;
-    }
-
     updateCharacter({
       ...character,
       skills: character.skills.map((skill) =>
-        skill.skillId === skillId ? { ...skill, proficient: false } : skill
+        skill.skillId !== skillId
+          ? skill
+          : (value as boolean)
+            ? { ...skill, proficient: true, source: "wizard-choice" }
+            : { ...skill, proficient: false }
       ),
     });
   }
@@ -117,25 +65,9 @@ export function useCharacterEditor({
     const power = selectedCampaign?.powers.find((p) => p.id === powerId);
     if (!power) return;
 
-    const rules = selectedClass?.powerChoiceRules ?? [];
-
     if (nextSelected) {
       const alreadySelected = character.powers.some((p) => p.powerId === powerId);
       if (alreadySelected) return;
-
-      if (rules.length > 0) {
-        const rule = getRuleForPower(powerId, rules);
-        if (!rule) {
-          alert("That power cannot be chosen for this class.");
-          return;
-        }
-
-        const selectedCount = getSelectedCountForPowerRule(rule, character.powers);
-        if (selectedCount >= rule.choose) {
-          alert("You have already selected the maximum number of powers for that group.");
-          return;
-        }
-      }
 
       updateCharacter({
         ...character,
@@ -216,25 +148,9 @@ export function useCharacterEditor({
     const item = selectedCampaign?.items.find((i) => i.id === itemId);
     if (!item) return;
 
-    const rules = selectedClass?.itemChoiceRules ?? [];
-
     if (nextSelected) {
       const alreadySelected = character.inventory.some((i) => i.itemId === itemId);
       if (alreadySelected) return;
-
-      if (rules.length > 0) {
-        const rule = getRuleForItem(itemId, rules);
-        if (!rule) {
-          alert("That item cannot be chosen for this class.");
-          return;
-        }
-
-        const selectedCount = getSelectedCountForItemRule(rule, character.inventory);
-        if (selectedCount >= rule.choose) {
-          alert("You have already selected the maximum number of items for that group.");
-          return;
-        }
-      }
 
       updateCharacter({
         ...character,

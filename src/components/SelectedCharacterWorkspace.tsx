@@ -3,9 +3,6 @@ import type {
   AttributeBonusRule,
   AttributeKey,
   CampaignLabels,
-  ClassItemChoiceRule,
-  ClassPowerChoiceRule,
-  ClassSkillChoiceRule,
   ItemDefinition,
   PowerDefinition,
   SkillDefinition,
@@ -26,14 +23,9 @@ interface SelectedCharacterWorkspaceProps {
   selectedRaceName: string;
   selectedClassName: string;
   labels: CampaignLabels;
-  pointBuyTotal: number;
-  pointBuyRemaining: number;
   selectedSkills: SkillDefinition[];
   selectedPowers: PowerDefinition[];
   selectedItems: ItemDefinition[];
-  skillChoiceRules: ClassSkillChoiceRule[];
-  powerChoiceRules: ClassPowerChoiceRule[];
-  itemChoiceRules: ClassItemChoiceRule[];
   chatSetAttrCommand: string;
   roll20Phase1Command: string;
   roll20Phase2Command: string;
@@ -57,8 +49,6 @@ interface SelectedCharacterWorkspaceProps {
   onApplyLevelUp: () => void;
   onNameChange: (name: string) => void;
   onAttributeChange: (k: AttributeKey, v: number) => void;
-  onAttributeGenerationChange: (method: "pointBuy" | "randomRoll" | "manual") => void;
-  onApplyAttributeRolls: (values: number[]) => void;
   onSpeedChange: (value: string) => void;
   onAcBaseChange: (value: number) => void;
   onAcBonusChange: (value: number) => void;
@@ -88,14 +78,9 @@ export default function SelectedCharacterWorkspace({
   selectedRaceName,
   selectedClassName,
   labels,
-  pointBuyTotal,
-  pointBuyRemaining,
   selectedSkills,
   selectedPowers,
   selectedItems,
-  skillChoiceRules,
-  powerChoiceRules,
-  itemChoiceRules,
   chatSetAttrCommand,
   roll20Phase1Command,
   roll20Phase2Command,
@@ -119,8 +104,6 @@ export default function SelectedCharacterWorkspace({
   onApplyLevelUp,
   onNameChange,
   onAttributeChange,
-  onAttributeGenerationChange,
-  onApplyAttributeRolls,
   onSpeedChange,
   onAcBaseChange,
   onAcBonusChange,
@@ -184,11 +167,7 @@ export default function SelectedCharacterWorkspace({
       <AttributesSection
         character={character}
         label={labels.attributes}
-        pointBuyTotal={pointBuyTotal}
-        pointBuyRemaining={pointBuyRemaining}
         onChange={onAttributeChange}
-        onGenerationChange={onAttributeGenerationChange}
-        onApplyRolls={onApplyAttributeRolls}
       />
 
       <SheetFieldsSection
@@ -206,7 +185,6 @@ export default function SelectedCharacterWorkspace({
         character={character}
         skills={selectedSkills}
         label={labels.skills}
-        skillChoiceRules={skillChoiceRules}
         onChange={onSkillChange}
       />
 
@@ -214,7 +192,6 @@ export default function SelectedCharacterWorkspace({
         character={character}
         powers={selectedPowers}
         label={labels.powers}
-        powerChoiceRules={powerChoiceRules}
         onTogglePower={onTogglePower}
         onPowerChange={onPowerChange}
       />
@@ -223,7 +200,6 @@ export default function SelectedCharacterWorkspace({
         character={character}
         items={selectedItems}
         label={labels.inventory}
-        itemChoiceRules={itemChoiceRules}
         onToggleItem={onToggleItem}
         onQuantityChange={onQuantityChange}
         onEquippedChange={onEquippedChange}

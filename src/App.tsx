@@ -12,6 +12,7 @@ import {
   sortByName,
   touchCharacter,
 } from "./lib/character";
+import { makePointBuyBaseAttributes } from "./lib/pointBuy";
 import {
   getFirstVisibleCharacterId,
 } from "./lib/campaigns";
@@ -44,30 +45,6 @@ import { useCharacterEditor } from "./hooks/useCharacterEditor";
 import { useLevelUpWorkflow } from "./hooks/useLevelUpWorkflow";
 import { useSelectedCharacterWorkspaceCallbacks } from "./hooks/useSelectedCharacterWorkspaceCallbacks";
 import { buttonStyle, inputStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
-
-const POINT_BUY_COSTS: Record<number, number> = {
-  8: 0,
-  9: 1,
-  10: 2,
-  11: 3,
-  12: 4,
-  13: 5,
-  14: 7,
-  15: 9,
-};
-
-function getPointBuyCost(score: number) {
-  if (score < 8) return 0;
-  if (score > 15) return 999;
-  return POINT_BUY_COSTS[score] ?? 999;
-}
-
-function getPointBuySpent(attributes: Record<AttributeKey, number>) {
-  return (Object.keys(attributes) as AttributeKey[]).reduce(
-    (total, key) => total + getPointBuyCost(attributes[key]),
-    0
-  );
-}
 
 function applyClassAttributeModifiers(
   attributes: Record<AttributeKey, number>,
@@ -118,6 +95,8 @@ function makeDraftFromCampaignClassAndRace(
   const method = draft.attributeGeneration?.method ?? "manual";
   if (method === "manual") {
     draft.attributes = makeBaseAttributes();
+  } else if (method === "pointBuy") {
+    draft.attributes = applyClassAttributeModifiers(makePointBuyBaseAttributes(), cls, race);
   } else {
     draft.attributes = applyClassAttributeModifiers(makeBaseAttributes(), cls, race);
   }
@@ -508,7 +487,6 @@ export default function App() {
     makeDraftFromCampaignClassAndRace,
     makeBaseAttributes,
     applyClassAttributeModifiers,
-    getPointBuySpent,
     onFinishDraft: commitCreatedCharacter,
   });
 
@@ -531,9 +509,6 @@ export default function App() {
   const selectedPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
 
   const selectedItems = selectedCampaign ? sortByName(selectedCampaign.items) : [];
-  const skillChoiceRules = selectedClass?.skillChoiceRules ?? [];
-  const powerChoiceRules = selectedClass?.powerChoiceRules ?? [];
-  const itemChoiceRules = selectedClass?.itemChoiceRules ?? [];
 
   const labels = selectedCampaign?.labels ?? {
     attributes: "Attributes",
@@ -548,14 +523,6 @@ export default function App() {
 
   const currentCampaignContextLabel =
     gameData.campaigns.find((campaign) => campaign.id === campaignId)?.name ?? "Unknown Campaign";
-
-  const pointBuyTotal =
-    selected?.attributeGeneration?.pointBuyTotal ??
-    selectedCampaign?.attributeRules.pointBuyTotal ??
-    27;
-
-  const pointBuySpent = selected ? getPointBuySpent(selected.attributes) : 0;
-  const pointBuyRemaining = pointBuyTotal - pointBuySpent;
 
   // Export calls now route through an exporter boundary so new exporters can be added safely.
   const roll20Commands = selected
@@ -635,8 +602,6 @@ export default function App() {
     selectedId,
     campaignId,
     selectedCampaign,
-    selectedClass,
-    getPointBuySpent,
     updateCharacter,
     setCharacters,
     setSelectedId,
@@ -644,7 +609,6 @@ export default function App() {
 
   const selectedWorkspaceCallbacks = useSelectedCharacterWorkspaceCallbacks({
     selected,
-    selectedCampaign,
     updateCharacter,
     updateAttributeWithRules,
     updateSkillWithRules,
@@ -838,14 +802,9 @@ export default function App() {
               selectedRaceName={selectedRace?.name ?? "Unassigned"}
               selectedClassName={selectedClass?.name ?? "Unassigned"}
               labels={labels}
-              pointBuyTotal={pointBuyTotal}
-              pointBuyRemaining={pointBuyRemaining}
               selectedSkills={selectedSkills}
               selectedPowers={selectedPowers}
               selectedItems={selectedItems}
-              skillChoiceRules={skillChoiceRules}
-              powerChoiceRules={powerChoiceRules}
-              itemChoiceRules={itemChoiceRules}
               chatSetAttrCommand={chatSetAttrCommand}
               roll20Phase1Command={roll20Commands.phase1}
               roll20Phase2Command={roll20Commands.phase2}
