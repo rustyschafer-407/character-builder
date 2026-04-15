@@ -355,7 +355,7 @@ export default function CharacterCreationWizard({
 
       {step === 3 && (
         <div style={{ display: "grid", gap: 14 }}>
-          {selectedClass && (
+          {(selectedClass || selectedRace) && (
             <div
               style={{
                 padding: 10,
@@ -366,7 +366,16 @@ export default function CharacterCreationWizard({
                 fontSize: 14,
               }}
             >
-              Class Modifiers: <strong style={{ color: "var(--text-primary)" }}>{classModifiersText}</strong>
+              {selectedClass && (
+                <div>
+                  Class Modifiers: <strong style={{ color: "var(--text-primary)" }}>{classModifiersText}</strong>
+                </div>
+              )}
+              {selectedRace && (
+                <div style={{ marginTop: selectedClass ? 6 : 0 }}>
+                  Race Modifiers: <strong style={{ color: "var(--text-primary)" }}>{raceModifiersText}</strong>
+                </div>
+              )}
             </div>
           )}
           <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
@@ -459,17 +468,10 @@ export default function CharacterCreationWizard({
                 </span>
                 <input
                   type="number"
-                  value={method === "pointBuy" || method === "randomRoll" ? baseScore : draft.attributes[attr]}
-                  min={method === "pointBuy" ? 8 : undefined}
-                  max={method === "pointBuy" ? 15 : undefined}
+                  value={draft.attributes[attr]}
                   onChange={(e) => onAttributeChange(attr, Number(e.target.value) || 0)}
                   style={inputStyle}
                 />
-                {(method === "pointBuy" || (method === "randomRoll" && combinedModifier !== 0)) && (
-                  <div style={{ marginTop: 4, fontWeight: 400, fontSize: 12, color: "var(--text-secondary)" }}>
-                    Total: {draft.attributes[attr]}
-                  </div>
-                )}
               </label>
               );
             })}

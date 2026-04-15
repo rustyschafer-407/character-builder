@@ -288,11 +288,9 @@ export function useCharacterCreation({
     const method = creationDraft.attributeGeneration?.method ?? "manual";
 
     if (method === "pointBuy") {
-      const bonus = wizardAttributeBonusTotals[key];
-      const clampedBase = Math.max(8, Math.min(15, value));
       const nextAttributes = {
         ...creationDraft.attributes,
-        [key]: clampedBase + bonus,
+        [key]: value,
       };
       const totalAllowed = creationDraft.attributeGeneration?.pointBuyTotal ?? 27;
       const spent = getPointBuySpentFromTotals(nextAttributes, wizardAttributeBonusTotals);
@@ -317,10 +315,9 @@ export function useCharacterCreation({
     }
 
     if (method === "randomRoll") {
-      const bonus = wizardAttributeBonusTotals[key];
       const nextAttributes = {
         ...creationDraft.attributes,
-        [key]: value + bonus,
+        [key]: value,
       };
       const nextHp = getDraftHpForCon(
         wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,

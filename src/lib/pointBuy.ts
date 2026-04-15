@@ -28,7 +28,7 @@ export function makePointBuyBaseAttributes(): Record<AttributeKey, number> {
 
 export function getPointBuyCost(baseScore: number) {
   if (baseScore < 8) return 0;
-  if (baseScore > 15) return 999;
+  if (baseScore > 15) return 9 + (baseScore - 15) * 2;
   return POINT_BUY_COSTS[baseScore] ?? 999;
 }
 
