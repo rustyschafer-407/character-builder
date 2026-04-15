@@ -147,10 +147,14 @@ function resolveCloudCampaignId(row: {
   slug: string;
   data: Partial<CampaignDefinition> | null | undefined;
 }) {
+  const slug = typeof row.slug === "string" ? row.slug.trim() : "";
+  if (slug) {
+    return slug;
+  }
+
   const dataId =
     row.data && typeof row.data.id === "string" ? row.data.id.trim() : "";
-  const slug = typeof row.slug === "string" ? row.slug.trim() : "";
-  return dataId || slug;
+  return dataId;
 }
 
 function normalizeCloudCampaignRow(row: {
