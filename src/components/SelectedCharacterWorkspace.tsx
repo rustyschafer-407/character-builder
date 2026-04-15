@@ -29,6 +29,7 @@ interface SelectedCharacterWorkspaceProps {
   chatSetAttrCommand: string;
   roll20Phase1Command: string;
   roll20Phase2Command: string;
+  roll20ModPayload: string;
   levelUpOpen: boolean;
   levelUpApplyPending: boolean;
   levelUpSkillSelections: string[];
@@ -84,6 +85,7 @@ export default function SelectedCharacterWorkspace({
   chatSetAttrCommand,
   roll20Phase1Command,
   roll20Phase2Command,
+  roll20ModPayload,
   levelUpOpen,
   levelUpApplyPending,
   levelUpSkillSelections,
@@ -219,6 +221,7 @@ export default function SelectedCharacterWorkspace({
         combinedCommand={chatSetAttrCommand}
         phase1Command={roll20Phase1Command}
         phase2Command={roll20Phase2Command}
+        modPayload={roll20ModPayload}
       />
     </div>
   );

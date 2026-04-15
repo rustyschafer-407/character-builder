@@ -6,6 +6,7 @@ interface Roll20ExportPanelProps {
   combinedCommand: string;
   phase1Command: string;
   phase2Command: string;
+  modPayload: string;
 }
 
 export default function Roll20ExportPanel({
@@ -13,6 +14,7 @@ export default function Roll20ExportPanel({
   combinedCommand,
   phase1Command,
   phase2Command,
+  modPayload,
 }: Roll20ExportPanelProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -43,6 +45,15 @@ export default function Roll20ExportPanel({
     }
   }
 
+  async function copyModPayload() {
+    try {
+      await navigator.clipboard.writeText(modPayload);
+      alert("Roll20 Mod payload copied to clipboard.");
+    } catch {
+      alert("Could not copy to clipboard on this device/browser.");
+    }
+  }
+
   async function copyCurrentPreview() {
     try {
       await navigator.clipboard.writeText(combinedCommand);
@@ -66,9 +77,12 @@ export default function Roll20ExportPanel({
           >
             ChatSetAttr
           </a>{" "}
-          API script (Roll20 Pro). <strong>Select your character's token</strong> in Roll20, then paste <strong>Attributes & Core</strong> and then <strong>Repeating Lists</strong>.
+          API script (Roll20 Pro). Use <strong>Copy Mod Payload</strong> with your custom Roll20 Mod import path, or keep ChatSetAttr as fallback by selecting your character's token and pasting <strong>Attributes & Core</strong> then <strong>Repeating Lists</strong>.
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button onClick={copyModPayload} style={primaryButtonStyle}>
+            Copy Mod Payload
+          </button>
           <button onClick={copyChatSetAttrPhase1} style={buttonStyle}>
             Copy Attributes & Core
           </button>

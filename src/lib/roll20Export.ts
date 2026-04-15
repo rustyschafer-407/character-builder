@@ -13,6 +13,38 @@ const MAX_ATTACK_ROWS = 8;
 const MAX_POWER_ROWS = 12;
 const MAX_INVENTORY_ROWS = 20;
 
+export type Roll20ModRepeatingRow = {
+  rowId: string;
+  attributes: Record<string, string>;
+};
+
+export type Roll20ModPayload = {
+  kind: "character-builder.roll20-mod-import";
+  version: 1;
+  character: {
+    id: string;
+    name: string;
+    campaignId: string;
+    classId: string;
+    raceId: string;
+    level: number;
+  };
+  attributes: Record<string, string>;
+  hp: {
+    current: string;
+    max: string;
+    temp: string;
+    hitDie: string;
+    hitDiceTotal: string;
+  };
+  repeating: {
+    skills: Roll20ModRepeatingRow[];
+    attacks: Roll20ModRepeatingRow[];
+    powers: Roll20ModRepeatingRow[];
+    inventory: Roll20ModRepeatingRow[];
+  };
+};
+
 const LEGACY_SHEET_DEFAULTS = {
   acBase: 10,
   acBonus: 0,
@@ -167,6 +199,34 @@ function getSaveAttributeValue(attribute?: AttributeKey): string {
   return `${attrLower}_mod`;
 }
 
+function hashFnv1a(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function makeStableRepeatingRowId(section: string, seed: string, used: Set<string>): string {
+  let attempt = 0;
+  while (true) {
+    const suffix = hashFnv1a(`${section}:${seed}:${attempt}`);
+    const rowId = `cb${suffix}`;
+    if (!used.has(rowId)) {
+      used.add(rowId);
+      return rowId;
+    }
+    attempt += 1;
+  }
+}
+
+function buildOccurrenceSeed(baseSeed: string, countsBySeed: Map<string, number>): string {
+  const nextCount = (countsBySeed.get(baseSeed) ?? 0) + 1;
+  countsBySeed.set(baseSeed, nextCount);
+  return `${baseSeed}#${nextCount}`;
+}
+
 export function buildRoll20AttributeMap(
   character: CharacterRecord,
   gameData: GameData
@@ -307,6 +367,141 @@ export function buildRoll20AttributeMap(
   }
 
   return result;
+}
+
+export function buildRoll20ModPayload(
+  character: CharacterRecord,
+  gameData: GameData
+): Roll20ModPayload {
+  const context = buildExportContext(character, gameData);
+  const exported = getFilteredExportCollections(character, context);
+  const map = buildRoll20AttributeMap(character, gameData);
+
+  const attributes: Record<string, string> = {};
+  for (const [key, value] of Object.entries(map)) {
+    if (key.startsWith("repeating_")) continue;
+    const attrName = key.startsWith("attr_") ? key.slice(5) : key;
+    attributes[attrName] = value;
+  }
+
+  const hp = {
+    current: clean(character.hp.current),
+    max: clean(character.hp.max),
+    temp: clean(character.hp.temp ?? 0),
+    hitDie: clean(character.hp.hitDie ?? context.cls?.hpRule.hitDie ?? 0),
+    hitDiceTotal: clean(character.levelProgression?.totalHitDice ?? character.level),
+  };
+
+  attributes.hp_current = hp.current;
+  attributes.hp_max = hp.max;
+  attributes.hp_temp = hp.temp;
+  attributes.hit_die = hp.hitDie;
+  attributes.hit_dice_total = hp.hitDiceTotal;
+
+  const usedSkillIds = new Set<string>();
+  const usedAttackIds = new Set<string>();
+  const usedPowerIds = new Set<string>();
+  const usedInventoryIds = new Set<string>();
+
+  const skillSeedCounts = new Map<string, number>();
+  const attackSeedCounts = new Map<string, number>();
+  const powerSeedCounts = new Map<string, number>();
+  const inventorySeedCounts = new Map<string, number>();
+
+  const skills: Roll20ModRepeatingRow[] = exported.skills.map((skill) => {
+    const definition = context.skillMap.get(skill.skillId);
+    const attr = definition?.attribute ?? "STR";
+    const baseSeed = `skill:${skill.skillId}:${skill.source}`;
+    const seed = buildOccurrenceSeed(baseSeed, skillSeedCounts);
+    const rowId = makeStableRepeatingRowId("skills", seed, usedSkillIds);
+    return {
+      rowId,
+      attributes: {
+        skillname: clean(definition?.name ?? skill.skillId),
+        skillattr: clean(getModifier(character.attributes[attr])),
+        skillprof: clean(character.proficiencyBonus),
+        skillbonus: clean(skill.bonus ?? 0),
+      },
+    };
+  });
+
+  const attacks: Roll20ModRepeatingRow[] = exported.attacks.map((attack) => {
+    const baseSeed = `attack:${attack.id}`;
+    const seed = buildOccurrenceSeed(baseSeed, attackSeedCounts);
+    const rowId = makeStableRepeatingRowId("attacks", seed, usedAttackIds);
+    return {
+      rowId,
+      attributes: {
+        attackname: clean(attack.name),
+        attackattr: clean(getModifier(character.attributes[attack.attribute])),
+        attackprof: clean(character.proficiencyBonus),
+        attackbonus: clean(attack.bonus ?? 0),
+        damagedice: clean(attack.damage),
+        damagebonus: clean(attack.damageBonus ?? 0),
+      },
+    };
+  });
+
+  const powers: Roll20ModRepeatingRow[] = exported.powers.map((power) => {
+    const definition = power.powerId ? context.powerMap.get(power.powerId) : undefined;
+    const usesPerDay = power.usesPerDay ?? definition?.usesPerDay ?? 0;
+    const saveAttribute = power.saveAttribute ?? definition?.saveAttribute;
+    const description = power.description ?? definition?.description ?? power.notes ?? "";
+    const baseSeed = `power:${power.powerId ?? power.name}:${power.source}`;
+    const seed = buildOccurrenceSeed(baseSeed, powerSeedCounts);
+    const rowId = makeStableRepeatingRowId("powers", seed, usedPowerIds);
+
+    return {
+      rowId,
+      attributes: {
+        powername: clean(power.name),
+        power_uses: clean(usesPerDay),
+        power_save_attr: clean(getSaveAttributeValue(saveAttribute)),
+        powertext: clean(description),
+      },
+    };
+  });
+
+  const inventory: Roll20ModRepeatingRow[] = exported.inventory.map((item) => {
+    const definition = item.itemId ? context.itemMap.get(item.itemId) : undefined;
+    const baseSeed = `inventory:${item.itemId ?? item.name}:${item.source}`;
+    const seed = buildOccurrenceSeed(baseSeed, inventorySeedCounts);
+    const rowId = makeStableRepeatingRowId("inventory", seed, usedInventoryIds);
+
+    return {
+      rowId,
+      attributes: {
+        itemname: clean(item.name),
+        itemqty: clean(item.quantity),
+        itemnotes: clean(item.notes ?? definition?.description ?? ""),
+      },
+    };
+  });
+
+  return {
+    kind: "character-builder.roll20-mod-import",
+    version: 1,
+    character: {
+      id: character.id,
+      name: clean(character.identity.name),
+      campaignId: character.campaignId,
+      classId: character.classId,
+      raceId: character.raceId ?? "",
+      level: character.level,
+    },
+    attributes,
+    hp,
+    repeating: {
+      skills,
+      attacks,
+      powers,
+      inventory,
+    },
+  };
+}
+
+export function buildRoll20ModPayloadJson(character: CharacterRecord, gameData: GameData): string {
+  return JSON.stringify(buildRoll20ModPayload(character, gameData), null, 2);
 }
 
 function getFilteredExportCollections(character: CharacterRecord, context: ExportContext) {

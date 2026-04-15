@@ -592,7 +592,7 @@ export default function App() {
   // Export calls now route through an exporter boundary so new exporters can be added safely.
   const roll20Commands = selected
     ? exportCharacter(selected, gameData, DEFAULT_EXPORTER_ID)
-    : { phase1: "", phase2: "", combined: "" };
+    : { phase1: "", phase2: "", combined: "", modPayload: "" };
   const chatSetAttrCommand = roll20Commands.combined;
 
   function getCampaignName(id: string) {
@@ -873,6 +873,7 @@ export default function App() {
               chatSetAttrCommand={chatSetAttrCommand}
               roll20Phase1Command={roll20Commands.phase1}
               roll20Phase2Command={roll20Commands.phase2}
+              roll20ModPayload={roll20Commands.modPayload}
               levelUpOpen={levelUpOpen && Boolean(selectedClass)}
               levelUpApplyPending={levelUpApplyPending}
               levelUpSkillSelections={levelUpSkillSelections}

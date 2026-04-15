@@ -7,6 +7,7 @@ export type ExportCommands = {
   phase1: string;
   phase2: string;
   combined: string;
+  modPayload: string;
 };
 
 export interface CharacterExporter {
