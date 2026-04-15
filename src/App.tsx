@@ -30,6 +30,7 @@ import { appStorage } from "./storage/appStorage";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
+  CampaignDefinition,
   GameData,
 } from "./types/gameData";
 
@@ -138,6 +139,46 @@ function makeDefaultSheet(): CharacterRecord["sheet"] {
   };
 }
 
+function getCampaignsSignature(campaigns: CampaignDefinition[]) {
+  return JSON.stringify(campaigns);
+}
+
+function resolveCloudCampaignId(row: {
+  slug: string;
+  data: Partial<CampaignDefinition> | null | undefined;
+}) {
+  const dataId =
+    row.data && typeof row.data.id === "string" ? row.data.id.trim() : "";
+  const slug = typeof row.slug === "string" ? row.slug.trim() : "";
+  return dataId || slug;
+}
+
+function normalizeCloudCampaignRow(row: {
+  slug: string;
+  name: string;
+  data: CampaignDefinition;
+}) {
+  if (!row.data || typeof row.data !== "object") {
+    return null;
+  }
+
+  const campaignId = resolveCloudCampaignId(row);
+  if (!campaignId) {
+    return null;
+  }
+
+  const normalizedName =
+    typeof row.data.name === "string" && row.data.name.trim().length > 0
+      ? row.data.name
+      : row.name || campaignId;
+
+  return {
+    ...row.data,
+    id: campaignId,
+    name: normalizedName,
+  } as CampaignDefinition;
+}
+
 function loadCharactersWithDefaultSheets(): CharacterRecord[] {
   return appStorage.loadCharacters().map((character) =>
     character.sheet ? character : { ...character, sheet: makeDefaultSheet() }
@@ -158,6 +199,7 @@ export default function App() {
   );
   const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
   const cloudInitDoneRef = useRef(false);
+  const campaignSignatureRef = useRef(getCampaignsSignature(gameData.campaigns));
 
   useEffect(() => {
     appStorage.saveCharacters(characters);
@@ -168,9 +210,14 @@ export default function App() {
   }, [gameData]);
 
   useEffect(() => {
+    campaignSignatureRef.current = getCampaignsSignature(gameData.campaigns);
+  }, [gameData.campaigns]);
+
+  useEffect(() => {
     if (!cloudEnabled || cloudInitDoneRef.current) return;
 
     let isCancelled = false;
+    const initStartedCampaignSignature = campaignSignatureRef.current;
 
     async function initializeCloud() {
       try {
@@ -192,14 +239,28 @@ export default function App() {
 
         if (isCancelled) return;
 
+        const normalizedCloudCampaigns = campaignRows
+          .map((row) => normalizeCloudCampaignRow(row))
+          .filter((row): row is CampaignDefinition => row !== null);
+
         const nextCampaignMap = Object.fromEntries(
-          campaignRows.map((row) => [row.data.id, row.id])
+          campaignRows
+            .map((row) => [resolveCloudCampaignId(row), row.id] as const)
+            .filter(([id]) => Boolean(id))
         );
         setCampaignRowIdsByAppId(nextCampaignMap);
 
-        if (campaignRows.length > 0) {
+        const campaignsChangedDuringInit =
+          campaignSignatureRef.current !== initStartedCampaignSignature;
+
+        if (campaignsChangedDuringInit) {
+          setCloudStatus("Cloud sync active (kept newer local campaign edits)");
+          return;
+        }
+
+        if (normalizedCloudCampaigns.length > 0) {
           const nextGameData = createGameData({
-            campaigns: campaignRows.map((row) => row.data),
+            campaigns: normalizedCloudCampaigns,
           });
 
           setGameData(nextGameData);
