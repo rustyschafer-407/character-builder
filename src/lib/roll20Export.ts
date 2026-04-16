@@ -227,13 +227,25 @@ function buildOccurrenceSeed(baseSeed: string, countsBySeed: Map<string, number>
   return `${baseSeed}#${nextCount}`;
 }
 
+type ExportCollectionLimits = {
+  maxSkills?: number;
+  maxAttacks?: number;
+  maxPowers?: number;
+  maxInventory?: number;
+};
+
 export function buildRoll20AttributeMap(
   character: CharacterRecord,
   gameData: GameData
 ): Record<string, string> {
   const context = buildExportContext(character, gameData);
   const sheet = getEffectiveSheetState(character);
-  const exported = getFilteredExportCollections(character, context);
+  const exported = getFilteredExportCollections(character, context, {
+    maxSkills: MAX_SKILL_ROWS,
+    maxAttacks: MAX_ATTACK_ROWS,
+    maxPowers: MAX_POWER_ROWS,
+    maxInventory: MAX_INVENTORY_ROWS,
+  });
 
   const result: Record<string, string> = {};
 
@@ -512,18 +524,22 @@ export function buildRoll20ModImportCommand(
   return `!cb-import ${compactPayload}`;
 }
 
-function getFilteredExportCollections(character: CharacterRecord, context: ExportContext) {
+function getFilteredExportCollections(
+  character: CharacterRecord,
+  context: ExportContext,
+  limits: ExportCollectionLimits = {}
+) {
   const skills = getExportedSkills(character)
     .filter((skill) => !context.invalidSkillIdSet.has(skill.skillId))
-    .slice(0, MAX_SKILL_ROWS);
+    .slice(0, limits.maxSkills ?? Number.POSITIVE_INFINITY);
 
   const powers = getExportedPowers(character, context.campaignPowerIds, context.powerMap)
     .filter((power) => !context.invalidPowerIdSet.has(power.powerId ?? ""))
-    .slice(0, MAX_POWER_ROWS);
+    .slice(0, limits.maxPowers ?? Number.POSITIVE_INFINITY);
 
   const inventory = character.inventory
     .filter((item) => !context.invalidItemIdSet.has(item.itemId ?? ""))
-    .slice(0, MAX_INVENTORY_ROWS);
+    .slice(0, limits.maxInventory ?? Number.POSITIVE_INFINITY);
 
   const attacks = character.attacks
     .filter(
@@ -535,7 +551,7 @@ function getFilteredExportCollections(character: CharacterRecord, context: Expor
         !context.invalidAttackTemplateIdSet.has(attack.templateId ?? "")
     )
     .filter((attack) => attack.name.trim() !== "")
-    .slice(0, MAX_ATTACK_ROWS);
+      .slice(0, limits.maxAttacks ?? Number.POSITIVE_INFINITY);
 
   return { skills, powers, inventory, attacks };
 }
@@ -550,7 +566,12 @@ export function buildChatSetAttrPhases(
 ): { phase1: string; phase2: string; combined: string } {
   const map = buildRoll20AttributeMap(character, gameData);
   const context = buildExportContext(character, gameData);
-  const exported = getFilteredExportCollections(character, context);
+  const exported = getFilteredExportCollections(character, context, {
+    maxSkills: MAX_SKILL_ROWS,
+    maxAttacks: MAX_ATTACK_ROWS,
+    maxPowers: MAX_POWER_ROWS,
+    maxInventory: MAX_INVENTORY_ROWS,
+  });
   const setPrefix = "!setattr --replace --sel";
   const delPrefix = "!delattr --mute --sel";
   const maxCommandLength = 1700;
