@@ -57,46 +57,29 @@ export default function IdentitySection({
 
   return (
     <section style={panelStyle}>
-      <div style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "grid", gap: 8 }}>
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+        {/* Left: name + details */}
+        <div style={{ flex: 1, display: "grid", gap: 12 }}>
           {!editingName ? (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <div
-                  style={{
-                    fontSize: 34,
-                    fontWeight: 800,
-                    lineHeight: 1.05,
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {character.identity.name || "Unnamed Character"}
-                </div>
-                <button
-                  onClick={startNameEdit}
-                  style={{ ...buttonStyle, padding: "6px 10px", minWidth: 38 }}
-                  aria-label="Edit character name"
-                  title="Edit name"
-                >
-                  ✎
-                </button>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  fontSize: 34,
+                  fontWeight: 800,
+                  lineHeight: 1.05,
+                  color: "var(--text-primary)",
+                }}
+              >
+                {character.identity.name || "Unnamed Character"}
               </div>
-              <div style={{ display: "grid", gap: 8 }}>
-                <button onClick={copyToRoll20} style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
-                  Copy to Roll20
-                </button>
-                <button onClick={onOpenLevelUpWizard} style={{ ...buttonStyle, padding: "8px 14px" }}>
-                  Level Up
-                </button>
-              </div>
+              <button
+                onClick={startNameEdit}
+                style={{ ...buttonStyle, padding: "6px 10px", minWidth: 38 }}
+                aria-label="Edit character name"
+                title="Edit name"
+              >
+                ✎
+              </button>
             </div>
           ) : (
             <div style={{ display: "grid", gap: 8 }}>
@@ -129,26 +112,36 @@ export default function IdentitySection({
               </div>
             </div>
           )}
+
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>Campaign:</strong> {campaignName}
+          </div>
+
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>Race:</strong> {raceName}
+          </div>
+
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>{classLabel}:</strong> {className}
+          </div>
+
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>{levelLabel}:</strong> {character.level}
+          </div>
+
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
+          </div>
         </div>
 
-        <div style={{ color: "#b9cdf0" }}>
-          <strong>Campaign:</strong> {campaignName}
-        </div>
-
-        <div style={{ color: "#b9cdf0" }}>
-          <strong>Race:</strong> {raceName}
-        </div>
-
-        <div style={{ color: "#b9cdf0" }}>
-          <strong>{classLabel}:</strong> {className}
-        </div>
-
-        <div style={{ color: "#b9cdf0" }}>
-          <strong>{levelLabel}:</strong> {character.level}
-        </div>
-
-        <div style={{ color: "#b9cdf0" }}>
-          <strong>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
+        {/* Right: action buttons */}
+        <div style={{ display: "grid", gap: 8, minWidth: 160 }}>
+          <button onClick={copyToRoll20} style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
+            Copy to Roll20
+          </button>
+          <button onClick={onOpenLevelUpWizard} style={{ ...buttonStyle, padding: "8px 14px" }}>
+            Level Up
+          </button>
         </div>
       </div>
     </section>
