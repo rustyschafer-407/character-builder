@@ -328,38 +328,65 @@
     return rowId;
   }
 
-  function hashFnv1a(value) {
-    let hash = 0x811c9dc5;
-    for (let i = 0; i < value.length; i++) {
-      hash ^= value.charCodeAt(i);
-      hash = Math.imul(hash, 0x01000193);
-    }
-    return (hash >>> 0).toString(36);
-  }
+  // Roll20 uses generateUUID().replace(/_/g, "Z") for repeating row IDs.
+  // Underscores must be excluded because Roll20 splits repeating attribute
+  // names on "_" to find the row ID boundary — any underscore in the ID
+  // itself would corrupt attribute name parsing and cause red outlines.
+  const generateUUID = (() => {
+    let lastTimestamp = 0;
+    const randomValues = [];
+    const chars = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 
-  function makeCanonicalRoll20RowId(rawRowId, sectionName) {
-    const normalized = rawRowId.replace(/-/g, "_");
+    return () => {
+      let now = new Date().getTime();
+      const duplicateTime = now === lastTimestamp;
+      lastTimestamp = now;
 
-    if (normalized.length <= 19) {
-      return "-" + normalized.padEnd(19, "0");
-    }
+      const timeChars = new Array(8);
+      for (let i = 7; i >= 0; i--) {
+        timeChars[i] = chars.charAt(now % 64);
+        now = Math.floor(now / 64);
+      }
 
-    const prefix = normalized.slice(0, 10);
-    const suffix = hashFnv1a(sectionName + ":" + normalized).slice(0, 9).padEnd(9, "0");
-    return "-" + prefix + suffix;
+      let id = timeChars.join("");
+
+      if (duplicateTime) {
+        let i;
+        for (i = 11; i >= 0 && randomValues[i] === 63; i--) {
+          randomValues[i] = 0;
+        }
+        randomValues[i] += 1;
+      } else {
+        for (let i = 0; i < 12; i++) {
+          randomValues[i] = Math.floor(Math.random() * 64);
+        }
+      }
+
+      for (let i = 0; i < 12; i++) {
+        id += chars.charAt(randomValues[i]);
+      }
+
+      return id;
+    };
+  })();
+
+  function generateRoll20RowId() {
+    return generateUUID().replace(/_/g, "Z");
   }
 
   function normalizeRowIdForRoll20(rawRowId, sectionName) {
     const rowId = sanitizeRowId(rawRowId);
 
-    // Already canonical: keep it untouched.
-    if (/^-[0-9A-Za-z_]{19}$/.test(rowId)) {
+    // Valid Roll20 row ID: "-" + exactly 19 chars, NO underscores.
+    if (/^-[0-9A-Za-z]{19}$/.test(rowId)) {
       return rowId;
     }
 
-    // Normalize to Roll20-like row IDs to avoid UI/edit-mode anomalies while
-    // preserving deterministic mapping from payload row IDs.
-    return makeCanonicalRoll20RowId(rowId, sectionName);
+    // Payload IDs (e.g. "cb6995913f") or any ID containing "_" must be
+    // replaced — never padded or hashed.
+    const fresh = generateRoll20RowId();
+    log("[CB Import] Row ID '" + rowId + "' replaced with fresh Roll20 ID: " + fresh);
+    return fresh;
   }
 
   function toInt(value) {
@@ -437,6 +464,27 @@
     return normalized;
   }
 
+  const VALID_ABILITY_REFS = ["@{str_mod}", "@{dex_mod}", "@{con_mod}", "@{int_mod}", "@{wis_mod}", "@{cha_mod}"];
+  const VALID_POWER_SAVE_ATTRS = ["none", "str_mod", "dex_mod", "con_mod", "int_mod", "wis_mod", "cha_mod"];
+
+  function validateRepeatingRowSelectValues(sectionName, fields, rowIndex) {
+    if (sectionName === "skills") {
+      if (VALID_ABILITY_REFS.indexOf(fields.skillattr) < 0) {
+        warn("[DEBUG] skills row " + rowIndex + ": skillattr has unexpected value '" + safeString(fields.skillattr) + "'");
+      }
+    }
+    if (sectionName === "attacks") {
+      if (VALID_ABILITY_REFS.indexOf(fields.attackattr) < 0) {
+        warn("[DEBUG] attacks row " + rowIndex + ": attackattr has unexpected value '" + safeString(fields.attackattr) + "'");
+      }
+    }
+    if (sectionName === "powers") {
+      if (VALID_POWER_SAVE_ATTRS.indexOf(fields.power_save_attr) < 0) {
+        warn("[DEBUG] powers row " + rowIndex + ": power_save_attr has unexpected value '" + safeString(fields.power_save_attr) + "'");
+      }
+    }
+  }
+
   function writeRepeatingSection(characterId, sectionName, rows, baseAttrs) {
     const safeRows = Array.isArray(rows) ? rows : [];
     const seenRowIds = {};
@@ -459,10 +507,14 @@
       }
 
       const normalizedFields = normalizeRepeatingRowAttributes(sectionName, fields, baseAttrs);
+      validateRepeatingRowSelectValues(sectionName, normalizedFields, rowIndex);
 
+      log("[CB Import] Writing row index=" + rowIndex + " section=" + sectionName + " rowId=" + rowId);
       Object.keys(normalizedFields).forEach((fieldName) => {
         const fullName = "repeating_" + sectionName + "_" + rowId + "_" + fieldName;
-        upsertAttribute(characterId, fullName, normalizedFields[fieldName]);
+        const val = safeString(normalizedFields[fieldName]);
+        log("[CB Import]   " + fullName + " = " + val);
+        upsertAttribute(characterId, fullName, val);
         attrsWritten += 1;
       });
     });
