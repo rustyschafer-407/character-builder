@@ -530,6 +530,7 @@ function getFilteredExportCollections(character: CharacterRecord, context: Expor
       (attack) =>
         !attack.templateId || !context.invalidAttackTemplateIdSet.has(attack.templateId)
     )
+    .filter((attack) => attack.name.trim() !== "")
     .slice(0, MAX_ATTACK_ROWS);
 
   return { skills, powers, inventory, attacks };
