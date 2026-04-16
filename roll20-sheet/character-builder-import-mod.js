@@ -52,6 +52,41 @@
     return String(value);
   }
 
+  function decodeBase64Payload(encoded) {
+    const raw = safeString(encoded).trim();
+    if (!raw) {
+      throw new Error("Missing base64 payload after b64: prefix.");
+    }
+
+    // Support both classic base64 and URL-safe base64 variants.
+    let normalized = raw.replace(/-/g, "+").replace(/_/g, "/");
+    const remainder = normalized.length % 4;
+    if (remainder !== 0) {
+      normalized += "=".repeat(4 - remainder);
+    }
+
+    if (typeof Buffer !== "undefined" && Buffer.from) {
+      return Buffer.from(normalized, "base64").toString("utf8");
+    }
+
+    if (typeof atob === "function") {
+      const binary = atob(normalized);
+      try {
+        // Decode UTF-8 bytes represented as binary string.
+        return decodeURIComponent(
+          binary
+            .split("")
+            .map((ch) => "%" + ch.charCodeAt(0).toString(16).padStart(2, "0"))
+            .join("")
+        );
+      } catch (_error) {
+        return binary;
+      }
+    }
+
+    throw new Error("Base64 decoding not supported in this Roll20 sandbox runtime.");
+  }
+
   function parsePayloadFromMessage(content) {
     const raw = content.slice(COMMAND.length).trim();
     if (!raw) {
@@ -62,12 +97,8 @@
     // !cb-import b64:<base64-json>
     if (raw.indexOf("b64:") === 0) {
       const encoded = raw.slice(4).trim();
-      if (!encoded) {
-        throw new Error("Missing base64 payload after b64: prefix.");
-      }
-
       try {
-        const decoded = Buffer.from(encoded, "base64").toString("utf8");
+        const decoded = decodeBase64Payload(encoded);
         return JSON.parse(decoded);
       } catch (_error) {
         throw new Error("Invalid base64 payload.");
