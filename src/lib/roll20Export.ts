@@ -232,6 +232,7 @@ type ExportCollectionLimits = {
   maxAttacks?: number;
   maxPowers?: number;
   maxInventory?: number;
+  allowInvalidReferences?: boolean;
 };
 
 export function buildRoll20AttributeMap(
@@ -386,7 +387,9 @@ export function buildRoll20ModPayload(
   gameData: GameData
 ): Roll20ModPayload {
   const context = buildExportContext(character, gameData);
-  const exported = getFilteredExportCollections(character, context);
+  const exported = getFilteredExportCollections(character, context, {
+    allowInvalidReferences: true,
+  });
   const map = buildRoll20AttributeMap(character, gameData);
 
   const attributes: Record<string, string> = {};
@@ -529,21 +532,24 @@ function getFilteredExportCollections(
   context: ExportContext,
   limits: ExportCollectionLimits = {}
 ) {
+  const allowInvalidReferences = Boolean(limits.allowInvalidReferences);
+
   const skills = getExportedSkills(character)
-    .filter((skill) => !context.invalidSkillIdSet.has(skill.skillId))
+    .filter((skill) => allowInvalidReferences || !context.invalidSkillIdSet.has(skill.skillId))
     .slice(0, limits.maxSkills ?? Number.POSITIVE_INFINITY);
 
   const powers = getExportedPowers(character, context.campaignPowerIds, context.powerMap)
-    .filter((power) => !context.invalidPowerIdSet.has(power.powerId ?? ""))
+    .filter((power) => allowInvalidReferences || !context.invalidPowerIdSet.has(power.powerId ?? ""))
     .slice(0, limits.maxPowers ?? Number.POSITIVE_INFINITY);
 
   const inventory = character.inventory
-    .filter((item) => !context.invalidItemIdSet.has(item.itemId ?? ""))
+    .filter((item) => allowInvalidReferences || !context.invalidItemIdSet.has(item.itemId ?? ""))
     .slice(0, limits.maxInventory ?? Number.POSITIVE_INFINITY);
 
   const attacks = character.attacks
     .filter(
       (attack) =>
+        allowInvalidReferences ||
         // Only drop derived (power/item) attacks whose source has been removed.
         // Manually-referenced template attacks are kept even if the template is stale.
         !attack.derivedFromType ||
@@ -551,7 +557,7 @@ function getFilteredExportCollections(
         !context.invalidAttackTemplateIdSet.has(attack.templateId ?? "")
     )
     .filter((attack) => attack.name.trim() !== "")
-      .slice(0, limits.maxAttacks ?? Number.POSITIVE_INFINITY);
+    .slice(0, limits.maxAttacks ?? Number.POSITIVE_INFINITY);
 
   return { skills, powers, inventory, attacks };
 }
