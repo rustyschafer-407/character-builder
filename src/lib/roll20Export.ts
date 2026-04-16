@@ -233,6 +233,8 @@ type ExportCollectionLimits = {
   maxPowers?: number;
   maxInventory?: number;
   allowInvalidReferences?: boolean;
+  includeAllSkills?: boolean;
+  keepUnnamedAttacks?: boolean;
 };
 
 export function buildRoll20AttributeMap(
@@ -389,6 +391,8 @@ export function buildRoll20ModPayload(
   const context = buildExportContext(character, gameData);
   const exported = getFilteredExportCollections(character, context, {
     allowInvalidReferences: true,
+    includeAllSkills: true,
+    keepUnnamedAttacks: true,
   });
   const map = buildRoll20AttributeMap(character, gameData);
 
@@ -447,7 +451,7 @@ export function buildRoll20ModPayload(
     return {
       rowId,
       attributes: {
-        attackname: clean(attack.name),
+        attackname: clean(attack.name || "Attack"),
         attackattr: clean(getSaveAttributeValue(attack.attribute)),
         attackprof: "1",
         attackbonus: clean(attack.bonus ?? 0),
@@ -533,8 +537,11 @@ function getFilteredExportCollections(
   limits: ExportCollectionLimits = {}
 ) {
   const allowInvalidReferences = Boolean(limits.allowInvalidReferences);
+  const includeAllSkills = Boolean(limits.includeAllSkills);
+  const keepUnnamedAttacks = Boolean(limits.keepUnnamedAttacks);
+  const skillSource = includeAllSkills ? character.skills : getExportedSkills(character);
 
-  const skills = getExportedSkills(character)
+  const skills = skillSource
     .filter((skill) => allowInvalidReferences || !context.invalidSkillIdSet.has(skill.skillId))
     .slice(0, limits.maxSkills ?? Number.POSITIVE_INFINITY);
 
@@ -556,7 +563,7 @@ function getFilteredExportCollections(
         !attack.derivedFromId ||
         !context.invalidAttackTemplateIdSet.has(attack.templateId ?? "")
     )
-    .filter((attack) => attack.name.trim() !== "")
+    .filter((attack) => keepUnnamedAttacks || attack.name.trim() !== "")
     .slice(0, limits.maxAttacks ?? Number.POSITIVE_INFINITY);
 
   return { skills, powers, inventory, attacks };
