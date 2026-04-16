@@ -328,24 +328,36 @@
     return rowId;
   }
 
-  function hashFnv1a(value) {
-    let hash = 0x811c9dc5;
+  function hashFnv1a(value, seed) {
+    let hash = typeof seed === "number" ? seed >>> 0 : 0x811c9dc5;
     for (let i = 0; i < value.length; i++) {
       hash ^= value.charCodeAt(i);
       hash = Math.imul(hash, 0x01000193);
     }
-    return (hash >>> 0).toString(36);
+    return hash >>> 0;
+  }
+
+  function encodeRoll20Alphabet(value) {
+    const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+    let state = value >>> 0;
+    let result = "";
+
+    for (let i = 0; i < 6; i++) {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      result += alphabet[state % alphabet.length];
+    }
+
+    return result;
   }
 
   function makeCanonicalRoll20RowId(rawRowId, sectionName) {
     const normalized = rawRowId.replace(/-/g, "_");
-
-    if (normalized.length <= 19) {
-      return "-" + normalized.padEnd(19, "0");
-    }
-
-    const prefix = normalized.slice(0, 10);
-    const suffix = hashFnv1a(sectionName + ":" + normalized).slice(0, 9).padEnd(9, "0");
+    const prefix = normalized.slice(0, 10).padEnd(10, "0");
+    const hashInput = sectionName + ":" + normalized;
+    const suffix = (
+      encodeRoll20Alphabet(hashFnv1a(hashInput, 0x811c9dc5)) +
+      encodeRoll20Alphabet(hashFnv1a(hashInput, 0x9e3779b9))
+    ).slice(0, 9);
     return "-" + prefix + suffix;
   }
 
