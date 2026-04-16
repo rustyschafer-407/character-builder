@@ -509,7 +509,10 @@ export function buildRoll20ModImportCommand(
   gameData: GameData
 ): string {
   const compactPayload = JSON.stringify(buildRoll20ModPayload(character, gameData));
-  return `!cb-import ${compactPayload}`;
+  const bytes = new TextEncoder().encode(compactPayload);
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
+  const encodedPayload = btoa(binary);
+  return `!cb-import b64:${encodedPayload}`;
 }
 
 function getFilteredExportCollections(character: CharacterRecord, context: ExportContext) {

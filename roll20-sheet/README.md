@@ -5,7 +5,7 @@ This folder contains source files for the Roll20 character sheet.
 Files:
 - sheet.html: Roll20 sheet markup placeholder.
 - sheet.css: Roll20 sheet style placeholder.
-- character-builder-import-mod.js: Roll20 API script for importing one JSON payload via `!cb-import`.
+- character-builder-import-mod.js: Roll20 API script for importing one payload via `!cb-import`.
 
 Replace these placeholders with your real Roll20 sheet implementation.
 
@@ -25,8 +25,11 @@ Use `character-builder-import-mod.js` in your Roll20 API scripts to import a ful
 Paste the command in Roll20 chat:
 
 ```text
-!cb-import {"kind":"character-builder.roll20-mod-import","version":1,"character":{"id":"abc123","name":"Aela","campaignId":"fantasy","classId":"fighter","raceId":"human","level":3},"attributes":{"character_name":"Aela","class":"Fighter","race":"Human","level":"3"},"hp":{"current":"24","max":"24","temp":"0","hitDie":"10","hitDiceTotal":"3"},"repeating":{"skills":[],"attacks":[],"powers":[],"inventory":[]}}
+!cb-import b64:<base64-payload-from-app>
 ```
+
+The app's **Copy Mod Command** button now produces this `b64:` format automatically.
+Legacy raw JSON after `!cb-import` is still supported, but `b64:` is preferred because it avoids Roll20 chat interpolation issues.
 
 Notes:
 - The importer finds or creates the character by `character.name`.
