@@ -26,7 +26,6 @@ import {
   upsertCharacterRow,
 } from "./lib/cloudRepository";
 import { hasSupabaseEnv } from "./lib/supabaseClient";
-import { appStorage } from "./storage/appStorage";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
@@ -183,39 +182,32 @@ function normalizeCloudCampaignRow(row: {
   } as CampaignDefinition;
 }
 
-function loadCharactersWithDefaultSheets(): CharacterRecord[] {
-  return appStorage.loadCharacters().map((character) =>
-    character.sheet ? character : { ...character, sheet: makeDefaultSheet() }
-  );
-}
-
 export default function App() {
   const cloudEnabled = hasSupabaseEnv();
-  const [gameData, setGameData] = useState<GameData>(() => appStorage.loadGameData(seedGameData));
-  const [characters, setCharacters] = useState<CharacterRecord[]>(() => loadCharactersWithDefaultSheets());
+  const [gameData, setGameData] = useState<GameData>(() => seedGameData);
+  const [characters, setCharacters] = useState<CharacterRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
-  const [campaignId, setCampaignId] = useState(() => appStorage.loadGameData(seedGameData).campaigns[0]?.id ?? "");
+  const [campaignId, setCampaignId] = useState(() => seedGameData.campaigns[0]?.id ?? "");
   const [raceId, setRaceId] = useState("");
   const [classId, setClassId] = useState("");
-  const [cloudReady, setCloudReady] = useState(!cloudEnabled);
+  const [cloudReady, setCloudReady] = useState(false);
   const [cloudStatus, setCloudStatus] = useState(
-    cloudEnabled ? "Connecting to cloud..." : "Local storage mode"
+    cloudEnabled ? "Connecting to cloud..." : "Supabase configuration missing"
   );
   const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
   const cloudInitDoneRef = useRef(false);
   const campaignSignatureRef = useRef(getCampaignsSignature(gameData.campaigns));
 
   useEffect(() => {
-    appStorage.saveCharacters(characters);
-  }, [characters]);
-
-  useEffect(() => {
-    appStorage.saveGameData(gameData);
-  }, [gameData]);
-
-  useEffect(() => {
     campaignSignatureRef.current = getCampaignsSignature(gameData.campaigns);
   }, [gameData.campaigns]);
+
+  useEffect(() => {
+    if (!cloudEnabled) {
+      setCloudStatus("Supabase configuration missing");
+      setCloudReady(false);
+    }
+  }, [cloudEnabled]);
 
   useEffect(() => {
     if (!cloudEnabled || cloudInitDoneRef.current) return;
@@ -314,6 +306,19 @@ export default function App() {
       isCancelled = true;
     };
   }, [cloudEnabled, gameData.campaigns]);
+
+  if (!cloudEnabled) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...panelStyle, maxWidth: 760 }}>
+          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Supabase Configuration Required</h2>
+          <p style={{ marginBottom: 0, ...mutedTextStyle }}>
+            This app is configured for Supabase-only persistence. Set <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> to continue.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!cloudEnabled || !cloudReady) return;
