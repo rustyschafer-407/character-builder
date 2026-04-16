@@ -138,10 +138,6 @@ function makeDefaultSheet(): CharacterRecord["sheet"] {
   };
 }
 
-function getCampaignsSignature(campaigns: CampaignDefinition[]) {
-  return JSON.stringify(campaigns);
-}
-
 function resolveCloudCampaignId(row: {
   slug: string;
   data: Partial<CampaignDefinition> | null | undefined;
@@ -196,24 +192,13 @@ export default function App() {
   );
   const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
   const cloudInitDoneRef = useRef(false);
-  const campaignSignatureRef = useRef(getCampaignsSignature(gameData.campaigns));
-
-  useEffect(() => {
-    campaignSignatureRef.current = getCampaignsSignature(gameData.campaigns);
-  }, [gameData.campaigns]);
-
-  useEffect(() => {
-    if (!cloudEnabled) {
-      setCloudStatus("Supabase configuration missing");
-      setCloudReady(false);
-    }
-  }, [cloudEnabled]);
 
   useEffect(() => {
     if (!cloudEnabled || cloudInitDoneRef.current) return;
 
     let isCancelled = false;
-    const initStartedCampaignSignature = campaignSignatureRef.current;
+    // Snapshot seed campaigns once for bootstrap — effect intentionally runs only on mount.
+    const seedCampaigns = gameData.campaigns;
 
     async function initializeCloud() {
       try {
@@ -221,9 +206,9 @@ export default function App() {
 
         let campaignRows = await listCampaignRows();
 
-        // First run bootstrap: seed cloud with current local campaigns.
+        // First run bootstrap: seed cloud from built-in campaign definitions.
         if (campaignRows.length === 0) {
-          for (const campaign of gameData.campaigns) {
+          for (const campaign of seedCampaigns) {
             await upsertCampaignBySlug({
               slug: campaign.id,
               name: campaign.name,
@@ -245,14 +230,6 @@ export default function App() {
             .filter(([id]) => Boolean(id))
         );
         setCampaignRowIdsByAppId(nextCampaignMap);
-
-        const campaignsChangedDuringInit =
-          campaignSignatureRef.current !== initStartedCampaignSignature;
-
-        if (campaignsChangedDuringInit) {
-          setCloudStatus("Cloud sync active (kept newer local campaign edits)");
-          return;
-        }
 
         if (normalizedCloudCampaigns.length > 0) {
           const nextGameData = createGameData({
@@ -290,7 +267,7 @@ export default function App() {
       } catch (error) {
         console.error("Failed to initialize cloud sync", error);
         if (!isCancelled) {
-          setCloudStatus("Cloud unavailable, using local data");
+          setCloudStatus("Cloud unavailable");
         }
       } finally {
         if (!isCancelled) {
@@ -305,20 +282,8 @@ export default function App() {
     return () => {
       isCancelled = true;
     };
-  }, [cloudEnabled, gameData.campaigns]);
-
-  if (!cloudEnabled) {
-    return (
-      <div style={pageStyle}>
-        <div style={{ ...panelStyle, maxWidth: 760 }}>
-          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Supabase Configuration Required</h2>
-          <p style={{ marginBottom: 0, ...mutedTextStyle }}>
-            This app is configured for Supabase-only persistence. Set <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> to continue.
-          </p>
-        </div>
-      </div>
-    );
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudEnabled]); // intentionally run once on mount — no gameData.campaigns dep
 
   useEffect(() => {
     if (!cloudEnabled || !cloudReady) return;
@@ -690,6 +655,19 @@ export default function App() {
     removeManualItem,
     addManualItem,
   });
+
+  if (!cloudEnabled) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...panelStyle, maxWidth: 760 }}>
+          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Supabase Configuration Required</h2>
+          <p style={{ marginBottom: 0, ...mutedTextStyle }}>
+            This app is configured for Supabase-only persistence. Set <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> to continue.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={pageStyle}>
