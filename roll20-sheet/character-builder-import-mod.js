@@ -328,12 +328,41 @@
     return rowId;
   }
 
-  function normalizeRowIdForRoll20(rawRowId) {
+  function hashFnv1a(value) {
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < value.length; i++) {
+      hash ^= value.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193);
+    }
+    return hash >>> 0;
+  }
+
+  function makeCanonicalRoll20RowId(seed) {
+    const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+    const targetLength = 19;
+    let state = hashFnv1a(seed);
+    let result = "";
+
+    for (let i = 0; i < targetLength; i++) {
+      // Simple LCG step to expand a 32-bit deterministic state.
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      result += alphabet[state % alphabet.length];
+    }
+
+    return "-" + result;
+  }
+
+  function normalizeRowIdForRoll20(rawRowId, sectionName) {
     const rowId = sanitizeRowId(rawRowId);
-    // Roll20 sheet workers and getSectionIDs are most reliable with row IDs that
-    // follow Roll20's generated pattern (leading '-'). Preserve payload stability
-    // by applying a deterministic transform instead of generating a new random ID.
-    return rowId.charAt(0) === "-" ? rowId : "-" + rowId;
+
+    // Already canonical: keep it untouched.
+    if (/^-[0-9A-Za-z_]{19}$/.test(rowId)) {
+      return rowId;
+    }
+
+    // Normalize to Roll20-like row IDs to avoid UI/edit-mode anomalies while
+    // preserving deterministic mapping from payload row IDs.
+    return makeCanonicalRoll20RowId(sectionName + ":" + rowId);
   }
 
   function toInt(value) {
@@ -421,7 +450,7 @@
         throw new Error("Invalid row object in section '" + sectionName + "' at index " + rowIndex + ".");
       }
 
-      const rowId = normalizeRowIdForRoll20(row.rowId);
+      const rowId = normalizeRowIdForRoll20(row.rowId, sectionName);
       if (seenRowIds[rowId]) {
         throw new Error("Duplicate rowId '" + rowId + "' in section '" + sectionName + "'.");
       }
