@@ -25,11 +25,11 @@ Use `character-builder-import-mod.js` in your Roll20 API scripts to import a ful
 Paste the command in Roll20 chat:
 
 ```text
-!cb-import b64:<base64-payload-from-app>
+!cb-import {"kind":"character-builder.roll20-mod-import",...}
 ```
 
-The app's **Copy Mod Command** button now produces this `b64:` format automatically.
-Legacy raw JSON after `!cb-import` is still supported, but `b64:` is preferred because it avoids Roll20 chat interpolation issues.
+The app's **Copy Mod Command** button produces a single chat-ready command in this format.
+The importer also supports `!cb-import b64:<payload>` for compatibility.
 
 Notes:
 - The importer finds or creates the character by `character.name`.
