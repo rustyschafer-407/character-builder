@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { CharacterRecord } from "../types/character";
-import { buttonStyle, inputStyle, labelTextStyle, panelStyle } from "./uiStyles";
+import { buttonStyle, inputStyle, labelTextStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
 
 interface Props {
   character: CharacterRecord;
@@ -69,20 +69,27 @@ export default function IdentitySection({
                 flexWrap: "wrap",
               }}
             >
-              <div
-                style={{
-                  fontSize: 34,
-                  fontWeight: 800,
-                  lineHeight: 1.05,
-                  color: "var(--text-primary)",
-                }}
-              >
-                {character.identity.name || "Unnamed Character"}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <div
+                  style={{
+                    fontSize: 34,
+                    fontWeight: 800,
+                    lineHeight: 1.05,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  {character.identity.name || "Unnamed Character"}
+                </div>
+                <button
+                  onClick={startNameEdit}
+                  style={{ ...buttonStyle, padding: "6px 10px", minWidth: 38 }}
+                  aria-label="Edit character name"
+                  title="Edit name"
+                >
+                  ✎
+                </button>
               </div>
-              <button onClick={startNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }}>
-                Edit
-              </button>
-              <button onClick={copyToRoll20} style={{ ...buttonStyle, padding: "6px 10px" }}>
+              <button onClick={copyToRoll20} style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
                 Copy to Roll20
               </button>
             </div>
