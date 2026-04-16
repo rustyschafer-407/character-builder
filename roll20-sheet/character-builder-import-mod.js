@@ -280,6 +280,14 @@
     return rowId;
   }
 
+  function normalizeRowIdForRoll20(rawRowId) {
+    const rowId = sanitizeRowId(rawRowId);
+    // Roll20 sheet workers and getSectionIDs are most reliable with row IDs that
+    // follow Roll20's generated pattern (leading '-'). Preserve payload stability
+    // by applying a deterministic transform instead of generating a new random ID.
+    return rowId.charAt(0) === "-" ? rowId : "-" + rowId;
+  }
+
   function toInt(value) {
     return parseInt(safeString(value), 10) || 0;
   }
@@ -365,7 +373,7 @@
         throw new Error("Invalid row object in section '" + sectionName + "' at index " + rowIndex + ".");
       }
 
-      const rowId = sanitizeRowId(row.rowId);
+      const rowId = normalizeRowIdForRoll20(row.rowId);
       if (seenRowIds[rowId]) {
         throw new Error("Duplicate rowId '" + rowId + "' in section '" + sectionName + "'.");
       }
