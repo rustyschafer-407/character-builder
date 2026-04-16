@@ -90,11 +90,11 @@ export default function IdentitySection({
                 </button>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                <button onClick={copyToRoll20} style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
-                  Copy to Roll20
-                </button>
                 <button onClick={onOpenLevelUpWizard} style={{ ...buttonStyle, padding: "8px 14px" }}>
                   Level Up
+                </button>
+                <button onClick={copyToRoll20} style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
+                  Copy to Roll20
                 </button>
               </div>
             </div>
