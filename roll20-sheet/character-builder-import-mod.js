@@ -334,22 +334,19 @@
       hash ^= value.charCodeAt(i);
       hash = Math.imul(hash, 0x01000193);
     }
-    return hash >>> 0;
+    return (hash >>> 0).toString(36);
   }
 
-  function makeCanonicalRoll20RowId(seed) {
-    const alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-    const targetLength = 19;
-    let state = hashFnv1a(seed);
-    let result = "";
+  function makeCanonicalRoll20RowId(rawRowId, sectionName) {
+    const normalized = rawRowId.replace(/-/g, "_");
 
-    for (let i = 0; i < targetLength; i++) {
-      // Simple LCG step to expand a 32-bit deterministic state.
-      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-      result += alphabet[state % alphabet.length];
+    if (normalized.length <= 19) {
+      return "-" + normalized.padEnd(19, "0");
     }
 
-    return "-" + result;
+    const prefix = normalized.slice(0, 10);
+    const suffix = hashFnv1a(sectionName + ":" + normalized).slice(0, 9).padEnd(9, "0");
+    return "-" + prefix + suffix;
   }
 
   function normalizeRowIdForRoll20(rawRowId, sectionName) {
@@ -362,7 +359,7 @@
 
     // Normalize to Roll20-like row IDs to avoid UI/edit-mode anomalies while
     // preserving deterministic mapping from payload row IDs.
-    return makeCanonicalRoll20RowId(sectionName + ":" + rowId);
+    return makeCanonicalRoll20RowId(rowId, sectionName);
   }
 
   function toInt(value) {
