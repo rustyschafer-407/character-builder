@@ -528,7 +528,11 @@ function getFilteredExportCollections(character: CharacterRecord, context: Expor
   const attacks = character.attacks
     .filter(
       (attack) =>
-        !attack.templateId || !context.invalidAttackTemplateIdSet.has(attack.templateId)
+        // Only drop derived (power/item) attacks whose source has been removed.
+        // Manually-referenced template attacks are kept even if the template is stale.
+        !attack.derivedFromType ||
+        !attack.derivedFromId ||
+        !context.invalidAttackTemplateIdSet.has(attack.templateId ?? "")
     )
     .filter((attack) => attack.name.trim() !== "")
     .slice(0, MAX_ATTACK_ROWS);
