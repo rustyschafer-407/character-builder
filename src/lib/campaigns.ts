@@ -29,7 +29,7 @@ export function makeBlankCampaign(): CampaignDefinition {
     availableItemIds: [],
     availableAttackTemplateIds: [],
     attributeRules: {
-      generationMethods: ["manual"],
+      generationMethods: ["pointBuy", "randomRoll", "manual"],
       pointBuyTotal: 27,
       randomRollFormula: "4d6 drop lowest",
       randomRollCount: 6,

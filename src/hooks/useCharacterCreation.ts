@@ -285,7 +285,7 @@ export function useCharacterCreation({
   function updateWizardAttributeWithRules(key: AttributeKey, value: number) {
     if (!creationDraft) return;
 
-    const method = creationDraft.attributeGeneration?.method ?? "manual";
+    const method = creationDraft.attributeGeneration?.method ?? "pointBuy";
 
     if (method === "pointBuy") {
       const nextAttributes = {

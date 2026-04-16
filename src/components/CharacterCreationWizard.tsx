@@ -207,6 +207,11 @@ export default function CharacterCreationWizard({
                 textAlign: "center",
                 fontSize: 13,
                 fontWeight: 700,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1,
                 background: isCurrent
                   ? "rgba(73, 224, 255, 0.22)"
                   : isDone
@@ -220,7 +225,8 @@ export default function CharacterCreationWizard({
                   : "1px solid var(--border-soft)",
               }}
             >
-              {index + 1}. {title}
+              <span>{index + 1}.</span>
+              <span>{title}</span>
             </div>
           );
         })}
