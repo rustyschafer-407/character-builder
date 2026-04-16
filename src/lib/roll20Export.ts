@@ -504,6 +504,14 @@ export function buildRoll20ModPayloadJson(character: CharacterRecord, gameData: 
   return JSON.stringify(buildRoll20ModPayload(character, gameData), null, 2);
 }
 
+export function buildRoll20ModImportCommand(
+  character: CharacterRecord,
+  gameData: GameData
+): string {
+  const compactPayload = JSON.stringify(buildRoll20ModPayload(character, gameData));
+  return `!cb-import ${compactPayload}`;
+}
+
 function getFilteredExportCollections(character: CharacterRecord, context: ExportContext) {
   const skills = getExportedSkills(character)
     .filter((skill) => !context.invalidSkillIdSet.has(skill.skillId))

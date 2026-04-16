@@ -48,7 +48,7 @@ export default function Roll20ExportPanel({
   async function copyModPayload() {
     try {
       await navigator.clipboard.writeText(modPayload);
-      alert("Roll20 Mod payload copied to clipboard.");
+      alert("Roll20 Mod command copied. Paste directly into Roll20 chat.");
     } catch {
       alert("Could not copy to clipboard on this device/browser.");
     }
@@ -77,11 +77,11 @@ export default function Roll20ExportPanel({
           >
             ChatSetAttr
           </a>{" "}
-          API script (Roll20 Pro). Use <strong>Copy Mod Payload</strong> with your custom Roll20 Mod import path, or keep ChatSetAttr as fallback by selecting your character's token and pasting <strong>Attributes & Core</strong> then <strong>Repeating Lists</strong>.
+          API script (Roll20 Pro). Use <strong>Copy Mod Command</strong> for a single paste into your custom Roll20 Mod import command, or keep ChatSetAttr as fallback by selecting your character's token and pasting <strong>Attributes & Core</strong> then <strong>Repeating Lists</strong>.
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <button onClick={copyModPayload} style={primaryButtonStyle}>
-            Copy Mod Payload
+            Copy Mod Command
           </button>
           <button onClick={copyChatSetAttrPhase1} style={buttonStyle}>
             Copy Attributes & Core
