@@ -9,7 +9,7 @@ Character Builder is a campaign-aware character management app for creating, edi
 - Lets you define campaign content in an admin editor.
 - Lets players create characters from campaign + class definitions.
 - Supports level-up progression with automatic and choice-based gains.
-- Exports characters to Roll20 using ChatSetAttr Mod-compatible commands.
+- Exports characters to Roll20 via a single MOD import command (copy-paste into Roll20 chat).
 
 ## Campaign Ownership Model
 
@@ -28,7 +28,8 @@ Characters are tied to a campaign and class, and all available options are resol
 Character creation wizard (high level):
 
 - Pick campaign and class.
-- Set attributes by generation method.
+- Set attributes by generation method (defaults to Point Buy).
+- Choose exactly 2 save proficiencies.
 - Make class-constrained skill/power/item choices.
 - Finish with a full character record.
 
@@ -41,16 +42,14 @@ Level-up wizard (high level):
 
 ## Roll20 Mod Workflow (High Level)
 
-The app generates ChatSetAttr Mod commands in two phases:
-
-1. Attributes and core fields
-2. Repeating sections (skills, attacks, powers, inventory)
+The app generates a single MOD import command containing all character data.
 
 Typical flow:
 
 - Open a character in this app.
-- Copy the generated commands.
-- In Roll20 (with ChatSetAttr Mod), select the token and paste phase 1 then phase 2.
+- Click **Copy to Roll20** in the character identity panel.
+- In Roll20 (with the Character Builder MOD installed), paste the command into chat.
+- The MOD applies all attributes and repeating sections in one pass.
 
 ## Commands
 
