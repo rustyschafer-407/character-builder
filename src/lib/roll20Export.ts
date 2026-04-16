@@ -199,6 +199,10 @@ function getSaveAttributeValue(attribute?: AttributeKey): string {
   return `${attrLower}_mod`;
 }
 
+function getAbilityModReference(attribute: AttributeKey): string {
+  return `@{${attribute.toLowerCase()}_mod}`;
+}
+
 function hashFnv1a(value: string): string {
   let hash = 0x811c9dc5;
   for (let i = 0; i < value.length; i++) {
@@ -418,8 +422,8 @@ export function buildRoll20ModPayload(
       rowId,
       attributes: {
         skillname: clean(definition?.name ?? skill.skillId),
-        skillattr: clean(getModifier(character.attributes[attr])),
-        skillprof: clean(character.proficiencyBonus),
+        skillattr: clean(getAbilityModReference(attr)),
+        skillprof: "@{pb}",
         skillbonus: clean(skill.bonus ?? 0),
       },
     };
@@ -433,8 +437,8 @@ export function buildRoll20ModPayload(
       rowId,
       attributes: {
         attackname: clean(attack.name),
-        attackattr: clean(getModifier(character.attributes[attack.attribute])),
-        attackprof: clean(character.proficiencyBonus),
+        attackattr: clean(getAbilityModReference(attack.attribute)),
+        attackprof: "@{pb}",
         attackbonus: clean(attack.bonus ?? 0),
         damagedice: clean(attack.damage),
         damagebonus: clean(attack.damageBonus ?? 0),

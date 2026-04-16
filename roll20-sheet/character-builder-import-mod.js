@@ -20,6 +20,15 @@
   const PAYLOAD_VERSION = 1;
 
   const REPEATING_SECTIONS = ["skills", "attacks", "powers", "inventory"];
+  const ABILITY_MOD_FIELDS = ["str_mod", "dex_mod", "con_mod", "int_mod", "wis_mod", "cha_mod"];
+  const ABILITY_MOD_REFS = [
+    "@{str_mod}",
+    "@{dex_mod}",
+    "@{con_mod}",
+    "@{int_mod}",
+    "@{wis_mod}",
+    "@{cha_mod}",
+  ];
 
   function whisper(msg) {
     sendChat(SCRIPT_NAME, "/w gm " + msg);
@@ -271,7 +280,82 @@
     return rowId;
   }
 
-  function writeRepeatingSection(characterId, sectionName, rows) {
+  function toInt(value) {
+    return parseInt(safeString(value), 10) || 0;
+  }
+
+  function normalizeAbilityRef(value, baseAttrs) {
+    const raw = safeString(value).trim().toLowerCase();
+    if (!raw) return "@{str_mod}";
+
+    if (ABILITY_MOD_REFS.indexOf(raw) >= 0) {
+      return raw;
+    }
+
+    if (ABILITY_MOD_FIELDS.indexOf(raw) >= 0) {
+      return "@{" + raw + "}";
+    }
+
+    // Backward compatibility for older payloads that exported numeric mod values.
+    const parsed = parseInt(raw, 10);
+    if (!Number.isNaN(parsed)) {
+      const matches = ABILITY_MOD_FIELDS.filter((fieldName) => toInt(baseAttrs[fieldName]) === parsed);
+      if (matches.length === 1) {
+        return "@{" + matches[0] + "}";
+      }
+    }
+
+    return "@{str_mod}";
+  }
+
+  function normalizePowerSaveAttr(value) {
+    const raw = safeString(value).trim().toLowerCase();
+    if (!raw || raw === "none") return "none";
+    if (ABILITY_MOD_FIELDS.indexOf(raw) >= 0) return raw;
+
+    const refMatch = raw.match(/^@\{(str_mod|dex_mod|con_mod|int_mod|wis_mod|cha_mod)\}$/);
+    if (refMatch) {
+      return refMatch[1];
+    }
+
+    return "none";
+  }
+
+  function computePowerDc(saveAttr, baseAttrs) {
+    if (saveAttr === "none") return "";
+    const pb = toInt(baseAttrs.pb);
+    const mod = toInt(baseAttrs[saveAttr]);
+    return String(8 + pb + mod);
+  }
+
+  function normalizeRepeatingRowAttributes(sectionName, fields, baseAttrs) {
+    const normalized = {};
+    Object.keys(fields || {}).forEach((key) => {
+      normalized[key] = fields[key];
+    });
+
+    if (sectionName === "skills") {
+      normalized.skillattr = normalizeAbilityRef(normalized.skillattr, baseAttrs);
+      // Checkbox is rendered checked when current matches the input's value.
+      normalized.skillprof = "@{pb}";
+    }
+
+    if (sectionName === "attacks") {
+      normalized.attackattr = normalizeAbilityRef(normalized.attackattr, baseAttrs);
+      // Per requirement: imported attacks are always proficient.
+      normalized.attackprof = "@{pb}";
+    }
+
+    if (sectionName === "powers") {
+      const saveAttr = normalizePowerSaveAttr(normalized.power_save_attr);
+      normalized.power_save_attr = saveAttr;
+      normalized.power_dc = computePowerDc(saveAttr, baseAttrs);
+    }
+
+    return normalized;
+  }
+
+  function writeRepeatingSection(characterId, sectionName, rows, baseAttrs) {
     const safeRows = Array.isArray(rows) ? rows : [];
     const seenRowIds = {};
     let attrsWritten = 0;
@@ -292,9 +376,11 @@
         throw new Error("Missing row.attributes in section '" + sectionName + "' row '" + rowId + "'.");
       }
 
-      Object.keys(fields).forEach((fieldName) => {
+      const normalizedFields = normalizeRepeatingRowAttributes(sectionName, fields, baseAttrs);
+
+      Object.keys(normalizedFields).forEach((fieldName) => {
         const fullName = "repeating_" + sectionName + "_" + rowId + "_" + fieldName;
-        upsertAttribute(characterId, fullName, fields[fieldName]);
+        upsertAttribute(characterId, fullName, normalizedFields[fieldName]);
         attrsWritten += 1;
       });
     });
@@ -302,12 +388,17 @@
     return attrsWritten;
   }
 
-  function replaceRepeatingSections(characterId, repeating) {
+  function replaceRepeatingSections(characterId, repeating, baseAttrs) {
     const summary = {};
 
     REPEATING_SECTIONS.forEach((sectionName) => {
       const removed = clearRepeatingSection(characterId, sectionName);
-      const written = writeRepeatingSection(characterId, sectionName, repeating[sectionName]);
+      const written = writeRepeatingSection(
+        characterId,
+        sectionName,
+        repeating[sectionName],
+        baseAttrs
+      );
       summary[sectionName] = {
         removed,
         written,
@@ -353,7 +444,11 @@
 
     const flatResult = upsertFlatAttributes(characterId, payload.attributes);
     const hpResult = upsertHp(characterId, payload.hp);
-    const repeatingSummary = replaceRepeatingSections(characterId, payload.repeating);
+    const repeatingSummary = replaceRepeatingSections(
+      characterId,
+      payload.repeating,
+      payload.attributes || {}
+    );
 
     info(
       "Import complete for '" +
