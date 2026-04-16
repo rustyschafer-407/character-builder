@@ -255,14 +255,19 @@ export function useCharacterCreation({
     }
 
     if (wizardStep === 4) {
-      return areSkillRulesSatisfiedExactly(wizardSkillChoiceRules, creationDraft.skills);
+      const selectedSaveProfCount = Object.values(creationDraft.saveProf).filter(Boolean).length;
+      return selectedSaveProfCount === 2;
     }
 
     if (wizardStep === 5) {
-      return arePowerRulesSatisfiedExactly(wizardPowerChoiceRules, creationDraft.powers);
+      return areSkillRulesSatisfiedExactly(wizardSkillChoiceRules, creationDraft.skills);
     }
 
     if (wizardStep === 6) {
+      return arePowerRulesSatisfiedExactly(wizardPowerChoiceRules, creationDraft.powers);
+    }
+
+    if (wizardStep === 7) {
       return areItemRulesSatisfiedAtMost(wizardItemChoiceRules, creationDraft.inventory);
     }
 
@@ -275,7 +280,7 @@ export function useCharacterCreation({
       return;
     }
 
-    setWizardStep((prev) => Math.min(prev + 1, 7));
+    setWizardStep((prev) => Math.min(prev + 1, 8));
   }
 
   function previousWizardStep() {
@@ -487,7 +492,6 @@ export function useCharacterCreation({
             name: item.name,
             quantity: item.defaultQuantity ?? 1,
             notes: item.description,
-            equipped: false,
             source: "wizard-choice",
           },
         ],
@@ -501,7 +505,6 @@ export function useCharacterCreation({
                 name: item.name,
                 quantity: item.defaultQuantity ?? 1,
                 notes: item.description,
-                equipped: false,
                 source: "wizard-choice",
               },
             ],
@@ -620,6 +623,23 @@ export function useCharacterCreation({
     });
   }
 
+  function toggleWizardSaveProf(attribute: AttributeKey, nextSelected: boolean) {
+    if (!creationDraft) return;
+
+    const currentSelectedCount = Object.values(creationDraft.saveProf).filter(Boolean).length;
+    if (nextSelected && !creationDraft.saveProf[attribute] && currentSelectedCount >= 2) {
+      return;
+    }
+
+    setCreationDraft({
+      ...creationDraft,
+      saveProf: {
+        ...creationDraft.saveProf,
+        [attribute]: nextSelected,
+      },
+    });
+  }
+
   function setWizardName(name: string) {
     if (!creationDraft) return;
     setCreationDraft({
@@ -661,6 +681,7 @@ export function useCharacterCreation({
     handleWizardRaceChange,
     handleWizardClassChange,
     handleWizardAttributeGenerationChange,
+    toggleWizardSaveProf,
     handleWizardRollAttributes,
     setWizardName,
   };

@@ -8,7 +8,6 @@ interface Props {
   label: string;
   onToggleItem: (itemId: string, nextSelected: boolean) => void;
   onQuantityChange: (itemId: string, quantity: number) => void;
-  onEquippedChange: (itemId: string, equipped: boolean) => void;
   onRemoveManualItem: (itemName: string) => void;
   onAddManualItem: () => void;
 }
@@ -19,7 +18,6 @@ export default function InventorySection({
   label,
   onToggleItem,
   onQuantityChange,
-  onEquippedChange,
   onRemoveManualItem,
   onAddManualItem,
 }: Props) {
@@ -50,7 +48,7 @@ export default function InventorySection({
               style={{
                 ...cardStyle,
                 display: "grid",
-                gridTemplateColumns: "1.5fr auto auto auto",
+                gridTemplateColumns: "1.5fr auto auto",
                 gap: 12,
                 alignItems: "center",
               }}
@@ -89,17 +87,6 @@ export default function InventorySection({
                   }}
                 />
               </label>
-
-              <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
-                Equipped
-                <input
-                  type="checkbox"
-                  checked={selectedItem?.equipped ?? false}
-                  disabled={!isSelected}
-                  onChange={(e) => onEquippedChange(item.id, e.target.checked)}
-                  style={{ marginLeft: 8 }}
-                />
-              </label>
             </div>
           );
         })}
@@ -112,7 +99,7 @@ export default function InventorySection({
               style={{
                 ...cardStyle,
                 display: "grid",
-                gridTemplateColumns: "2fr 1fr 1fr auto",
+                gridTemplateColumns: "2fr 1fr auto",
                 gap: 12,
                 alignItems: "center",
               }}
@@ -138,16 +125,6 @@ export default function InventorySection({
                     marginTop: 0,
                     display: "inline-block",
                   }}
-                />
-              </label>
-
-              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
-                Equipped
-                <input
-                  type="checkbox"
-                  checked={item.equipped ?? false}
-                  onChange={(e) => onEquippedChange(item.name, e.target.checked)}
-                  style={{ marginLeft: 8 }}
                 />
               </label>
 

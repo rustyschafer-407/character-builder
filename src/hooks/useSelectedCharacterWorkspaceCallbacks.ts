@@ -21,7 +21,6 @@ interface UseSelectedCharacterWorkspaceCallbacksParams {
   ) => void;
   toggleItemWithRules: (character: CharacterRecord, itemId: string, nextSelected: boolean) => void;
   updateInventoryQuantity: (character: CharacterRecord, itemKey: string, quantity: number) => void;
-  updateInventoryEquipped: (character: CharacterRecord, itemKey: string, equipped: boolean) => void;
   removeManualItem: (character: CharacterRecord, itemName: string) => void;
   addManualItem: (character: CharacterRecord) => void;
 }
@@ -35,7 +34,6 @@ export function useSelectedCharacterWorkspaceCallbacks({
   updatePowerWithRules,
   toggleItemWithRules,
   updateInventoryQuantity,
-  updateInventoryEquipped,
   removeManualItem,
   addManualItem,
 }: UseSelectedCharacterWorkspaceCallbacksParams) {
@@ -153,11 +151,6 @@ export function useSelectedCharacterWorkspaceCallbacks({
     updateInventoryQuantity(selected, itemKey, quantity);
   }
 
-  function onEquippedChange(itemKey: string, equipped: boolean) {
-    if (!selected) return;
-    updateInventoryEquipped(selected, itemKey, equipped);
-  }
-
   function onRemoveManualItem(itemName: string) {
     if (!selected) return;
     removeManualItem(selected, itemName);
@@ -213,7 +206,6 @@ export function useSelectedCharacterWorkspaceCallbacks({
     onPowerChange,
     onToggleItem,
     onQuantityChange,
-    onEquippedChange,
     onRemoveManualItem,
     onAddManualItem,
     onAddAttack,

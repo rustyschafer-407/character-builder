@@ -83,6 +83,7 @@ function makeDraftFromCampaignClassAndRace(
     level: base.level,
     proficiencyBonus: base.proficiencyBonus,
     attributes: base.attributes,
+    saveProf: { ...base.sheet.saveProf },
     attributeGeneration: base.attributeGeneration,
     hp: base.hp,
     skills: base.skills,
@@ -92,7 +93,7 @@ function makeDraftFromCampaignClassAndRace(
     levelProgression: base.levelProgression,
   };
 
-  const method = draft.attributeGeneration?.method ?? "manual";
+  const method = draft.attributeGeneration?.method ?? campaign.attributeRules.generationMethods[0] ?? "pointBuy";
   if (method === "manual") {
     draft.attributes = makeBaseAttributes();
   } else if (method === "pointBuy") {
@@ -451,14 +452,7 @@ export default function App() {
         acBonus: 0,
         acUseDex: true,
         initMisc: 0,
-        saveProf: {
-          STR: false,
-          DEX: false,
-          CON: false,
-          INT: false,
-          WIS: false,
-          CHA: false,
-        },
+        saveProf: { ...draft.saveProf },
         saveBonus: {
           STR: 0,
           DEX: 0,
@@ -511,6 +505,7 @@ export default function App() {
     handleWizardRaceChange,
     handleWizardClassChange,
     handleWizardAttributeGenerationChange,
+    toggleWizardSaveProf,
     handleWizardRollAttributes,
     setWizardName,
   } = useCharacterCreation({
@@ -562,8 +557,7 @@ export default function App() {
   // Export calls now route through an exporter boundary so new exporters can be added safely.
   const roll20Commands = selected
     ? exportCharacter(selected, gameData, DEFAULT_EXPORTER_ID)
-    : { phase1: "", phase2: "", combined: "", modPayload: "" };
-  const chatSetAttrCommand = roll20Commands.combined;
+    : { modPayload: "" };
 
   function getCampaignName(id: string) {
     return gameData.campaigns.find((g) => g.id === id)?.name ?? id;
@@ -628,7 +622,6 @@ export default function App() {
     updatePowerWithRules,
     toggleItemWithRules,
     updateInventoryQuantity,
-    updateInventoryEquipped,
     addManualItem,
     removeManualItem,
     deleteCharacter,
@@ -651,7 +644,6 @@ export default function App() {
     updatePowerWithRules,
     toggleItemWithRules,
     updateInventoryQuantity,
-    updateInventoryEquipped,
     removeManualItem,
     addManualItem,
   });
@@ -822,6 +814,7 @@ export default function App() {
                 onClassChange={handleWizardClassChange}
                 onAttributeGenerationChange={handleWizardAttributeGenerationChange}
                 onAttributeChange={(key, value) => updateWizardAttributeWithRules(key, value)}
+                onSaveProfToggle={toggleWizardSaveProf}
                 onRollAttributes={handleWizardRollAttributes}
                 onSkillToggle={toggleWizardSkill}
                 onPowerToggle={toggleWizardPower}
@@ -853,9 +846,6 @@ export default function App() {
               selectedSkills={selectedSkills}
               selectedPowers={selectedPowers}
               selectedItems={selectedItems}
-              chatSetAttrCommand={chatSetAttrCommand}
-              roll20Phase1Command={roll20Commands.phase1}
-              roll20Phase2Command={roll20Commands.phase2}
               roll20ModPayload={roll20Commands.modPayload}
               levelUpOpen={levelUpOpen && Boolean(selectedClass)}
               levelUpApplyPending={levelUpApplyPending}

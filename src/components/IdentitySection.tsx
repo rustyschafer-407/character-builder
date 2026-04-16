@@ -10,6 +10,7 @@ interface Props {
   className: string;
   levelLabel: string;
   hpLabel: string;
+  roll20ModPayload: string;
   onNameChange: (name: string) => void;
   onOpenLevelUpWizard: () => void;
 }
@@ -22,6 +23,7 @@ export default function IdentitySection({
   className,
   levelLabel,
   hpLabel,
+  roll20ModPayload,
   onNameChange,
   onOpenLevelUpWizard,
 }: Props) {
@@ -42,6 +44,15 @@ export default function IdentitySection({
   function cancelNameEdit() {
     setDraftName(character.identity.name);
     setEditingName(false);
+  }
+
+  async function copyToRoll20() {
+    try {
+      await navigator.clipboard.writeText(roll20ModPayload);
+      alert("Roll20 import command copied. Paste directly into Roll20 chat.");
+    } catch {
+      alert("Could not copy to clipboard on this device/browser.");
+    }
   }
 
   return (
@@ -70,6 +81,9 @@ export default function IdentitySection({
               </div>
               <button onClick={startNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }}>
                 Edit
+              </button>
+              <button onClick={copyToRoll20} style={{ ...buttonStyle, padding: "6px 10px" }}>
+                Copy to Roll20
               </button>
             </div>
           ) : (

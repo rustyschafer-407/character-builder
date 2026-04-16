@@ -4,9 +4,6 @@ import type { GameData } from "../../types/gameData";
 export type ExporterId = "roll20";
 
 export type ExportCommands = {
-  phase1: string;
-  phase2: string;
-  combined: string;
   modPayload: string;
 };
 

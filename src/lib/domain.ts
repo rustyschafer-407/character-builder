@@ -237,7 +237,7 @@ export function normalizeCampaignDefinition(campaign: CampaignDefinition): Campa
         campaign.attributeRules?.generationMethods &&
         campaign.attributeRules.generationMethods.length > 0
           ? campaign.attributeRules.generationMethods
-          : ["manual"],
+          : ["pointBuy", "randomRoll", "manual"],
       pointBuyTotal: Number.isFinite(campaign.attributeRules?.pointBuyTotal)
         ? Number(campaign.attributeRules?.pointBuyTotal)
         : 27,

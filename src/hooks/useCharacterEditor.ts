@@ -161,7 +161,6 @@ export function useCharacterEditor({
             name: item.name,
             quantity: item.defaultQuantity ?? 1,
             notes: item.description,
-            equipped: false,
             source: "wizard-choice",
           },
         ],
@@ -175,7 +174,6 @@ export function useCharacterEditor({
                 name: item.name,
                 quantity: item.defaultQuantity ?? 1,
                 notes: item.description,
-                equipped: false,
                 source: "wizard-choice",
               },
             ],
@@ -211,17 +209,6 @@ export function useCharacterEditor({
     });
   }
 
-  function updateInventoryEquipped(character: CharacterRecord, itemKey: string, equipped: boolean) {
-    updateCharacter({
-      ...character,
-      inventory: character.inventory.map((item) =>
-        (item.itemId ?? item.name) === itemKey
-          ? { ...item, equipped }
-          : item
-      ),
-    });
-  }
-
   function addManualItem(character: CharacterRecord) {
     updateCharacter({
       ...character,
@@ -230,7 +217,6 @@ export function useCharacterEditor({
         {
           name: `Custom Item ${character.inventory.filter((i) => !i.itemId).length + 1}`,
           quantity: 1,
-          equipped: false,
           source: "manual",
         },
       ],
@@ -272,7 +258,6 @@ export function useCharacterEditor({
     updatePowerWithRules,
     toggleItemWithRules,
     updateInventoryQuantity,
-    updateInventoryEquipped,
     addManualItem,
     removeManualItem,
     deleteCharacter,

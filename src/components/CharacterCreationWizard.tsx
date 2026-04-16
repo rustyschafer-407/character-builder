@@ -40,6 +40,7 @@ export interface CharacterCreationDraft {
   level: number;
   proficiencyBonus: number;
   attributes: Record<AttributeKey, number>;
+  saveProf: Record<AttributeKey, boolean>;
   attributeGeneration?: CharacterAttributeGeneration;
   hp: CharacterHp;
   skills: CharacterSkillSelection[];
@@ -73,6 +74,7 @@ interface Props {
   onClassChange: (classId: string) => void;
   onAttributeGenerationChange: (method: "pointBuy" | "randomRoll" | "manual") => void;
   onAttributeChange: (key: AttributeKey, value: number) => void;
+  onSaveProfToggle: (attribute: AttributeKey, nextSelected: boolean) => void;
   onRollAttributes: () => void;
   onSkillToggle: (skillId: string, nextSelected: boolean) => void;
   onPowerToggle: (powerId: string, nextSelected: boolean) => void;
@@ -91,6 +93,7 @@ function getStepTitles(labels: CampaignLabels) {
     "Race",
     labels.className,
     labels.attributes,
+    "Saves",
     labels.skills,
     labels.powers,
     labels.inventory,
@@ -152,6 +155,7 @@ export default function CharacterCreationWizard({
   onClassChange,
   onAttributeGenerationChange,
   onAttributeChange,
+  onSaveProfToggle,
   onRollAttributes,
   onSkillToggle,
   onPowerToggle,
@@ -161,11 +165,12 @@ export default function CharacterCreationWizard({
   onCancel,
   onFinish,
 }: Props) {
-  const method = draft.attributeGeneration?.method ?? "manual";
+  const method = draft.attributeGeneration?.method ?? selectedCampaign?.attributeRules.generationMethods[0] ?? "pointBuy";
   const stepTitles = getStepTitles(labels);
   const classModifiersText = formatClassAttributeModifiers(selectedClass);
   const raceModifiersText = formatRaceAttributeModifiers(selectedRace);
   const attributeBonusTotals = getAttributeBonusTotals(selectedClass, selectedRace);
+  const selectedSaveProfCount = ATTRS.filter((attr) => draft.saveProf[attr]).length;
 
   return (
     <section style={panelStyle}>
@@ -487,6 +492,58 @@ export default function CharacterCreationWizard({
 
       {step === 4 && (
         <div style={{ display: "grid", gap: 10 }}>
+          <div
+            style={{
+              padding: 10,
+              borderRadius: 8,
+              background: "rgba(73, 224, 255, 0.18)",
+              color: "var(--text-primary)",
+              fontSize: 14,
+              border: "1px solid var(--accent-primary)",
+            }}
+          >
+            <strong>Saving Throw Proficiencies:</strong> choose exactly 2 attributes.
+            <div style={{ marginTop: 4 }}>
+              Selected: {selectedSaveProfCount} / 2
+            </div>
+          </div>
+
+          {ATTRS.map((attr) => {
+            const checked = draft.saveProf[attr];
+            const disableUnchecked = !checked && selectedSaveProfCount >= 2;
+
+            return (
+              <label
+                key={attr}
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid var(--border-soft)",
+                  background: checked ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  color: "var(--text-primary)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <span>
+                  <strong>{attr}</strong> Save Proficiency
+                </span>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  disabled={disableUnchecked}
+                  onChange={(e) => onSaveProfToggle(attr, e.target.checked)}
+                />
+              </label>
+            );
+          })}
+        </div>
+      )}
+
+      {step === 5 && (
+        <div style={{ display: "grid", gap: 10 }}>
           {skillChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForSkillRule(rule, draft.skills);
             return (
@@ -564,7 +621,7 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 5 && (
+      {step === 6 && (
         <div style={{ display: "grid", gap: 10 }}>
           {powerChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForPowerRule(rule, draft.powers);
@@ -640,7 +697,7 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 6 && (
+      {step === 7 && (
         <div style={{ display: "grid", gap: 10 }}>
           {itemChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForItemRule(rule, draft.inventory);
@@ -716,7 +773,7 @@ export default function CharacterCreationWizard({
         </div>
       )}
 
-      {step === 7 && (
+      {step === 8 && (
         <div style={{ display: "grid", gap: 14 }}>
           <div style={{ color: "#b9cdf0" }}>
             <strong>Name:</strong> {draft.identity.name}
@@ -733,6 +790,10 @@ export default function CharacterCreationWizard({
           <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.attributes}:</strong>{" "}
             {ATTRS.map((attr) => `${attr} ${draft.attributes[attr]}`).join(", ")}
+          </div>
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>Saves:</strong>{" "}
+            {ATTRS.filter((attr) => draft.saveProf[attr]).join(", ") || "None"}
           </div>
           <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.skills}:</strong>{" "}

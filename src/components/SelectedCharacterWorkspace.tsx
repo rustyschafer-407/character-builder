@@ -15,7 +15,6 @@ import PowersSection from "./PowersSection";
 import InventorySection from "./InventorySection";
 import AttacksSection from "./AttacksSection";
 import LevelUpWizard from "./LevelUpWizard";
-import Roll20ExportPanel from "./Roll20ExportPanel";
 
 interface SelectedCharacterWorkspaceProps {
   character: CharacterRecord;
@@ -26,9 +25,6 @@ interface SelectedCharacterWorkspaceProps {
   selectedSkills: SkillDefinition[];
   selectedPowers: PowerDefinition[];
   selectedItems: ItemDefinition[];
-  chatSetAttrCommand: string;
-  roll20Phase1Command: string;
-  roll20Phase2Command: string;
   roll20ModPayload: string;
   levelUpOpen: boolean;
   levelUpApplyPending: boolean;
@@ -66,7 +62,6 @@ interface SelectedCharacterWorkspaceProps {
   ) => void;
   onToggleItem: (itemId: string, nextSelected: boolean) => void;
   onQuantityChange: (itemKey: string, quantity: number) => void;
-  onEquippedChange: (itemKey: string, equipped: boolean) => void;
   onRemoveManualItem: (itemName: string) => void;
   onAddManualItem: () => void;
   onAddAttack: () => void;
@@ -82,9 +77,6 @@ export default function SelectedCharacterWorkspace({
   selectedSkills,
   selectedPowers,
   selectedItems,
-  chatSetAttrCommand,
-  roll20Phase1Command,
-  roll20Phase2Command,
   roll20ModPayload,
   levelUpOpen,
   levelUpApplyPending,
@@ -118,7 +110,6 @@ export default function SelectedCharacterWorkspace({
   onPowerChange,
   onToggleItem,
   onQuantityChange,
-  onEquippedChange,
   onRemoveManualItem,
   onAddManualItem,
   onAddAttack,
@@ -162,6 +153,7 @@ export default function SelectedCharacterWorkspace({
         className={selectedClassName}
         levelLabel={labels.level}
         hpLabel={labels.hp}
+        roll20ModPayload={roll20ModPayload}
         onNameChange={onNameChange}
         onOpenLevelUpWizard={onOpenLevelUpWizard}
       />
@@ -204,7 +196,6 @@ export default function SelectedCharacterWorkspace({
         label={labels.inventory}
         onToggleItem={onToggleItem}
         onQuantityChange={onQuantityChange}
-        onEquippedChange={onEquippedChange}
         onRemoveManualItem={onRemoveManualItem}
         onAddManualItem={onAddManualItem}
       />
@@ -214,14 +205,6 @@ export default function SelectedCharacterWorkspace({
         label={labels.attacks}
         onAdd={onAddAttack}
         onChange={onAttackChange}
-      />
-
-      <Roll20ExportPanel
-        characterName={character.identity.name}
-        combinedCommand={chatSetAttrCommand}
-        phase1Command={roll20Phase1Command}
-        phase2Command={roll20Phase2Command}
-        modPayload={roll20ModPayload}
       />
     </div>
   );

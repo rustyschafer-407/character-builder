@@ -59,7 +59,6 @@ export interface CharacterItem {
   name: string;
   quantity: number;
   notes?: string;
-  equipped?: boolean;
   source: "campaign" | "class" | "background" | "wizard-choice" | "level-up" | "manual";
 }
 
