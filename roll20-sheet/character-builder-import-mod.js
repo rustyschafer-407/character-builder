@@ -314,53 +314,45 @@
     return removed;
   }
 
-  function sanitizeRowId(rawRowId) {
-    const rowId = safeString(rawRowId).trim();
-    if (!rowId) {
-      throw new Error("Repeating row missing rowId.");
-    }
+  // Generate native Roll20-style repeating IDs on import so we avoid
+  // payload-ID collisions and keep Roll20's UI in a healthy state.
+  const generateRowId = (() => {
+    let lastTime = 0;
+    const randomChars = [];
+    const chars = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 
-    // Guard against malformed row IDs generating bad attribute names.
-    if (!/^[A-Za-z0-9_-]+$/.test(rowId)) {
-      throw new Error("Invalid rowId '" + rowId + "'.");
-    }
+    return () => {
+      let now = new Date().getTime();
+      const duplicateTime = now === lastTime;
+      lastTime = now;
 
-    return rowId;
-  }
+      let id = "";
+      for (let i = 7; i >= 0; i--) {
+        id = chars.charAt(now % 64) + id;
+        now = Math.floor(now / 64);
+      }
 
-  function hashFnv1a(value) {
-    let hash = 0x811c9dc5;
-    for (let i = 0; i < value.length; i++) {
-      hash ^= value.charCodeAt(i);
-      hash = Math.imul(hash, 0x01000193);
-    }
-    return (hash >>> 0).toString(36);
-  }
+      if (!duplicateTime) {
+        for (let i = 0; i < 12; i++) {
+          randomChars[i] = Math.floor(Math.random() * 64);
+        }
+      } else {
+        for (let i = 11; i >= 0; i--) {
+          if (randomChars[i] !== 63) {
+            randomChars[i] += 1;
+            break;
+          }
+          randomChars[i] = 0;
+        }
+      }
 
-  function makeCanonicalRoll20RowId(rawRowId, sectionName) {
-    const normalized = rawRowId.replace(/-/g, "_");
+      for (let i = 0; i < 12; i++) {
+        id += chars.charAt(randomChars[i]);
+      }
 
-    if (normalized.length <= 19) {
-      return "-" + normalized.padEnd(19, "0");
-    }
-
-    const prefix = normalized.slice(0, 10);
-    const suffix = hashFnv1a(sectionName + ":" + normalized).slice(0, 9).padEnd(9, "0");
-    return "-" + prefix + suffix;
-  }
-
-  function normalizeRowIdForRoll20(rawRowId, sectionName) {
-    const rowId = sanitizeRowId(rawRowId);
-
-    // Already canonical: keep it untouched.
-    if (/^-[0-9A-Za-z_]{19}$/.test(rowId)) {
-      return rowId;
-    }
-
-    // Normalize to Roll20-like row IDs to avoid UI/edit-mode anomalies while
-    // preserving deterministic mapping from payload row IDs.
-    return makeCanonicalRoll20RowId(rowId, sectionName);
-  }
+      return id;
+    };
+  })();
 
   function toInt(value) {
     return parseInt(safeString(value), 10) || 0;
@@ -439,7 +431,6 @@
 
   function writeRepeatingSection(characterId, sectionName, rows, baseAttrs) {
     const safeRows = Array.isArray(rows) ? rows : [];
-    const seenRowIds = {};
     let attrsWritten = 0;
 
     safeRows.forEach((row, rowIndex) => {
@@ -447,11 +438,7 @@
         throw new Error("Invalid row object in section '" + sectionName + "' at index " + rowIndex + ".");
       }
 
-      const rowId = normalizeRowIdForRoll20(row.rowId, sectionName);
-      if (seenRowIds[rowId]) {
-        throw new Error("Duplicate rowId '" + rowId + "' in section '" + sectionName + "'.");
-      }
-      seenRowIds[rowId] = true;
+      const rowId = generateRowId();
 
       const fields = row.attributes;
       if (!fields || typeof fields !== "object") {
