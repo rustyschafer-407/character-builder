@@ -351,14 +351,14 @@
   }
 
   function makeCanonicalRoll20RowId(rawRowId, sectionName) {
-    const normalized = rawRowId.replace(/-/g, "_");
-    const prefix = normalized.slice(0, 10).padEnd(10, "0");
-    const hashInput = sectionName + ":" + normalized;
-    const suffix = (
+    const hashInput = sectionName + ":" + rawRowId;
+    const body = (
       encodeRoll20Alphabet(hashFnv1a(hashInput, 0x811c9dc5)) +
-      encodeRoll20Alphabet(hashFnv1a(hashInput, 0x9e3779b9))
-    ).slice(0, 9);
-    return "-" + prefix + suffix;
+      encodeRoll20Alphabet(hashFnv1a(hashInput, 0x9e3779b9)) +
+      encodeRoll20Alphabet(hashFnv1a(hashInput, 0x85ebca6b)) +
+      encodeRoll20Alphabet(hashFnv1a(hashInput, 0xc2b2ae35))
+    ).slice(0, 19);
+    return "-" + body;
   }
 
   function normalizeRowIdForRoll20(rawRowId, sectionName) {
