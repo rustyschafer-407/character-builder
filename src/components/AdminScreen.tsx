@@ -1782,22 +1782,37 @@ export default function AdminScreen({
                           style={inputStyle}
                         />
                       </label>
-                      <label
+                      <div
                         style={{
-                          ...labelTextStyle,
                           display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          marginTop: 36,
+                          alignItems: "flex-end",
+                          marginTop: 4,
                         }}
                       >
-                        <span>Is Attack</span>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(selectedItem.isAttack)}
-                          onChange={(e) => updateItem({ ...selectedItem, isAttack: e.target.checked })}
-                        />
-                      </label>
+                        <button
+                          type="button"
+                          onClick={() => updateItem({ ...selectedItem, isAttack: !Boolean(selectedItem.isAttack) })}
+                          style={{
+                            ...buttonStyle,
+                            minHeight: 44,
+                            borderRadius: 999,
+                            padding: "0 16px",
+                            border: Boolean(selectedItem.isAttack)
+                              ? "1px solid var(--accent-primary)"
+                              : "1px solid var(--border-soft)",
+                            background: Boolean(selectedItem.isAttack)
+                              ? "rgba(73, 224, 255, 0.2)"
+                              : "rgba(9, 20, 38, 0.82)",
+                            color: Boolean(selectedItem.isAttack)
+                              ? "#e9fdff"
+                              : "var(--text-secondary)",
+                            fontWeight: 700,
+                          }}
+                          aria-pressed={Boolean(selectedItem.isAttack)}
+                        >
+                          Usable as Attack
+                        </button>
+                      </div>
                     </div>
                   </section>
 
