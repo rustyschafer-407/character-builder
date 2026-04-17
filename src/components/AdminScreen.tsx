@@ -1717,15 +1717,37 @@ export default function AdminScreen({
                           <option value="CHA">CHA</option>
                         </select>
                       </label>
-                      <label style={labelTextStyle}>
-                        Is Attack
-                        <input
-                          type="checkbox"
-                          checked={Boolean(selectedPower.isAttack)}
-                          onChange={(e) => updatePower({ ...selectedPower, isAttack: e.target.checked })}
-                          style={{ marginLeft: 8 }}
-                        />
-                      </label>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-end",
+                          marginTop: 4,
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => updatePower({ ...selectedPower, isAttack: !Boolean(selectedPower.isAttack) })}
+                          style={{
+                            ...buttonStyle,
+                            minHeight: 44,
+                            borderRadius: 999,
+                            padding: "0 16px",
+                            border: Boolean(selectedPower.isAttack)
+                              ? "1px solid var(--accent-primary)"
+                              : "1px solid var(--border-soft)",
+                            background: Boolean(selectedPower.isAttack)
+                              ? "rgba(73, 224, 255, 0.2)"
+                              : "rgba(9, 20, 38, 0.82)",
+                            color: Boolean(selectedPower.isAttack)
+                              ? "#e9fdff"
+                              : "var(--text-secondary)",
+                            fontWeight: 700,
+                          }}
+                          aria-pressed={Boolean(selectedPower.isAttack)}
+                        >
+                          Usable as Attack
+                        </button>
+                      </div>
                     </div>
                   </section>
 
