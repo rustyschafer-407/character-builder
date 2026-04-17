@@ -20,6 +20,7 @@ export const panelStyle: React.CSSProperties = {
 export const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",
+  minHeight: 44,
   marginTop: 4,
   boxSizing: "border-box",
   borderRadius: 10,

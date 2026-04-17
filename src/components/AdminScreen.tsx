@@ -1782,13 +1782,20 @@ export default function AdminScreen({
                           style={inputStyle}
                         />
                       </label>
-                      <label style={labelTextStyle}>
-                        Is Attack
+                      <label
+                        style={{
+                          ...labelTextStyle,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginTop: 36,
+                        }}
+                      >
+                        <span>Is Attack</span>
                         <input
                           type="checkbox"
                           checked={Boolean(selectedItem.isAttack)}
                           onChange={(e) => updateItem({ ...selectedItem, isAttack: e.target.checked })}
-                          style={{ marginLeft: 8 }}
                         />
                       </label>
                     </div>
