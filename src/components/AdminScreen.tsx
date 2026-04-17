@@ -800,15 +800,6 @@ export default function AdminScreen({
                 <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Basic Info</h3>
                 <div style={gridCols(2)}>
                   <label style={labelTextStyle}>
-                    Internal ID
-                    <input
-                      value={selectedCampaign.id}
-                      onChange={(e) => updateCampaign({ ...selectedCampaign, id: e.target.value })}
-                      style={inputStyle}
-                    />
-                  </label>
-
-                  <label style={labelTextStyle}>
                     Campaign Name
                     <input
                       value={selectedCampaign.name}
@@ -860,14 +851,6 @@ export default function AdminScreen({
                   <section style={cardStyle()}>
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Class Details</h3>
                     <div style={gridCols(2)}>
-                      <label style={labelTextStyle}>
-                        Internal ID
-                        <input
-                          value={selectedClass.id}
-                          onChange={(e) => updateClass({ ...selectedClass, id: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </label>
                       <label style={labelTextStyle}>
                         Name
                         <input
@@ -1456,14 +1439,6 @@ export default function AdminScreen({
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Race Details</h3>
                     <div style={gridCols(2)}>
                       <label style={labelTextStyle}>
-                        Internal ID
-                        <input
-                          value={selectedRace.id}
-                          onChange={(e) => updateRace({ ...selectedRace, id: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={labelTextStyle}>
                         Name
                         <input
                           value={selectedRace.name}
@@ -1650,14 +1625,6 @@ export default function AdminScreen({
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Skill Details</h3>
                     <div style={gridCols(2)}>
                       <label style={labelTextStyle}>
-                        Internal ID
-                        <input
-                          value={selectedSkill.id}
-                          onChange={(e) => updateSkill({ ...selectedSkill, id: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={labelTextStyle}>
                         Name
                         <input
                           value={selectedSkill.name}
@@ -1716,14 +1683,6 @@ export default function AdminScreen({
                   <section style={cardStyle()}>
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Power Details</h3>
                     <div style={gridCols(2)}>
-                      <label style={labelTextStyle}>
-                        Internal ID
-                        <input
-                          value={selectedPower.id}
-                          onChange={(e) => updatePower({ ...selectedPower, id: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </label>
                       <label style={labelTextStyle}>
                         Name
                         <input
@@ -1816,14 +1775,6 @@ export default function AdminScreen({
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Item Details</h3>
                     <div style={gridCols(2)}>
                       <label style={labelTextStyle}>
-                        Internal ID
-                        <input
-                          value={selectedItem.id}
-                          onChange={(e) => updateItem({ ...selectedItem, id: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </label>
-                      <label style={labelTextStyle}>
                         Name
                         <input
                           value={selectedItem.name}
@@ -1841,6 +1792,18 @@ export default function AdminScreen({
                         />
                       </label>
                     </div>
+                  </section>
+
+                  <section style={cardStyle()}>
+                    <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Description</h3>
+                    <label style={labelTextStyle}>
+                      <textarea
+                        value={selectedItem.description ?? ""}
+                        onChange={(e) => updateItem({ ...selectedItem, description: e.target.value })}
+                        style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
+                        placeholder="Enter item description..."
+                      />
+                    </label>
                   </section>
                 </div>
               )}
@@ -1876,14 +1839,6 @@ export default function AdminScreen({
                   <section style={cardStyle()}>
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Attack Details</h3>
                     <div style={gridCols(2)}>
-                      <label style={labelTextStyle}>
-                        Internal ID
-                        <input
-                          value={selectedAttack.id}
-                          onChange={(e) => updateAttack({ ...selectedAttack, id: e.target.value })}
-                          style={inputStyle}
-                        />
-                      </label>
                       <label style={labelTextStyle}>
                         Name
                         <input

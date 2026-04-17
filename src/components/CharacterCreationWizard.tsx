@@ -558,12 +558,9 @@ export default function CharacterCreationWizard({
                   border: "1px solid var(--accent-primary)",
                 }}
               >
-                <strong>{labels.skills} Picks:</strong> choose {rule.choose} from{" "}
-                {rule.skillIds
-                  .map((id) => skills.find((s) => s.id === id)?.name ?? id)
-                  .join(", ")}
+                <strong>Choose {rule.choose} number of skills</strong>
                 <div style={{ marginTop: 4 }}>
-                  Selected: {selectedCount} / {rule.choose}
+                  Selected: {selectedCount}/{rule.choose}
                 </div>
               </div>
             );
@@ -713,12 +710,9 @@ export default function CharacterCreationWizard({
                   border: "1px solid var(--accent-primary)",
                 }}
               >
-                <strong>{labels.inventory} Picks:</strong> choose {rule.choose} from{" "}
-                {rule.itemIds
-                  .map((id) => items.find((i) => i.id === id)?.name ?? id)
-                  .join(", ")}
+                <strong>Choose up to {rule.choose} number of items</strong>
                 <div style={{ marginTop: 4 }}>
-                  Selected: {selectedCount} / {rule.choose}
+                  Selected {selectedCount}/{rule.choose}
                 </div>
               </div>
             );

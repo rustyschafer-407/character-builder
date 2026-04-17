@@ -372,7 +372,7 @@ export function buildRoll20AttributeMap(
 
     const itemName = clean(item.name);
     const itemQty = clean(item.quantity);
-    const itemNotes = clean(item.notes ?? definition?.description ?? "");
+    const itemNotes = clean(item.notes?.trim() ? item.notes : (definition?.description ?? ""));
 
     setRepeatingValue("inventory", rowId, "itemname", itemName);
     setRepeatingValue("inventory", rowId, "itemqty", itemQty);
@@ -488,7 +488,7 @@ export function buildRoll20ModPayload(
       attributes: {
         itemname: clean(item.name),
         itemqty: clean(item.quantity),
-        itemnotes: clean(item.notes ?? definition?.description ?? ""),
+        itemnotes: clean(item.notes?.trim() ? item.notes : (definition?.description ?? "")),
       },
     };
   });
