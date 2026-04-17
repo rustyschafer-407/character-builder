@@ -558,7 +558,7 @@ export default function CharacterCreationWizard({
                   border: "1px solid var(--accent-primary)",
                 }}
               >
-                <strong>Choose {rule.choose} skills</strong>
+                <strong>{labels.skills}:</strong> choose exactly {rule.choose} skills.
                 <div style={{ marginTop: 4 }}>
                   Selected: {selectedCount}/{rule.choose}
                 </div>
@@ -634,7 +634,7 @@ export default function CharacterCreationWizard({
                   border: "1px solid var(--accent-primary)",
                 }}
               >
-                <strong>Choose {rule.choose} powers</strong>
+                <strong>{labels.powers}:</strong> choose exactly {rule.choose} powers.
                 <div style={{ marginTop: 4 }}>
                   Selected: {selectedCount} / {rule.choose}
                 </div>
@@ -707,7 +707,7 @@ export default function CharacterCreationWizard({
                   border: "1px solid var(--accent-primary)",
                 }}
               >
-                <strong>Choose {rule.choose} items</strong>
+                <strong>{labels.inventory}:</strong> choose up to {rule.choose} items.
                 <div style={{ marginTop: 4 }}>
                   Selected {selectedCount}/{rule.choose}
                 </div>
