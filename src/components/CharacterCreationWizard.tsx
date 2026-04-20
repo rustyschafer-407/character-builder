@@ -494,7 +494,7 @@ export default function CharacterCreationWizard({
                       type="number"
                       value={draft.attributes[attr]}
                       onChange={(e) => onAttributeChange(attr, Number(e.target.value) || 0)}
-                      style={{ ...inputStyle, marginTop: 0, height: 88, minHeight: 88, fontSize: 18 }}
+                      style={{ ...inputStyle, marginTop: 0 }}
                     />
                   </label>
                   <span style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
