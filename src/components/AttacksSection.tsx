@@ -1,4 +1,4 @@
-import { getAttributeModifier } from "../lib/character";
+import { getAttributeModifier, sortByName } from "../lib/character";
 import type { CharacterRecord } from "../types/character";
 import { buttonStyle, cardStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
 
@@ -27,7 +27,7 @@ export default function AttacksSection({ character, label, onAdd, onChange }: Pr
       </div>
 
       <div style={{ display: "grid", gap: 8 }}>
-        {character.attacks.map((a) => {
+        {sortByName(character.attacks).map((a) => {
           const total = getAttributeModifier(character.attributes[a.attribute]) + a.bonus;
 
           return (

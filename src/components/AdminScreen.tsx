@@ -262,6 +262,7 @@ export default function AdminScreen({
   const sortedCampaignSkills = selectedCampaign ? sortByName(selectedCampaign.skills) : [];
   const sortedCampaignPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
   const sortedCampaignItems = selectedCampaign ? sortByName(selectedCampaign.items) : [];
+  const sortedCampaignAttacks = selectedCampaign ? sortByName(selectedCampaign.attackTemplates) : [];
 
   useEffect(() => {
     if (saveRequestVersion === lastHandledSaveVersion.current) return;
@@ -1156,7 +1157,7 @@ export default function AdminScreen({
                         {selectedCampaign.attackTemplates.length === 0 ? (
                           <p style={{ margin: 0, ...mutedTextStyle }}>No attacks are defined for this campaign.</p>
                         ) : (
-                          selectedCampaign.attackTemplates.map((attack) => (
+                          sortedCampaignAttacks.map((attack) => (
                             <label key={attack.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                               <input
                                 type="checkbox"
@@ -1866,7 +1867,7 @@ export default function AdminScreen({
             <EntityListEditor
               title={`Attacks (${selectedCampaign.name})`}
               helper="Attacks belong to the selected campaign."
-              items={selectedCampaign.attackTemplates}
+              items={sortedCampaignAttacks}
               selectedId={selectedAttackId}
               onSelect={setSelectedAttackId}
               onAdd={addAttack}

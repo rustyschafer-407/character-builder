@@ -803,7 +803,7 @@ export default function CharacterCreationWizard({
           </div>
           <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.attacks}:</strong>{" "}
-            {draft.attacks.map((attack) => `${attack.name} (${attack.damage})`).join(", ") || "None"}
+            {[...draft.attacks].sort((a, b) => a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })).map((attack) => `${attack.name} (${attack.damage})`).join(", ") || "None"}
           </div>
           <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.hp}:</strong> {draft.hp.current} / {draft.hp.max}
