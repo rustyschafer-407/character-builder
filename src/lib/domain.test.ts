@@ -59,4 +59,60 @@ describe("normalizeCampaignDefinition", () => {
 
     expect(normalized.attributeRules.generationMethods[0]).toBe("pointBuy");
   });
+
+  it("preserves selected rule IDs when choose is zero", () => {
+    const normalized = normalizeCampaignDefinition(
+      makeCampaign({
+        classes: [
+          {
+            id: "class-1",
+            campaignId: "campaign-1",
+            name: "Class One",
+            description: "",
+            attributeBonuses: [],
+            hpRule: {
+              hitDie: 8,
+              level1Mode: "fixed-max",
+              levelUpMode: "fixed-average",
+            },
+            levelProgression: [],
+            skillChoiceRules: [{ choose: 0, skillIds: ["skill-1"] }],
+            powerChoiceRules: [{ choose: 0, powerIds: ["power-1"] }],
+            itemChoiceRules: [{ choose: 0, itemIds: ["item-1"] }],
+            levelUpSkillChoiceRules: [{ choose: 0, skillIds: ["skill-1"] }],
+            levelUpPowerChoiceRules: [{ choose: 0, powerIds: ["power-1"] }],
+            levelUpItemChoiceRules: [{ choose: 0, itemIds: ["item-1"] }],
+          },
+        ],
+        skills: [
+          {
+            id: "skill-1",
+            name: "Skill One",
+            attribute: "STR",
+          },
+        ],
+        powers: [
+          {
+            id: "power-1",
+            name: "Power One",
+          },
+        ],
+        items: [
+          {
+            id: "item-1",
+            name: "Item One",
+            stackable: false,
+          },
+        ],
+      })
+    );
+
+    const cls = normalized.classes[0];
+    expect(cls.skillChoiceRules).toEqual([{ choose: 0, skillIds: ["skill-1"] }]);
+    expect(cls.powerChoiceRules).toEqual([{ choose: 0, powerIds: ["power-1"] }]);
+    expect(cls.itemChoiceRules).toEqual([{ choose: 0, itemIds: ["item-1"] }]);
+    expect(cls.levelUpSkillChoiceRules).toEqual([{ choose: 0, skillIds: ["skill-1"] }]);
+    expect(cls.levelUpPowerChoiceRules).toEqual([{ choose: 0, powerIds: ["power-1"] }]);
+    expect(cls.levelUpItemChoiceRules).toEqual([{ choose: 0, itemIds: ["item-1"] }]);
+  });
 });

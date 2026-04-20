@@ -64,7 +64,7 @@ function normalizeSkillRules(
       choose: Number.isFinite(rule.choose) ? Math.max(0, Math.floor(rule.choose)) : 0,
       skillIds: (rule.skillIds ?? []).filter((id) => allowedSkillIds.has(id)),
     }))
-    .filter((rule) => rule.choose > 0 && rule.skillIds.length > 0);
+    .filter((rule) => rule.choose > 0 || rule.skillIds.length > 0);
 }
 
 function normalizePowerRules(
@@ -76,7 +76,7 @@ function normalizePowerRules(
       choose: Number.isFinite(rule.choose) ? Math.max(0, Math.floor(rule.choose)) : 0,
       powerIds: (rule.powerIds ?? []).filter((id) => allowedPowerIds.has(id)),
     }))
-    .filter((rule) => rule.choose > 0 && rule.powerIds.length > 0);
+    .filter((rule) => rule.choose > 0 || rule.powerIds.length > 0);
 }
 
 function normalizeItemRules(
@@ -88,7 +88,7 @@ function normalizeItemRules(
       choose: Number.isFinite(rule.choose) ? Math.max(0, Math.floor(rule.choose)) : 0,
       itemIds: (rule.itemIds ?? []).filter((id) => allowedItemIds.has(id)),
     }))
-    .filter((rule) => rule.choose > 0 && rule.itemIds.length > 0);
+    .filter((rule) => rule.choose > 0 || rule.itemIds.length > 0);
 }
 
 function normalizeProgressionRows(
