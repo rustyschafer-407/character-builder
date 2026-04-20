@@ -664,6 +664,7 @@ export default function App() {
   return (
     <div style={pageStyle}>
       <div
+        className="app-header"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -715,6 +716,7 @@ export default function App() {
           gap: 12,
           alignItems: "end",
         }}
+        className="camp-bar"
       >
         <div>
           <div
@@ -766,7 +768,7 @@ export default function App() {
           onSave={handleAdminSave}
         />
       ) : (
-        <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
+        <div className="app-body" style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           <Sidebar
             characters={filteredCharacters}
             selectedId={selectedId}

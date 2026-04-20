@@ -33,6 +33,7 @@ export default function Sidebar({
 
   return (
     <aside
+      className="app-sidebar"
       style={{
         ...panelStyle,
         width: 300,

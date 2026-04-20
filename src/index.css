@@ -119,6 +119,45 @@ button:hover {
   box-shadow: 0 8px 18px rgba(2, 8, 24, 0.32);
 }
 
+/* Phone-only layout layer (≤ 479px) — tablet and desktop are unchanged */
+@media screen and (max-width: 479px) {
+  #root {
+    padding: 10px;
+  }
+
+  .app-header {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .app-header h1 {
+    font-size: 28px !important;
+    line-height: 1.1 !important;
+  }
+
+  .app-header > div {
+    flex-wrap: wrap !important;
+  }
+
+  .camp-bar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .app-body {
+    flex-direction: column !important;
+    gap: 16px !important;
+    align-items: stretch !important;
+  }
+
+  .app-sidebar {
+    width: 100% !important;
+  }
+
+  .wizard-steps {
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)) !important;
+  }
+}
+
 button:active {
   transform: translateY(0);
 }

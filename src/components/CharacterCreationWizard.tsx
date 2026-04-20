@@ -191,6 +191,7 @@ export default function CharacterCreationWizard({
       </div>
 
       <div
+        className="wizard-steps"
         style={{
           display: "grid",
           gridTemplateColumns: `repeat(${stepTitles.length}, minmax(0, 1fr))`,
