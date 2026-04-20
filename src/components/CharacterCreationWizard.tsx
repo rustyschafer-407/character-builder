@@ -31,7 +31,7 @@ import {
 } from "../lib/creationChoiceRules";
 import { getAttributeModifier } from "../lib/character";
 import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
-import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
+import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, statCardStyle } from "./uiStyles";
 
 export interface CharacterCreationDraft {
   identity: CharacterIdentity;
@@ -445,9 +445,15 @@ export default function CharacterCreationWizard({
               const attributeModifier = getAttributeModifier(draft.attributes[attr]);
 
               return (
-                <label
+                <div
                   key={attr}
-                  style={{ display: "flex", flexDirection: "column", fontWeight: 600, color: "#b9cdf0" }}
+                  style={{
+                    ...statCardStyle,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    padding: 24,
+                  }}
                 >
                   <span
                     style={{
@@ -483,17 +489,19 @@ export default function CharacterCreationWizard({
                       </span>
                     )}
                   </span>
-                  <input
-                    type="number"
-                    value={draft.attributes[attr]}
-                    onChange={(e) => onAttributeChange(attr, Number(e.target.value) || 0)}
-                    style={inputStyle}
-                  />
+                  <label style={{ display: "flex", flexDirection: "column", fontWeight: 600, color: "#b9cdf0" }}>
+                    <input
+                      type="number"
+                      value={draft.attributes[attr]}
+                      onChange={(e) => onAttributeChange(attr, Number(e.target.value) || 0)}
+                      style={{ ...inputStyle, marginTop: 0, height: 88, minHeight: 88, fontSize: 18 }}
+                    />
+                  </label>
                   <span style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
                     Mod: {attributeModifier >= 0 ? "+" : ""}
                     {attributeModifier}
                   </span>
-                </label>
+                </div>
               );
             })}
           </div>

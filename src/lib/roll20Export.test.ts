@@ -191,4 +191,29 @@ describe("buildRoll20ModPayload", () => {
     expect(payload.attributes.int_saveprof).toBe("");
     expect(payload.attributes.cha_saveprof).toBe("");
   });
+
+  it("exports attribute modifiers and derived totals from the same modifier chart", () => {
+    const campaign = makeCampaign();
+    const gameData: GameData = {
+      campaigns: [campaign],
+      classes: campaign.classes,
+      races: campaign.races ?? [],
+      skills: campaign.skills,
+      powers: campaign.powers,
+      items: campaign.items,
+      attackTemplates: campaign.attackTemplates,
+    };
+
+    const payload = buildRoll20ModPayload(makeCharacter(), gameData);
+
+    expect(payload.attributes.str_mod).toBe("2");
+    expect(payload.attributes.dex_mod).toBe("1");
+    expect(payload.attributes.con_mod).toBe("1");
+    expect(payload.attributes.int_mod).toBe("0");
+    expect(payload.attributes.wis_mod).toBe("2");
+    expect(payload.attributes.cha_mod).toBe("-1");
+
+    expect(payload.attributes.ac).toBe("11");
+    expect(payload.attributes.initiative).toBe("1");
+  });
 });
