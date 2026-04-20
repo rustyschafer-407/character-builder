@@ -1,5 +1,6 @@
 import type { CharacterRecord } from "../types/character";
 import type { AttributeKey } from "../types/gameData";
+import { getAttributeModifier } from "../lib/character";
 import { inputStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
 
 interface Props {
@@ -14,10 +15,6 @@ interface Props {
 }
 
 const ATTRS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
-
-function getModifier(score: number) {
-  return Math.floor((score - 10) / 2);
-}
 
 export default function SheetFieldsSection({
   character,
@@ -53,7 +50,7 @@ export default function SheetFieldsSection({
     },
   };
 
-  const dexMod = getModifier(character.attributes.DEX);
+  const dexMod = getAttributeModifier(character.attributes.DEX);
   const totalAc = sheet.acBase + sheet.acBonus + (sheet.acUseDex ? dexMod : 0);
   const initiative = dexMod + sheet.initMisc;
 
@@ -155,7 +152,7 @@ export default function SheetFieldsSection({
         <div style={{ fontWeight: 700 }}>Total</div>
 
         {ATTRS.map((attr) => {
-          const mod = getModifier(character.attributes[attr]);
+          const mod = getAttributeModifier(character.attributes[attr]);
           const prof = sheet.saveProf[attr];
           const bonus = sheet.saveBonus[attr];
           const total = mod + (prof ? character.proficiencyBonus : 0) + bonus;

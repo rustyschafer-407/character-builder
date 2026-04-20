@@ -31,7 +31,7 @@ import {
 } from "../lib/creationChoiceRules";
 import { getAttributeModifier } from "../lib/character";
 import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
-import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, statCardStyle } from "./uiStyles";
+import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, selectStyle, statCardStyle } from "./uiStyles";
 
 export interface CharacterCreationDraft {
   identity: CharacterIdentity;
@@ -255,7 +255,7 @@ export default function CharacterCreationWizard({
             <select
               value={draft.campaignId}
               onChange={(e) => onCampaignChange(e.target.value)}
-              style={inputStyle}
+              style={selectStyle}
             >
               {campaigns.map((campaign) => (
                 <option key={campaign.id} value={campaign.id}>
@@ -288,7 +288,7 @@ export default function CharacterCreationWizard({
             <select
               value={draft.raceId}
               onChange={(e) => onRaceChange(e.target.value)}
-              style={inputStyle}
+              style={selectStyle}
             >
               {racesForCampaign.map((race) => (
                 <option key={race.id} value={race.id}>
@@ -329,7 +329,7 @@ export default function CharacterCreationWizard({
             <select
               value={draft.classId}
               onChange={(e) => onClassChange(e.target.value)}
-              style={inputStyle}
+              style={selectStyle}
             >
               {classesForCampaign.map((cls) => (
                 <option key={cls.id} value={cls.id}>
@@ -400,7 +400,7 @@ export default function CharacterCreationWizard({
                   e.target.value as "pointBuy" | "randomRoll" | "manual"
                 )
               }
-              style={inputStyle}
+              style={selectStyle}
             >
               <option value="manual">Manual</option>
               <option value="pointBuy">Point Buy</option>

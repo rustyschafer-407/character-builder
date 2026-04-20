@@ -33,6 +33,12 @@ export const inputStyle: React.CSSProperties = {
   outline: "none",
 };
 
+export const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  padding: "0 12px",
+  lineHeight: "normal",
+};
+
 export const buttonStyle: React.CSSProperties = {
   padding: "9px 13px",
   borderRadius: 10,

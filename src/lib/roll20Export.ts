@@ -1,5 +1,6 @@
 import type { CharacterRecord } from "../types/character";
 import type { AttributeKey, GameData } from "../types/gameData";
+import { getAttributeModifier } from "./character";
 import {
   findCampaign,
   findClassInCampaign,
@@ -180,10 +181,6 @@ function clean(value: string | number | boolean | undefined | null) {
   return String(value).replace(/\r?\n/g, " ").trim();
 }
 
-function getModifier(score: number) {
-  return Math.floor((score - 10) / 2);
-}
-
 function getThemeValue(campaignId: string) {
   const normalized = campaignId.toLowerCase();
   if (normalized.includes("scifi") || normalized.includes("sci-fi")) return "scifi";
@@ -290,12 +287,12 @@ export function buildRoll20AttributeMap(
   result["attr_cha"] = clean(character.attributes.CHA);
 
   // Derived mods
-  result["attr_str_mod"] = clean(getModifier(character.attributes.STR));
-  result["attr_dex_mod"] = clean(getModifier(character.attributes.DEX));
-  result["attr_con_mod"] = clean(getModifier(character.attributes.CON));
-  result["attr_int_mod"] = clean(getModifier(character.attributes.INT));
-  result["attr_wis_mod"] = clean(getModifier(character.attributes.WIS));
-  result["attr_cha_mod"] = clean(getModifier(character.attributes.CHA));
+  result["attr_str_mod"] = clean(getAttributeModifier(character.attributes.STR));
+  result["attr_dex_mod"] = clean(getAttributeModifier(character.attributes.DEX));
+  result["attr_con_mod"] = clean(getAttributeModifier(character.attributes.CON));
+  result["attr_int_mod"] = clean(getAttributeModifier(character.attributes.INT));
+  result["attr_wis_mod"] = clean(getAttributeModifier(character.attributes.WIS));
+  result["attr_cha_mod"] = clean(getAttributeModifier(character.attributes.CHA));
 
   // Saving throw state from modeled character sheet fields.
   const saveAttrs: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
@@ -304,16 +301,16 @@ export function buildRoll20AttributeMap(
     result[`attr_${lower}_saveprof`] = sheet.saveProf[attr] ? "1" : "";
     result[`attr_${lower}_savebonus`] = clean(sheet.saveBonus[attr]);
     result[`attr_${lower}_save_total`] = clean(
-      getModifier(character.attributes[attr]) + sheet.saveBonus[attr]
+      getAttributeModifier(character.attributes[attr]) + sheet.saveBonus[attr]
     );
   }
 
   // AC / initiative derived fields
   result["attr_ac"] = clean(
-    sheet.acBase + sheet.acBonus + (sheet.acUseDex ? getModifier(character.attributes.DEX) : 0)
+    sheet.acBase + sheet.acBonus + (sheet.acUseDex ? getAttributeModifier(character.attributes.DEX) : 0)
   );
   result["attr_init_misc"] = clean(sheet.initMisc);
-  result["attr_initiative"] = clean(getModifier(character.attributes.DEX) + sheet.initMisc);
+  result["attr_initiative"] = clean(getAttributeModifier(character.attributes.DEX) + sheet.initMisc);
 
   // Repeating skills
   for (let i = 0; i < exported.skills.length; i++) {
@@ -323,7 +320,7 @@ export function buildRoll20AttributeMap(
     const attr = definition?.attribute ?? "STR";
 
     const skillName = clean(definition?.name ?? skill.skillId);
-    const skillAttr = clean(getModifier(character.attributes[attr]));
+    const skillAttr = clean(getAttributeModifier(character.attributes[attr]));
     const skillProf = clean(character.proficiencyBonus);
     const skillBonus = clean(skill.bonus ?? 0);
 
@@ -339,7 +336,7 @@ export function buildRoll20AttributeMap(
     const attack = exported.attacks[i];
 
     const attackName = clean(attack.name);
-    const attackAttr = clean(getModifier(character.attributes[attack.attribute]));
+    const attackAttr = clean(getAttributeModifier(character.attributes[attack.attribute]));
     const attackProf = clean(character.proficiencyBonus);
     const attackBonus = clean(attack.bonus ?? 0);
     const damageDice = clean(attack.damage);
