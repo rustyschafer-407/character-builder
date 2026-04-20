@@ -29,6 +29,7 @@ import {
   getSelectedCountForSkillRule,
   getSkillChoiceState,
 } from "../lib/creationChoiceRules";
+import { getAttributeModifier } from "../lib/character";
 import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
 import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle } from "./uiStyles";
 
@@ -441,50 +442,58 @@ export default function CharacterCreationWizard({
               const baseScore = getPointBuyBaseScore(draft.attributes[attr], attributeBonusTotals[attr]);
               const pointBuyCost = method === "pointBuy" ? getPointBuyCost(baseScore) : null;
               const combinedModifier = attributeBonusTotals[attr];
+              const attributeModifier = getAttributeModifier(draft.attributes[attr]);
 
               return (
-              <label key={attr} style={{ fontWeight: 600, color: "#b9cdf0" }}>
-                <span
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                    gap: 8,
-                    marginBottom: 4,
-                  }}
+                <label
+                  key={attr}
+                  style={{ display: "flex", flexDirection: "column", fontWeight: 600, color: "#b9cdf0" }}
                 >
-                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <span>{attr}</span>
-                    {combinedModifier !== 0 && (
-                      <span
-                        style={{
-                          fontWeight: 500,
-                          fontSize: 12,
-                          color: "var(--text-secondary)",
-                          background: "rgba(255,255,255,0.08)",
-                          border: "1px solid var(--border-soft)",
-                          borderRadius: 999,
-                          padding: "1px 7px",
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {formatSignedNumber(combinedModifier)}
+                  <span
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      gap: 8,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <span>{attr}</span>
+                      {combinedModifier !== 0 && (
+                        <span
+                          style={{
+                            fontWeight: 500,
+                            fontSize: 12,
+                            color: "var(--text-secondary)",
+                            background: "rgba(255,255,255,0.08)",
+                            border: "1px solid var(--border-soft)",
+                            borderRadius: 999,
+                            padding: "1px 7px",
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {formatSignedNumber(combinedModifier)}
+                        </span>
+                      )}
+                    </span>
+                    {pointBuyCost !== null && (
+                      <span style={{ fontWeight: 500, fontSize: 12, color: "var(--text-secondary)" }}>
+                        {pointBuyCost} pts
                       </span>
                     )}
                   </span>
-                  {pointBuyCost !== null && (
-                    <span style={{ fontWeight: 500, fontSize: 12, color: "var(--text-secondary)" }}>
-                      {pointBuyCost} pts
-                    </span>
-                  )}
-                </span>
-                <input
-                  type="number"
-                  value={draft.attributes[attr]}
-                  onChange={(e) => onAttributeChange(attr, Number(e.target.value) || 0)}
-                  style={inputStyle}
-                />
-              </label>
+                  <input
+                    type="number"
+                    value={draft.attributes[attr]}
+                    onChange={(e) => onAttributeChange(attr, Number(e.target.value) || 0)}
+                    style={inputStyle}
+                  />
+                  <span style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
+                    Mod: {attributeModifier >= 0 ? "+" : ""}
+                    {attributeModifier}
+                  </span>
+                </label>
               );
             })}
           </div>
