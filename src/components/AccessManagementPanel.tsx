@@ -7,7 +7,8 @@ import type {
   ProfileRow,
 } from "../lib/cloudRepository";
 import { getSupabaseClient } from "../lib/supabaseClient";
-import { buttonStyle, inputStyle, panelStyle, primaryButtonStyle, sectionTitleStyle } from "./uiStyles";
+import { resolveUserEmail, resolveUserName } from "../lib/userDisplay";
+import { buttonStyle, dangerButtonStyle, inputStyle, panelStyle, primaryButtonStyle, sectionTitleStyle } from "./uiStyles";
 
 interface AccessManagementPanelProps {
   canManageUsers: boolean;
@@ -31,6 +32,7 @@ interface AccessManagementPanelProps {
     isGm: boolean;
   }) => Promise<{ ok: boolean; message: string }>;
   onAssignCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
+  onAssignCampaignAccessByEmail: (input: { email: string; role: CampaignAccessRole }) => Promise<{ deferred: boolean; message: string }>;
   onUpdateCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
   onRemoveCampaignAccess: (userId: string) => Promise<void>;
   onAssignCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
@@ -56,6 +58,7 @@ export default function AccessManagementPanel({
   onDeleteUser,
   onCreatePlayer,
   onAssignCampaignAccess,
+  onAssignCampaignAccessByEmail,
   onUpdateCampaignAccess,
   onRemoveCampaignAccess,
   onAssignCharacterAccess,
@@ -83,7 +86,7 @@ export default function AccessManagementPanel({
   const [createPlayerResult, setCreatePlayerResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const [showCampaignAddPanel, setShowCampaignAddPanel] = useState(false);
-  const [campaignUserSearch, setCampaignUserSearch] = useState("");
+  const [campaignSearchOrEmail, setCampaignSearchOrEmail] = useState("");
   const [campaignMemberResult, setCampaignMemberResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [campaignRoleModalUserId, setCampaignRoleModalUserId] = useState("");
   const [campaignRoleModalValue, setCampaignRoleModalValue] = useState<CampaignAccessRole>("player");
@@ -98,6 +101,11 @@ export default function AccessManagementPanel({
   const [setPasswordNewPassword, setSetPasswordNewPassword] = useState("");
   const [setPasswordConfirmPassword, setSetPasswordConfirmPassword] = useState("");
   const [setPasswordResult, setSetPasswordResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [setPasswordVisible, setSetPasswordVisible] = useState(false);
+  const [setPasswordToast, setSetPasswordToast] = useState("");
+  const [peopleResult, setPeopleResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [hoveredPeopleRowId, setHoveredPeopleRowId] = useState("");
+  const [hoveredCampaignRowId, setHoveredCampaignRowId] = useState("");
 
   const workflowOptions = useMemo(() => {
     const options: Array<{ id: Workflow; label: string }> = [];
@@ -130,7 +138,7 @@ export default function AccessManagementPanel({
     [campaignAccessRows]
   );
   const filteredCampaignCandidateIds = useMemo(() => {
-    const query = campaignUserSearch.trim().toLowerCase();
+    const query = campaignSearchOrEmail.trim().toLowerCase();
     return campaignUserCandidateIds.filter((userId) => {
       if (assignedCampaignUserIds.has(userId)) {
         return false;
@@ -143,7 +151,7 @@ export default function AccessManagementPanel({
       const email = profile?.email?.toLowerCase() ?? "";
       return displayName.includes(query) || email.includes(query) || userId.toLowerCase().includes(query);
     });
-  }, [campaignUserCandidateIds, campaignUserSearch, assignedCampaignUserIds, usersById]);
+  }, [campaignUserCandidateIds, campaignSearchOrEmail, assignedCampaignUserIds, usersById]);
 
   useEffect(() => {
     if (workflowOptions.length === 0) {
@@ -154,6 +162,16 @@ export default function AccessManagementPanel({
       setActiveWorkflow(workflowOptions[0].id);
     }
   }, [activeWorkflow, workflowOptions]);
+
+  useEffect(() => {
+    if (!setPasswordToast) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setSetPasswordToast("");
+    }, 2400);
+    return () => window.clearTimeout(timeoutId);
+  }, [setPasswordToast]);
 
   async function runAction(action: () => Promise<void>) {
     onClearError();
@@ -180,6 +198,20 @@ export default function AccessManagementPanel({
     setShowEditPanel(true);
     setShowSetPasswordPanel(false);
     setShowCreatePlayerPanel(false);
+    setPeopleResult(null);
+  }
+
+  function hasUnsavedEditRoleChanges() {
+    if (!selectedEditUser) return false;
+    return editUserIsAdmin !== Boolean(selectedEditUser.is_admin) || editUserIsGm !== Boolean(selectedEditUser.is_gm);
+  }
+
+  function requestCloseEditModal() {
+    if (busy) return;
+    if (hasUnsavedEditRoleChanges() && !window.confirm("Discard changes?")) {
+      return;
+    }
+    setShowEditPanel(false);
   }
 
   function roleBadges(user: ProfileRow) {
@@ -195,13 +227,14 @@ export default function AccessManagementPanel({
   }
 
   function campaignRoleLabel(role: CampaignAccessRole) {
-    return role === "editor" ? "GM / Editor" : "Player";
+    return role === "editor" ? "GM" : "Player";
   }
 
   function resetSetPasswordForm() {
     setSetPasswordNewPassword("");
     setSetPasswordConfirmPassword("");
     setSetPasswordResult(null);
+    setSetPasswordVisible(false);
   }
 
   async function handleSetPassword() {
@@ -249,8 +282,9 @@ export default function AccessManagementPanel({
           return;
         }
 
-        setSetPasswordResult({ type: "success", message: data.message || "Password updated successfully." });
+        setSetPasswordToast("Password updated");
         resetSetPasswordForm();
+        setShowSetPasswordPanel(false);
       } catch (err) {
         const message = err instanceof Error ? err.message : "An unexpected error occurred.";
         setSetPasswordResult({ type: "error", message });
@@ -293,6 +327,27 @@ export default function AccessManagementPanel({
         </div>
       ) : null}
 
+      {setPasswordToast ? (
+        <div
+          style={{
+            position: "fixed",
+            right: 20,
+            bottom: 20,
+            border: "1px solid rgba(90, 236, 178, 0.45)",
+            background: "rgba(90, 236, 178, 0.14)",
+            borderRadius: 10,
+            padding: "10px 12px",
+            color: "#ccffe7",
+            fontWeight: 700,
+            fontSize: 13,
+            zIndex: 85,
+            boxShadow: "0 8px 24px rgba(7, 12, 24, 0.35)",
+          }}
+        >
+          {setPasswordToast}
+        </div>
+      ) : null}
+
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {workflowOptions.map((option) => {
           const active = activeWorkflow === option.id;
@@ -327,6 +382,22 @@ export default function AccessManagementPanel({
             </button>
           </div>
 
+          {peopleResult ? (
+            <div
+              style={{
+                border: peopleResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
+                background: peopleResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
+                borderRadius: 10,
+                padding: "10px 12px",
+                color: peopleResult.type === "success" ? "#ccffe7" : "#ffd6e2",
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              {peopleResult.message}
+            </div>
+          ) : null}
+
           <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Name</div>
@@ -336,12 +407,29 @@ export default function AccessManagementPanel({
             </div>
             <div style={{ display: "grid", gap: 0 }}>
               {users.length === 0 ? (
-                <div style={{ padding: 12, color: "var(--text-secondary)" }}>No users found.</div>
+                <div style={{ display: "grid", placeItems: "center", padding: 24, gap: 6, textAlign: "center" }}>
+                  <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>No players yet.</div>
+                  <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>Add a player to get started.</div>
+                </div>
               ) : (
                 users.map((user) => (
-                  <div key={user.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, alignItems: "center", padding: "10px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
+                  <div
+                    key={user.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1.4fr 1.8fr 1fr auto",
+                      gap: 8,
+                      alignItems: "center",
+                      padding: "10px 12px",
+                      borderTop: "1px solid rgba(58, 78, 127, 0.35)",
+                      background: hoveredPeopleRowId === user.id ? "rgba(73, 224, 255, 0.08)" : "transparent",
+                      transition: "background 120ms ease",
+                    }}
+                    onMouseEnter={() => setHoveredPeopleRowId(user.id)}
+                    onMouseLeave={() => setHoveredPeopleRowId("")}
+                  >
                     <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                      {user.display_name?.trim() || user.email || "Unknown user"}
+                      {resolveUserName(user, user.id)}
                     </div>
                     <div style={{ color: "var(--text-secondary)" }}>{user.email || "No email"}</div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -349,11 +437,11 @@ export default function AccessManagementPanel({
                         <span
                           key={`${user.id}-${badge}`}
                           style={{
-                            padding: "4px 8px",
+                            padding: "4px 10px",
                             borderRadius: 999,
-                            border: "1px solid #3a4e7f",
-                            background: "rgba(11, 22, 42, 0.72)",
-                            color: "#d7e8ff",
+                            border: badge === "Admin" ? "1px solid rgba(255, 188, 83, 0.65)" : badge === "GM" ? "1px solid rgba(138, 247, 207, 0.6)" : "1px solid #3a4e7f",
+                            background: badge === "Admin" ? "rgba(255, 188, 83, 0.2)" : badge === "GM" ? "rgba(138, 247, 207, 0.16)" : "rgba(11, 22, 42, 0.72)",
+                            color: badge === "Admin" ? "#ffeacc" : badge === "GM" ? "#d7ffef" : "#d7e8ff",
                             fontSize: 12,
                             fontWeight: 700,
                           }}
@@ -501,141 +589,222 @@ export default function AccessManagementPanel({
           ) : null}
 
           {showEditPanel && selectedEditUser ? (
-            <div style={{ ...panelStyle, border: "1px solid var(--border-bright)", padding: 12, display: "grid", gap: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                <strong>Edit User Roles</strong>
-                <button style={buttonStyle} onClick={() => setShowEditPanel(false)} disabled={busy}>
-                  Close
-                </button>
-              </div>
-              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{selectedEditUser.email || selectedEditUser.id}</div>
-              <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
-                  <input
-                    type="checkbox"
-                    checked={editUserIsAdmin}
-                    onChange={(e) => setEditUserIsAdmin(e.target.checked)}
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(7, 12, 24, 0.65)",
+                display: "grid",
+                placeItems: "center",
+                padding: 16,
+                zIndex: 70,
+              }}
+              onClick={() => {
+                requestCloseEditModal();
+              }}
+            >
+              <div
+                style={{ ...panelStyle, width: "min(620px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <strong>Edit User Roles</strong>
+                  <button style={buttonStyle} onClick={requestCloseEditModal} disabled={busy}>
+                    Close
+                  </button>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                    Display Name
+                    <input
+                      type="text"
+                      value={resolveUserName(selectedEditUser, selectedEditUser.id)}
+                      style={inputStyle}
+                      readOnly
+                      disabled
+                    />
+                  </label>
+                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                    Email
+                    <input
+                      type="email"
+                      value={selectedEditUser.email || selectedEditUser.id}
+                      style={inputStyle}
+                      readOnly
+                      disabled
+                    />
+                  </label>
+                </div>
+
+                <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={editUserIsAdmin}
+                      onChange={(e) => setEditUserIsAdmin(e.target.checked)}
+                      disabled={busy}
+                    />
+                    Admin
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={editUserIsGm}
+                      onChange={(e) => setEditUserIsGm(e.target.checked)}
+                      disabled={busy}
+                    />
+                    Can create campaigns (GM)
+                  </label>
+                </div>
+
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  <button
+                    style={primaryButtonStyle}
                     disabled={busy}
-                  />
-                  Admin
-                </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
-                  <input
-                    type="checkbox"
-                    checked={editUserIsGm}
-                    onChange={(e) => setEditUserIsGm(e.target.checked)}
-                    disabled={busy}
-                  />
-                  GM
-                </label>
-              </div>
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                <button
-                  style={primaryButtonStyle}
-                  disabled={busy}
-                  onClick={() => {
-                    if (!selectedEditUser) return;
-                    void runAction(async () => {
-                      await onSaveUserRoles({
-                        userId: selectedEditUser.id,
-                        isAdmin: editUserIsAdmin,
-                        isGm: editUserIsGm,
+                    onClick={() => {
+                      if (!selectedEditUser) return;
+                      void runAction(async () => {
+                        await onSaveUserRoles({
+                          userId: selectedEditUser.id,
+                          isAdmin: editUserIsAdmin,
+                          isGm: editUserIsGm,
+                        });
+                        setPeopleResult({ type: "success", message: "User updated" });
+                        setShowEditPanel(false);
                       });
-                      setShowEditPanel(false);
-                    });
-                  }}
-                >
-                  Save
-                </button>
-                <button style={buttonStyle} disabled={busy} onClick={() => setShowEditPanel(false)}>
-                  Cancel
-                </button>
-                <button
-                  style={buttonStyle}
-                  disabled={busy}
-                  onClick={() => {
-                    if (!selectedEditUser) return;
-                    if (!window.confirm(`Delete user ${getUserLabel(selectedEditUser.id)}? This removes their login and cannot be undone.`)) {
-                      return;
-                    }
-                    void runAction(async () => {
-                      await onDeleteUser({ userId: selectedEditUser.id });
-                      setShowEditPanel(false);
-                    });
-                  }}
-                >
-                  Delete User
-                </button>
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button style={buttonStyle} disabled={busy} onClick={requestCloseEditModal}>
+                    Cancel
+                  </button>
+                  <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255, 122, 157, 0.3)", margin: "0 4px" }} />
+                  <button
+                    style={{ ...dangerButtonStyle, padding: "9px 12px" }}
+                    disabled={busy}
+                    onClick={() => {
+                      if (!selectedEditUser) return;
+                      if (!window.confirm(`Delete user ${getUserLabel(selectedEditUser.id)}? This removes their login and cannot be undone.`)) {
+                        return;
+                      }
+                      void runAction(async () => {
+                        await onDeleteUser({ userId: selectedEditUser.id });
+                        setPeopleResult({ type: "success", message: "User removed" });
+                        setShowEditPanel(false);
+                      });
+                    }}
+                  >
+                    Delete User
+                  </button>
+                </div>
               </div>
             </div>
           ) : null}
 
           {showSetPasswordPanel && selectedEditUser ? (
-            <div style={{ ...panelStyle, border: "1px solid var(--border-bright)", padding: 12, display: "grid", gap: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                <strong>Set Password</strong>
-                <button style={buttonStyle} onClick={() => setShowSetPasswordPanel(false)} disabled={busy}>
-                  Close
-                </button>
-              </div>
-              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                User: {selectedEditUser.email || selectedEditUser.id}
-              </div>
-              <div style={{ display: "grid", gap: 10 }}>
-                <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
-                  New Password
-                  <input
-                    type="password"
-                    value={setPasswordNewPassword}
-                    onChange={(e) => setSetPasswordNewPassword(e.target.value)}
-                    style={inputStyle}
-                    disabled={busy}
-                  />
-                </label>
-                <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
-                  Confirm Password
-                  <input
-                    type="password"
-                    value={setPasswordConfirmPassword}
-                    onChange={(e) => setSetPasswordConfirmPassword(e.target.value)}
-                    style={inputStyle}
-                    disabled={busy}
-                  />
-                </label>
-              </div>
-              {setPasswordResult ? (
-                <div
-                  style={{
-                    border: setPasswordResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
-                    background: setPasswordResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    color: setPasswordResult.type === "success" ? "#ccffe7" : "#ffd6e2",
-                    fontWeight: 600,
-                    fontSize: 13,
-                  }}
-                >
-                  {setPasswordResult.message}
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                background: "rgba(7, 12, 24, 0.65)",
+                display: "grid",
+                placeItems: "center",
+                padding: 16,
+                zIndex: 70,
+              }}
+              onClick={() => {
+                if (busy) return;
+                setShowSetPasswordPanel(false);
+              }}
+            >
+              <div
+                style={{ ...panelStyle, width: "min(620px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                  <strong>Set Password</strong>
+                  <button style={buttonStyle} onClick={() => setShowSetPasswordPanel(false)} disabled={busy}>
+                    Close
+                  </button>
                 </div>
-              ) : null}
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                <button
-                  style={primaryButtonStyle}
-                  disabled={busy || !setPasswordNewPassword.trim() || !setPasswordConfirmPassword.trim()}
-                  onClick={handleSetPassword}
-                >
-                  Set Password
-                </button>
-                <button
-                  style={buttonStyle}
-                  disabled={busy}
-                  onClick={() => {
-                    resetSetPasswordForm();
-                    setShowSetPasswordPanel(false);
-                  }}
-                >
-                  Cancel
-                </button>
+
+                <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  Set a new password for this user?
+                </div>
+
+                <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  User: {resolveUserName(selectedEditUser, selectedEditUser.id)} ({selectedEditUser.email || selectedEditUser.id})
+                </div>
+
+                <div style={{ display: "grid", gap: 10 }}>
+                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                    New Password
+                    <input
+                      type={setPasswordVisible ? "text" : "password"}
+                      value={setPasswordNewPassword}
+                      onChange={(e) => setSetPasswordNewPassword(e.target.value)}
+                      style={inputStyle}
+                      disabled={busy}
+                    />
+                  </label>
+                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                    Confirm Password
+                    <input
+                      type={setPasswordVisible ? "text" : "password"}
+                      value={setPasswordConfirmPassword}
+                      onChange={(e) => setSetPasswordConfirmPassword(e.target.value)}
+                      style={inputStyle}
+                      disabled={busy}
+                    />
+                  </label>
+                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                    <input
+                      type="checkbox"
+                      checked={setPasswordVisible}
+                      onChange={(e) => setSetPasswordVisible(e.target.checked)}
+                      disabled={busy}
+                    />
+                    Show passwords
+                  </label>
+                </div>
+
+                {setPasswordResult ? (
+                  <div
+                    style={{
+                      border: "1px solid rgba(255, 122, 157, 0.45)",
+                      background: "rgba(255, 122, 157, 0.14)",
+                      borderRadius: 10,
+                      padding: "10px 12px",
+                      color: "#ffd6e2",
+                      fontWeight: 600,
+                      fontSize: 13,
+                    }}
+                  >
+                    {setPasswordResult.message}
+                  </div>
+                ) : null}
+
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                  <button
+                    style={primaryButtonStyle}
+                    disabled={busy || !setPasswordNewPassword.trim() || !setPasswordConfirmPassword.trim()}
+                    onClick={handleSetPassword}
+                  >
+                    Set Password
+                  </button>
+                  <button
+                    style={buttonStyle}
+                    disabled={busy}
+                    onClick={() => {
+                      resetSetPasswordForm();
+                      setShowSetPasswordPanel(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           ) : null}
@@ -658,7 +827,7 @@ export default function AccessManagementPanel({
           </div>
 
           <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-            Choose who can play in this campaign and who can edit campaign content.
+            Who can access this campaign and who can manage it.
           </div>
 
           {campaignMemberResult ? (
@@ -704,7 +873,7 @@ export default function AccessManagementPanel({
                     disabled={busy}
                     onClick={() => {
                       setShowCampaignAddPanel(false);
-                      setCampaignUserSearch("");
+                      setCampaignSearchOrEmail("");
                       setCampaignAssignUserId("");
                       setCampaignAssignRole("player");
                     }}
@@ -714,36 +883,39 @@ export default function AccessManagementPanel({
                 </div>
 
                 <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
-                  Search Existing User
+                  Search or enter email
                   <input
                     type="text"
-                    value={campaignUserSearch}
-                    onChange={(e) => setCampaignUserSearch(e.target.value)}
-                    placeholder="Search by name or email"
+                    value={campaignSearchOrEmail}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setCampaignSearchOrEmail(value);
+                      const normalized = value.trim().toLowerCase();
+                      const matchedUserId = filteredCampaignCandidateIds.find((userId) => {
+                        const profile = usersById.get(userId);
+                        const email = profile?.email?.toLowerCase() ?? "";
+                        return email === normalized;
+                      });
+                      setCampaignAssignUserId(matchedUserId ?? "");
+                    }}
+                    placeholder="Search by name, or enter email"
+                    list="campaign-user-candidate-list"
                     style={inputStyle}
                     disabled={busy}
                   />
                 </label>
 
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 10 }}>
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
-                    Existing User
-                    <select
-                      value={campaignAssignUserId}
-                      onChange={(e) => setCampaignAssignUserId(e.target.value)}
-                      style={inputStyle}
-                      disabled={busy}
-                    >
-                      <option value="">Select user</option>
-                      {filteredCampaignCandidateIds.map((userId) => (
-                        <option key={userId} value={userId}>
-                          {getUserLabel(userId)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                <datalist id="campaign-user-candidate-list">
+                  {filteredCampaignCandidateIds.map((userId) => {
+                    const profile = usersById.get(userId);
+                    const email = profile?.email?.trim();
+                    if (!email) return null;
+                    return <option key={userId} value={email} label={getUserLabel(userId)} />;
+                  })}
+                </datalist>
 
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+                  <label style={{ fontWeight: 600, color: "#b9cdf0", maxWidth: 280 }}>
                     Member Type
                     <select
                       value={campaignAssignRole}
@@ -752,31 +924,56 @@ export default function AccessManagementPanel({
                       disabled={busy}
                     >
                       <option value="player">Player</option>
-                      <option value="editor">GM / Editor</option>
+                      <option value="editor">GM</option>
                     </select>
                   </label>
                 </div>
 
+                <div style={{ color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.45 }}>
+                  Player: can create and manage their own characters
+                  <br />
+                  GM: can edit the campaign and all characters
+                </div>
+
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                  {filteredCampaignCandidateIds.length === 0
-                    ? "No matching users available to add."
-                    : `${filteredCampaignCandidateIds.length} matching user${filteredCampaignCandidateIds.length === 1 ? "" : "s"}.`}
+                  {campaignAssignUserId
+                    ? "Matched existing user. Access will be applied now."
+                    : "User will get access after they sign in."}
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                   <button
                     style={primaryButtonStyle}
-                    disabled={busy || !campaignAssignUserId}
+                    disabled={busy || !campaignSearchOrEmail.trim()}
                     onClick={() => {
-                      if (!campaignAssignUserId) {
-                        setCampaignMemberResult({ type: "error", message: "Select a user to add." });
+                      const inputValue = campaignSearchOrEmail.trim();
+                      if (!inputValue) {
+                        setCampaignMemberResult({ type: "error", message: "Enter a name or email." });
                         return;
                       }
+
                       void runAction(async () => {
-                        await onAssignCampaignAccess({ userId: campaignAssignUserId, role: campaignAssignRole });
-                        setCampaignMemberResult({ type: "success", message: "Campaign member added." });
+                        const normalized = inputValue.toLowerCase();
+                        const matchedUserId = campaignAssignUserId ||
+                          filteredCampaignCandidateIds.find((userId) => {
+                            const profile = usersById.get(userId);
+                            const email = profile?.email?.toLowerCase() ?? "";
+                            return email === normalized;
+                          }) || "";
+
+                        if (matchedUserId) {
+                          await onAssignCampaignAccess({ userId: matchedUserId, role: campaignAssignRole });
+                          setCampaignMemberResult({ type: "success", message: "Player added to campaign" });
+                        } else {
+                          const result = await onAssignCampaignAccessByEmail({ email: inputValue, role: campaignAssignRole });
+                          setCampaignMemberResult({
+                            type: "success",
+                            message: result.message,
+                          });
+                        }
+
                         setShowCampaignAddPanel(false);
-                        setCampaignUserSearch("");
+                        setCampaignSearchOrEmail("");
                         setCampaignAssignUserId("");
                         setCampaignAssignRole("player");
                       });
@@ -798,16 +995,33 @@ export default function AccessManagementPanel({
             </div>
             <div style={{ display: "grid", gap: 0 }}>
               {campaignAccessRows.length === 0 ? (
-                <div style={{ padding: 12, color: "var(--text-secondary)" }}>No members have campaign access yet.</div>
+                <div style={{ display: "grid", placeItems: "center", padding: 24, gap: 6, textAlign: "center" }}>
+                  <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>No players in this campaign.</div>
+                  <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>Add a player to start building characters.</div>
+                </div>
               ) : (
                 campaignAccessRows.map((row) => {
                   const profile = usersById.get(row.user_id);
-                  const displayName = profile?.display_name?.trim() || "Unknown user";
-                  const email = profile?.email || row.user_id;
+                  const displayName = resolveUserName(profile, row.user_id);
+                  const email = resolveUserEmail(profile, row.user_id);
                   const removingLastEditor = row.role === "editor" && campaignEditorCount <= 1;
 
                   return (
-                    <div key={`${row.campaign_id}-${row.user_id}`} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, alignItems: "center", padding: "10px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
+                    <div
+                      key={`${row.campaign_id}-${row.user_id}`}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1.2fr 1.4fr 1fr auto",
+                        gap: 8,
+                        alignItems: "center",
+                        padding: "10px 12px",
+                        borderTop: "1px solid rgba(58, 78, 127, 0.35)",
+                        background: hoveredCampaignRowId === row.user_id ? "rgba(73, 224, 255, 0.08)" : "transparent",
+                        transition: "background 120ms ease",
+                      }}
+                      onMouseEnter={() => setHoveredCampaignRowId(row.user_id)}
+                      onMouseLeave={() => setHoveredCampaignRowId("")}
+                    >
                       <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>{displayName}</div>
                       <div style={{ color: "var(--text-secondary)" }}>{email}</div>
                       <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{campaignRoleLabel(row.role)}</div>
@@ -827,7 +1041,7 @@ export default function AccessManagementPanel({
                           disabled={busy}
                           onClick={() => {
                             if (removingLastEditor) {
-                              setCampaignMemberResult({ type: "error", message: "Cannot remove the last campaign editor." });
+                              setCampaignMemberResult({ type: "error", message: "Cannot remove the last GM." });
                               return;
                             }
                             setCampaignRemoveModalUserId(row.user_id);
@@ -877,9 +1091,14 @@ export default function AccessManagementPanel({
                     disabled={busy}
                   >
                     <option value="player">Player</option>
-                    <option value="editor">GM / Editor</option>
+                    <option value="editor">GM</option>
                   </select>
                 </label>
+                <div style={{ color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.45 }}>
+                  Player: can create and manage their own characters
+                  <br />
+                  GM: can edit the campaign and all characters
+                </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <button
                     style={primaryButtonStyle}
@@ -888,7 +1107,7 @@ export default function AccessManagementPanel({
                       const currentRole = campaignAccessRows.find((row) => row.user_id === campaignRoleModalUserId)?.role;
                       const demotingLastEditor = currentRole === "editor" && campaignRoleModalValue !== "editor" && campaignEditorCount <= 1;
                       if (demotingLastEditor) {
-                        setCampaignMemberResult({ type: "error", message: "Cannot change role: this is the last campaign editor." });
+                        setCampaignMemberResult({ type: "error", message: "Cannot change role: this is the last GM." });
                         return;
                       }
                       void runAction(async () => {

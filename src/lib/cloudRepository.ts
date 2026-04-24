@@ -341,6 +341,41 @@ export async function getProfileByEmail(email: string): Promise<ProfileRow | nul
   return (data as ProfileRow | null) ?? null
 }
 
+export async function upsertCampaignAccessInviteByEmail(input: {
+  campaignRowId: string
+  email: string
+  role: CampaignAccessRole
+}) {
+  const normalizedEmail = input.email.trim().toLowerCase()
+  if (!normalizedEmail) {
+    throw new Error("Email is required")
+  }
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from("campaign_email_access_invites")
+    .upsert(
+      {
+        campaign_id: input.campaignRowId,
+        email: normalizedEmail,
+        role: input.role,
+      } as never,
+      { onConflict: "campaign_id,email" }
+    )
+    .select("campaign_id, email, role")
+    .single()
+
+  if (error) throw error
+  return data as { campaign_id: string; email: string; role: CampaignAccessRole }
+}
+
+export async function claimCampaignEmailAccessInvites() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc("claim_campaign_email_access_invites")
+  if (error) throw error
+  return Number(data ?? 0)
+}
+
 export async function listCampaignAccessRows(campaignRowId: string) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase

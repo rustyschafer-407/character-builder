@@ -5,6 +5,7 @@ import type {
   CharacterAccessRow,
   ProfileRow,
 } from "../lib/cloudRepository";
+import { resolveUserEmail, resolveUserName } from "../lib/userDisplay";
 import { buttonStyle, inputStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
 
 interface CharacterAccessPanelProps {
@@ -62,8 +63,8 @@ export default function CharacterAccessPanel({
   const explicitRows = useMemo(() => {
     return characterAccessRows.map((row) => {
       const profile = usersById.get(row.user_id);
-      const displayName = profile?.display_name?.trim() || "Unknown user";
-      const email = profile?.email || row.user_id;
+      const displayName = resolveUserName(profile, row.user_id);
+      const email = resolveUserEmail(profile, row.user_id);
       return {
         ...row,
         displayName,
@@ -75,8 +76,8 @@ export default function CharacterAccessPanel({
   const inheritedRows = useMemo(() => {
     return inheritedCampaignEditors.map((row) => {
       const profile = usersById.get(row.user_id);
-      const displayName = profile?.display_name?.trim() || "Unknown user";
-      const email = profile?.email || row.user_id;
+      const displayName = resolveUserName(profile, row.user_id);
+      const email = resolveUserEmail(profile, row.user_id);
       return {
         ...row,
         displayName,
@@ -205,7 +206,7 @@ export default function CharacterAccessPanel({
               <div key={`${row.campaign_id}-${row.user_id}`} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, alignItems: "center", padding: "10px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
                 <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>{row.displayName}</div>
                 <div style={{ color: "var(--text-secondary)" }}>{row.email}</div>
-                <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>GM / Campaign Editor</div>
+                <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>GM (inherited from campaign)</div>
                 <div style={{ color: "var(--text-secondary)", fontSize: 12, textAlign: "right" }}>Inherited</div>
               </div>
             ))}

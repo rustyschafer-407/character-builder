@@ -28,14 +28,17 @@ import {
   getAccessContext,
   getCurrentProfile,
   ensureProfileExists,
+  getProfileByEmail,
   deleteUserAccount,
   updateUserRoles,
+  claimCampaignEmailAccessInvites,
   listCampaignAccessRows,
   listCharacterAccessRows,
   listManageableProfiles,
   listAccessibleCampaignRows,
   listAccessibleCharacterRows,
   upsertCampaignAccessRow,
+  upsertCampaignAccessInviteByEmail,
   upsertCharacterAccessRow,
   upsertCampaignBySlug,
   upsertCharacterRow,
@@ -50,6 +53,7 @@ import {
   signOut,
 } from "./lib/authRepository";
 import { hasSupabaseEnv } from "./lib/supabaseClient";
+import { resolveUserEmail, resolveUserName } from "./lib/userDisplay";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
@@ -783,6 +787,11 @@ export default function App() {
   });
 
   async function refreshAccessContextState() {
+    try {
+      await claimCampaignEmailAccessInvites();
+    } catch {
+      // Invite claiming is best-effort to keep access fresh after sign-in.
+    }
     const context = await getAccessContext();
     setIsAdmin(Boolean(context.profile?.is_admin));
     setIsGm(Boolean(context.profile?.is_gm));
@@ -839,10 +848,9 @@ export default function App() {
 
   function getUserLabel(userId: string) {
     const profile = userById.get(userId) ?? null;
-    if (!profile) return userId;
-    const name = profile.display_name?.trim();
-    if (name) return `${name} (${profile.email ?? userId})`;
-    return profile.email ?? userId;
+    const name = resolveUserName(profile, userId);
+    const email = resolveUserEmail(profile, userId);
+    return `${name} (${email})`;
   }
 
   const reloadAccessManagementData = useCallback(async () => {
@@ -1020,6 +1028,49 @@ export default function App() {
         role: input.role,
       });
     });
+  }
+
+  async function handleAssignCampaignAccessByEmail(input: { email: string; role: "player" | "editor" }) {
+    if (!currentCampaignRowId) {
+      return { deferred: false as const, message: "Campaign is not selected." };
+    }
+
+    let deferred = false;
+    await runAccessMutation(async () => {
+      const normalizedEmail = input.email.trim().toLowerCase();
+      if (!normalizedEmail) {
+        throw new Error("Enter an email address.");
+      }
+
+      const profile = await getProfileByEmail(normalizedEmail);
+      if (profile) {
+        await upsertCampaignAccessRow({
+          campaignRowId: currentCampaignRowId,
+          userId: profile.id,
+          role: input.role,
+        });
+        return;
+      }
+
+      deferred = true;
+      await upsertCampaignAccessInviteByEmail({
+        campaignRowId: currentCampaignRowId,
+        email: normalizedEmail,
+        role: input.role,
+      });
+    });
+
+    if (deferred) {
+      return {
+        deferred: true as const,
+        message: "User will get access after they sign in.",
+      };
+    }
+
+    return {
+      deferred: false as const,
+      message: "Campaign member added.",
+    };
   }
 
   async function handleUpdateCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
@@ -1364,6 +1415,7 @@ export default function App() {
           onDeleteUser={handleDeleteUser}
           onCreatePlayer={handleCreatePlayer}
           onAssignCampaignAccess={handleAssignCampaignAccess}
+          onAssignCampaignAccessByEmail={handleAssignCampaignAccessByEmail}
           onUpdateCampaignAccess={handleUpdateCampaignAccess}
           onRemoveCampaignAccess={handleRemoveCampaignAccess}
           onAssignCharacterAccess={handleAssignCharacterAccess}
