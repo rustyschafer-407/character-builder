@@ -908,6 +908,23 @@ export default function App() {
     );
   }
 
+  async function handleDeleteUser(input: { userId: string }) {
+    const profile = manageableUsers.find((user) => user.id === input.userId) ?? null;
+    if (!profile) {
+      setAccessManagementError("Select a valid user first.");
+      return;
+    }
+    if (input.userId === currentUserId) {
+      setAccessManagementError("You cannot delete your own user account from this panel.");
+      return;
+    }
+
+    const targetHint = profile.email ? `TARGET_USER_EMAIL=${profile.email}` : `TARGET_USER_ID=${profile.id}`;
+    setAccessManagementError(
+      `User deletion is server-only. In a trusted shell, run: ${targetHint} SUPABASE_SERVICE_ROLE_KEY=... SUPABASE_URL=... npm run user:delete`
+    );
+  }
+
   async function handleAssignCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
     if (!currentCampaignRowId) return;
     await runAccessMutation(async () => {
@@ -1286,6 +1303,7 @@ export default function App() {
           characterUserCandidateIds={characterUserCandidateIds}
           getUserLabel={getUserLabel}
           onSaveUserRoles={handleSaveUserRoles}
+          onDeleteUser={handleDeleteUser}
           onAssignCampaignAccess={handleAssignCampaignAccess}
           onAddPlayerByEmail={handleAddPlayerByEmail}
           onUpdateCampaignAccess={handleUpdateCampaignAccess}

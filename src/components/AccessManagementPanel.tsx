@@ -21,6 +21,7 @@ interface AccessManagementPanelProps {
   characterUserCandidateIds: string[];
   getUserLabel: (userId: string) => string;
   onSaveUserRoles: (input: { userId: string; isAdmin: boolean; isGm: boolean }) => Promise<void>;
+  onDeleteUser: (input: { userId: string }) => Promise<void>;
   onAssignCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
   onAddPlayerByEmail: (input: { email: string; role: CampaignAccessRole }) => Promise<void>;
   onUpdateCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
@@ -45,6 +46,7 @@ export default function AccessManagementPanel({
   characterUserCandidateIds,
   getUserLabel,
   onSaveUserRoles,
+  onDeleteUser,
   onAssignCampaignAccess,
   onAddPlayerByEmail,
   onUpdateCampaignAccess,
@@ -166,22 +168,37 @@ export default function AccessManagementPanel({
           </div>
 
           <div style={{ marginTop: 10 }}>
-            <button
-              style={primaryButtonStyle}
-              disabled={busy || !selectedProfile}
-              onClick={() => {
-                if (!selectedProfile) return;
-                void runAction(() =>
-                  onSaveUserRoles({
-                    userId: selectedProfile.id,
-                    isAdmin: selectedUserIsAdmin,
-                    isGm: selectedUserIsGm,
-                  })
-                );
-              }}
-            >
-              Request Role Update
-            </button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                style={primaryButtonStyle}
+                disabled={busy || !selectedProfile}
+                onClick={() => {
+                  if (!selectedProfile) return;
+                  void runAction(() =>
+                    onSaveUserRoles({
+                      userId: selectedProfile.id,
+                      isAdmin: selectedUserIsAdmin,
+                      isGm: selectedUserIsGm,
+                    })
+                  );
+                }}
+              >
+                Request Role Update
+              </button>
+              <button
+                style={buttonStyle}
+                disabled={busy || !selectedProfile}
+                onClick={() => {
+                  if (!selectedProfile) return;
+                  if (!window.confirm(`Delete user ${getUserLabel(selectedProfile.id)}? This removes their login and cannot be undone.`)) {
+                    return;
+                  }
+                  void runAction(() => onDeleteUser({ userId: selectedProfile.id }));
+                }}
+              >
+                Delete User
+              </button>
+            </div>
             <div style={{ marginTop: 8, color: "var(--text-secondary)", fontSize: 12 }}>
               Global role changes are server-only and require trusted credentials.
             </div>
