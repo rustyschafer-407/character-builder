@@ -743,6 +743,9 @@ export default function AccessManagementPanel({
                     New Password
                     <input
                       type={setPasswordVisible ? "text" : "password"}
+                      className="password-visibility-input"
+                      data-mask={setPasswordVisible ? "false" : "true"}
+                      autoComplete="new-password"
                       value={setPasswordNewPassword}
                       onChange={(e) => setSetPasswordNewPassword(e.target.value)}
                       style={inputStyle}
@@ -753,6 +756,9 @@ export default function AccessManagementPanel({
                     Confirm Password
                     <input
                       type={setPasswordVisible ? "text" : "password"}
+                      className="password-visibility-input"
+                      data-mask={setPasswordVisible ? "false" : "true"}
+                      autoComplete="new-password"
                       value={setPasswordConfirmPassword}
                       onChange={(e) => setSetPasswordConfirmPassword(e.target.value)}
                       style={inputStyle}
