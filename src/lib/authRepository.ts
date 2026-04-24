@@ -3,9 +3,27 @@ import { getSupabaseClient } from "./supabaseClient"
 
 export type AuthListener = (event: AuthChangeEvent, session: Session | null) => void
 
-export async function signInWithPassword(email: string, password: string) {
+export async function requestEmailSignIn(email: string) {
   const supabase = getSupabaseClient()
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  const emailRedirectTo = typeof window === "undefined" ? undefined : window.location.origin
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo,
+      shouldCreateUser: true,
+    },
+  })
+  if (error) throw error
+  return data
+}
+
+export async function verifyEmailSignIn(email: string, token: string) {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  })
   if (error) throw error
   return data
 }
@@ -14,13 +32,6 @@ export async function signOut() {
   const supabase = getSupabaseClient()
   const { error } = await supabase.auth.signOut()
   if (error) throw error
-}
-
-export async function signUpWithPassword(email: string, password: string) {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase.auth.signUp({ email, password })
-  if (error) throw error
-  return data
 }
 
 export async function getCurrentSession() {

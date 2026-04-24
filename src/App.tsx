@@ -41,9 +41,9 @@ import {
   getCurrentSession,
   getSessionUser,
   onAuthStateChange,
-  signInWithPassword,
+  requestEmailSignIn,
   signOut,
-  signUpWithPassword,
+  verifyEmailSignIn,
 } from "./lib/authRepository";
 import { hasSupabaseEnv } from "./lib/supabaseClient";
 import type { CharacterRecord } from "./types/character";
@@ -204,8 +204,10 @@ export default function App() {
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
+  const [authCode, setAuthCode] = useState("");
   const [authError, setAuthError] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+  const [authCodeRequested, setAuthCodeRequested] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -461,17 +463,33 @@ export default function App() {
     }
   }
 
-  async function handleAuthSubmit(mode: "sign-in" | "sign-up") {
+  async function handleEmailCodeRequest() {
     setAuthLoading(true);
     setAuthError("");
+    setAuthMessage("");
     try {
-      if (mode === "sign-up") {
-        await signUpWithPassword(authEmail.trim(), authPassword);
-      } else {
-        await signInWithPassword(authEmail.trim(), authPassword);
-      }
+      await requestEmailSignIn(authEmail.trim());
+      setAuthCodeRequested(true);
+      setAuthMessage(
+        "Check your email for a sign-in code. If your Supabase email template still uses magic links, clicking the link will also sign you in."
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Authentication failed"
+      const message = error instanceof Error ? error.message : "Authentication failed";
+      setAuthError(message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleEmailCodeVerify() {
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      await verifyEmailSignIn(authEmail.trim(), authCode.trim());
+      setAuthMessage("Sign-in complete. Finishing session...");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Authentication failed";
       setAuthError(message);
     } finally {
       setAuthLoading(false);
@@ -481,6 +499,10 @@ export default function App() {
   async function handleSignOut() {
     try {
       await signOut();
+      setAuthCode("");
+      setAuthCodeRequested(false);
+      setAuthError("");
+      setAuthMessage("");
       setCloudStatus("Signed out");
     } catch (error) {
       console.error("Sign-out failed", error);
@@ -666,6 +688,25 @@ export default function App() {
     setClassId,
     setSelectedId,
   });
+
+  function openAdminScreen() {
+    setSecurityOpen(false);
+    openAdminForCurrentCampaign();
+  }
+
+  function openNewCampaignAdminScreen() {
+    setSecurityOpen(false);
+    createCampaignAndOpenAdmin();
+  }
+
+  function openAccessManagement() {
+    cancelAdmin();
+    setSecurityOpen(true);
+  }
+
+  function cancelAccessManagement() {
+    setSecurityOpen(false);
+  }
 
   const {
     levelUpOpen,
@@ -916,6 +957,12 @@ export default function App() {
     }
   }, [adminOpen, canEditCurrentCampaign, cancelAdmin]);
 
+  useEffect(() => {
+    if (securityOpen && !canManageUsers && !canManageCampaignAccess && !canManageCharacterAccess) {
+      setSecurityOpen(false);
+    }
+  }, [securityOpen, canManageUsers, canManageCampaignAccess, canManageCharacterAccess]);
+
   if (!cloudEnabled) {
     return (
       <div style={pageStyle}>
@@ -944,9 +991,9 @@ export default function App() {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
-          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Sign In</h2>
+          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Email Sign In</h2>
           <p style={{ ...mutedTextStyle }}>
-            Use your Supabase email and password. No custom password rules are applied by the app.
+            Enter your email and we will send a sign-in code. New players, existing users, and the admin account all use the same flow.
           </p>
 
           <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
@@ -954,42 +1001,60 @@ export default function App() {
             <input
               type="email"
               value={authEmail}
-              onChange={(e) => setAuthEmail(e.target.value)}
+              onChange={(e) => {
+                setAuthEmail(e.target.value);
+                setAuthCode("");
+                setAuthCodeRequested(false);
+                setAuthError("");
+                setAuthMessage("");
+              }}
               autoComplete="email"
               style={inputStyle}
             />
           </label>
 
-          <label style={{ display: "block", marginBottom: 12, fontWeight: 600, color: "#b9cdf0" }}>
-            Password
-            <input
-              type="password"
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-              autoComplete="current-password"
-              style={inputStyle}
-            />
-          </label>
+          {authCodeRequested ? (
+            <label style={{ display: "block", marginBottom: 12, fontWeight: 600, color: "#b9cdf0" }}>
+              Sign-In Code
+              <input
+                type="text"
+                value={authCode}
+                onChange={(e) => {
+                  setAuthCode(e.target.value);
+                  setAuthError("");
+                }}
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                style={inputStyle}
+              />
+            </label>
+          ) : null}
 
           {authError ? (
             <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
           ) : null}
 
+          {authMessage ? (
+            <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
+          ) : null}
+
           <div style={{ display: "flex", gap: 8 }}>
             <button
-              onClick={() => void handleAuthSubmit("sign-in")}
+              onClick={() => void handleEmailCodeRequest()}
               style={primaryButtonStyle}
-              disabled={authLoading || !authEmail.trim() || !authPassword}
+              disabled={authLoading || !authEmail.trim()}
             >
-              {authLoading ? "Signing In..." : "Sign In"}
+              {authLoading ? "Sending..." : authCodeRequested ? "Resend Code" : "Email Me a Sign-In Code"}
             </button>
-            <button
-              onClick={() => void handleAuthSubmit("sign-up")}
-              style={buttonStyle}
-              disabled={authLoading || !authEmail.trim() || !authPassword}
-            >
-              Sign Up
-            </button>
+            {authCodeRequested ? (
+              <button
+                onClick={() => void handleEmailCodeVerify()}
+                style={buttonStyle}
+                disabled={authLoading || !authEmail.trim() || !authCode.trim()}
+              >
+                Verify Code
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -1027,21 +1092,27 @@ export default function App() {
               Save
             </button>
           </div>
+        ) : securityOpen ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={cancelAccessManagement} style={buttonStyle}>
+              Cancel
+            </button>
+          </div>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
             {canCreateCampaign ? (
-              <button onClick={createCampaignAndOpenAdmin} style={primaryButtonStyle}>
+              <button onClick={openNewCampaignAdminScreen} style={primaryButtonStyle}>
                 New Campaign
               </button>
             ) : null}
             {canEditCurrentCampaign ? (
-              <button onClick={openAdminForCurrentCampaign} style={buttonStyle}>
+              <button onClick={openAdminScreen} style={buttonStyle}>
                 Edit Campaign
               </button>
             ) : null}
             {(canManageUsers || canManageCampaignAccess || canManageCharacterAccess) ? (
-              <button onClick={() => setSecurityOpen((v) => !v)} style={securityOpen ? primaryButtonStyle : buttonStyle}>
-                Security
+              <button onClick={openAccessManagement} style={buttonStyle}>
+                Access
               </button>
             ) : null}
             <button onClick={() => void handleSignOut()} style={buttonStyle}>
@@ -1051,7 +1122,8 @@ export default function App() {
         )}
       </div>
 
-      <div
+      {!securityOpen ? (
+        <div
         style={{
           marginBottom: 20,
           padding: "12px 14px",
@@ -1103,9 +1175,10 @@ export default function App() {
             {directCharacterAccessCount > 0 ? ` • ${directCharacterAccessCount} direct character assignments` : ""}
           </div>
         </label>
-      </div>
+        </div>
+      ) : null}
 
-      {!adminOpen && securityOpen ? (
+      {securityOpen ? (
         <AccessManagementPanel
           canManageUsers={canManageUsers}
           canManageCampaignAccess={canManageCampaignAccess}
@@ -1140,7 +1213,7 @@ export default function App() {
           onGameDataChange={handleAdminGameDataChange}
           onSave={handleAdminSave}
         />
-      ) : (
+      ) : !securityOpen ? (
         <div className="app-body" style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           <Sidebar
             characters={filteredCharacters}
@@ -1259,7 +1332,7 @@ export default function App() {
             />
           )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
