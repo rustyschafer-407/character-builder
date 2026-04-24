@@ -481,7 +481,7 @@ export async function deleteUserAccount(userId: string) {
   const supabase = getSupabaseClient()
   const { error } = await supabase.rpc("admin_delete_user", {
     p_target_user_id: userId,
-  })
+  } as never)
   if (error) {
     if (error.message.includes("admin_delete_user")) {
       throw new Error("Delete-user RPC is not available yet. Apply migration 0006_admin_delete_user_rpc.sql to this environment.")
