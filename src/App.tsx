@@ -28,7 +28,6 @@ import {
   getAccessContext,
   getCurrentProfile,
   ensureProfileExists,
-  getProfileByEmail,
   deleteUserAccount,
   updateUserRoles,
   listCampaignAccessRows,
@@ -801,7 +800,9 @@ export default function App() {
       campaignRolesByCampaignId[campaignId] === "editor"
   );
   const canManageUsers = isAdmin;
-  const canManageCampaignAccess = Boolean(isAdmin && currentCampaignRowId);
+  const canManageCampaignAccess = Boolean(
+    currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[campaignId] === "editor")
+  );
   const canManageCharacterAccess = Boolean(
     selected && currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[selected.campaignId] === "editor")
   );
@@ -847,9 +848,17 @@ export default function App() {
   const reloadAccessManagementData = useCallback(async () => {
     if (!currentUserId) return;
 
-    if (canManageUsers) {
-      const users = await listManageableProfiles();
-      setManageableUsers(users);
+    if (canManageUsers || canManageCampaignAccess) {
+      try {
+        const users = await listManageableProfiles();
+        setManageableUsers(users);
+      } catch (error) {
+        if (canManageUsers) {
+          throw error;
+        }
+        // Some environments restrict profile lookups for non-admins.
+        setManageableUsers([]);
+      }
     } else {
       setManageableUsers([]);
     }
@@ -902,10 +911,29 @@ export default function App() {
       await action();
       await refreshAccessContextState();
       await reloadAccessManagementData();
+      return { ok: true as const };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Access management action failed";
+      const rawMessage = error instanceof Error ? error.message : "Access management action failed";
+      const message = formatAccessManagementError(rawMessage);
       setAccessManagementError(message);
+      return { ok: false as const, message };
     }
+  }
+
+  function formatAccessManagementError(rawMessage: string) {
+    const text = rawMessage.toLowerCase();
+
+    if (text.includes("row-level security") || text.includes("rls") || text.includes("permission denied")) {
+      if (text.includes("profiles")) {
+        return "You do not have access to the full people list in this environment. Ask an admin to add this person for you.";
+      }
+      if (text.includes("campaign_user_access")) {
+        return "You do not have permission to update campaign members for this campaign.";
+      }
+      return "This action is not allowed for your current account permissions.";
+    }
+
+    return rawMessage;
   }
 
   async function handleSaveUserRoles(input: { userId: string; isAdmin: boolean; isGm: boolean }) {
@@ -934,40 +962,61 @@ export default function App() {
     });
   }
 
+  async function handleCreatePlayer(input: {
+    displayName: string;
+    email: string;
+    temporaryPassword: string;
+    isAdmin: boolean;
+    isGm: boolean;
+  }) {
+    let successMessage = "Player created successfully.";
+
+    const result = await runAccessMutation(async () => {
+      const session = await getCurrentSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        throw new Error("You must be signed in to add players.");
+      }
+
+      const response = await fetch("/api/admin-create-player", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          displayName: input.displayName,
+          email: input.email,
+          temporaryPassword: input.temporaryPassword,
+          isAdmin: input.isAdmin,
+          isGm: input.isGm,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { message?: string; error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.error || "Failed to create player.");
+      }
+
+      if (payload?.message) {
+        successMessage = payload.message;
+      }
+    });
+
+    if (result.ok) {
+      return { ok: true as const, message: successMessage };
+    }
+
+    return { ok: false as const, message: result.message };
+  }
+
   async function handleAssignCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
     if (!currentCampaignRowId) return;
     await runAccessMutation(async () => {
       await upsertCampaignAccessRow({
         campaignRowId: currentCampaignRowId,
         userId: input.userId,
-        role: input.role,
-      });
-    });
-  }
-
-  async function handleAddPlayerByEmail(input: { email: string; role: "player" | "editor" }) {
-    if (!canManageCampaignAccess) return;
-    
-    await runAccessMutation(async () => {
-      const profile = await getProfileByEmail(input.email);
-      
-      if (!profile) {
-        throw new Error(
-          `Player with email "${input.email}" not found. They must sign in with Google using this email first.`
-        );
-      }
-      
-      // Verify admin/editor can grant requested role
-      if (input.role === "editor" && !isAdmin && campaignRolesByCampaignId[campaignId] !== "editor") {
-        throw new Error("Only campaign editors and admins can grant editor access.");
-      }
-      
-      // Grant campaign access
-      if (!currentCampaignRowId) throw new Error("Campaign ID is missing");
-      
-      await upsertCampaignAccessRow({
-        campaignRowId: currentCampaignRowId,
-        userId: profile.id,
         role: input.role,
       });
     });
@@ -1313,8 +1362,8 @@ export default function App() {
           getUserLabel={getUserLabel}
           onSaveUserRoles={handleSaveUserRoles}
           onDeleteUser={handleDeleteUser}
+          onCreatePlayer={handleCreatePlayer}
           onAssignCampaignAccess={handleAssignCampaignAccess}
-          onAddPlayerByEmail={handleAddPlayerByEmail}
           onUpdateCampaignAccess={handleUpdateCampaignAccess}
           onRemoveCampaignAccess={handleRemoveCampaignAccess}
           onAssignCharacterAccess={handleAssignCharacterAccess}
@@ -1450,6 +1499,17 @@ export default function App() {
                   applyLevelUp();
                 }
               }}
+              canManageCharacterAccess={canManageCharacterAccess}
+              characterAccessUsers={manageableUsers}
+              campaignAccessRows={campaignAccessRows}
+              characterAccessRows={characterAccessRows}
+              characterUserCandidateIds={characterUserCandidateIds}
+              getUserLabel={getUserLabel}
+              onAssignCharacterAccess={handleAssignCharacterAccess}
+              onUpdateCharacterAccess={handleUpdateCharacterAccess}
+              onRemoveCharacterAccess={handleRemoveCharacterAccess}
+              characterAccessErrorMessage={accessManagementError}
+              onClearCharacterAccessError={() => setAccessManagementError("")}
               {...selectedWorkspaceCallbacks}
             />
           )}

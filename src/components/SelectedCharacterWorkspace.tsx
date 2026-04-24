@@ -15,6 +15,13 @@ import PowersSection from "./PowersSection";
 import InventorySection from "./InventorySection";
 import AttacksSection from "./AttacksSection";
 import LevelUpWizard from "./LevelUpWizard";
+import CharacterAccessPanel from "./CharacterAccessPanel";
+import type {
+  CampaignAccessRow,
+  CharacterAccessRole,
+  CharacterAccessRow,
+  ProfileRow,
+} from "../lib/cloudRepository";
 
 interface SelectedCharacterWorkspaceProps {
   character: CharacterRecord;
@@ -67,6 +74,17 @@ interface SelectedCharacterWorkspaceProps {
   onAddManualItem: () => void;
   onAddAttack: () => void;
   onAttackChange: (id: string, field: "name" | "damage" | "bonus", value: string | number) => void;
+  canManageCharacterAccess: boolean;
+  characterAccessUsers: ProfileRow[];
+  campaignAccessRows: CampaignAccessRow[];
+  characterAccessRows: CharacterAccessRow[];
+  characterUserCandidateIds: string[];
+  getUserLabel: (userId: string) => string;
+  onAssignCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
+  onUpdateCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
+  onRemoveCharacterAccess: (userId: string) => Promise<void>;
+  characterAccessErrorMessage: string;
+  onClearCharacterAccessError: () => void;
 }
 
 export default function SelectedCharacterWorkspace({
@@ -116,6 +134,17 @@ export default function SelectedCharacterWorkspace({
   onAddManualItem,
   onAddAttack,
   onAttackChange,
+  canManageCharacterAccess,
+  characterAccessUsers,
+  campaignAccessRows,
+  characterAccessRows,
+  characterUserCandidateIds,
+  getUserLabel,
+  onAssignCharacterAccess,
+  onUpdateCharacterAccess,
+  onRemoveCharacterAccess,
+  characterAccessErrorMessage,
+  onClearCharacterAccessError,
 }: SelectedCharacterWorkspaceProps) {
   if (levelUpOpen) {
     return (
@@ -160,6 +189,22 @@ export default function SelectedCharacterWorkspace({
         onNameChange={onNameChange}
         onOpenLevelUpWizard={onOpenLevelUpWizard}
       />
+
+      {canManageCharacterAccess ? (
+        <CharacterAccessPanel
+          characterName={character.identity.name?.trim() || "this character"}
+          users={characterAccessUsers}
+          campaignAccessRows={campaignAccessRows}
+          characterAccessRows={characterAccessRows}
+          characterUserCandidateIds={characterUserCandidateIds}
+          getUserLabel={getUserLabel}
+          onAssignCharacterAccess={onAssignCharacterAccess}
+          onUpdateCharacterAccess={onUpdateCharacterAccess}
+          onRemoveCharacterAccess={onRemoveCharacterAccess}
+          errorMessage={characterAccessErrorMessage}
+          onClearError={onClearCharacterAccessError}
+        />
+      ) : null}
 
       {readOnly ? (
         <div
