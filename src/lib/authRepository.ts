@@ -20,11 +20,11 @@ export async function signInWithGoogle() {
   return data
 }
 
-export async function requestEmailSignIn(email: string) {
+export async function requestEmailSignIn(email: string, password: string) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    password: email,
+    password,
   })
   if (error) throw error
   return data

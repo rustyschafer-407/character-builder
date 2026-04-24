@@ -207,6 +207,7 @@ export default function App() {
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -479,8 +480,7 @@ export default function App() {
     setAuthError("");
     setAuthMessage("");
     try {
-      await requestEmailSignIn(authEmail.trim());
-      setAuthMessage("Check your email and sign in.");
+      await requestEmailSignIn(authEmail.trim(), authPassword);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
       setAuthError(message);
@@ -1051,6 +1051,21 @@ export default function App() {
                 />
               </label>
 
+              <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
+                Password
+                <input
+                  type="password"
+                  value={authPassword}
+                  onChange={(e) => {
+                    setAuthPassword(e.target.value);
+                    setAuthError("");
+                    setAuthMessage("");
+                  }}
+                  autoComplete="current-password"
+                  style={inputStyle}
+                />
+              </label>
+
               {authError ? (
                 <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
               ) : null}
@@ -1063,7 +1078,7 @@ export default function App() {
                 <button
                   onClick={() => void handleEmailCodeRequest()}
                   style={primaryButtonStyle}
-                  disabled={authLoading || !authEmail.trim()}
+                  disabled={authLoading || !authEmail.trim() || authPassword.length === 0}
                 >
                   {authLoading ? "Signing in..." : "Sign In"}
                 </button>
