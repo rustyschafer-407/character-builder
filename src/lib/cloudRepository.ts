@@ -489,3 +489,22 @@ export async function deleteUserAccount(userId: string) {
     throw error
   }
 }
+
+export async function updateUserRoles(input: {
+  userId: string
+  isAdmin: boolean
+  isGm: boolean
+}) {
+  const supabase = getSupabaseClient()
+  const { error } = await supabase.rpc("admin_update_user_roles", {
+    p_target_user_id: input.userId,
+    p_is_admin: input.isAdmin,
+    p_is_gm: input.isGm,
+  } as never)
+  if (error) {
+    if (error.message.includes("admin_update_user_roles")) {
+      throw new Error("Role-update RPC is not available yet. Apply migration 0007_admin_update_user_roles_rpc.sql to this environment.")
+    }
+    throw error
+  }
+}

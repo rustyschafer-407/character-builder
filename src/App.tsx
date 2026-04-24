@@ -30,6 +30,7 @@ import {
   ensureProfileExists,
   getProfileByEmail,
   deleteUserAccount,
+  updateUserRoles,
   listCampaignAccessRows,
   listCharacterAccessRows,
   listManageableProfiles,
@@ -907,10 +908,14 @@ export default function App() {
     }
   }
 
-  async function handleSaveUserRoles() {
-    setAccessManagementError(
-      "Global role updates are server-only. Use npm run roles:set with SUPABASE_SERVICE_ROLE_KEY in a trusted environment."
-    );
+  async function handleSaveUserRoles(input: { userId: string; isAdmin: boolean; isGm: boolean }) {
+    await runAccessMutation(async () => {
+      await updateUserRoles({
+        userId: input.userId,
+        isAdmin: input.isAdmin,
+        isGm: input.isGm,
+      });
+    });
   }
 
   async function handleDeleteUser(input: { userId: string }) {
