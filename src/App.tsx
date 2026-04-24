@@ -210,6 +210,7 @@ export default function App() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGm, setIsGm] = useState(false);
+  const [securityOpen, setSecurityOpen] = useState(false);
   const [campaignRolesByCampaignId, setCampaignRolesByCampaignId] = useState<Record<string, "player" | "editor">>({});
   const [characterRolesByCharacterId, setCharacterRolesByCharacterId] = useState<Record<string, "viewer" | "editor">>({});
   const [gameData, setGameData] = useState<GameData>(() => seedGameData);
@@ -1028,14 +1029,19 @@ export default function App() {
           </div>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
+            {canCreateCampaign ? (
+              <button onClick={createCampaignAndOpenAdmin} style={primaryButtonStyle}>
+                New Campaign
+              </button>
+            ) : null}
             {canEditCurrentCampaign ? (
               <button onClick={openAdminForCurrentCampaign} style={buttonStyle}>
                 Edit Campaign
               </button>
             ) : null}
-            {canCreateCampaign ? (
-              <button onClick={createCampaignAndOpenAdmin} style={primaryButtonStyle}>
-                New Campaign
+            {(canManageUsers || canManageCampaignAccess || canManageCharacterAccess) ? (
+              <button onClick={() => setSecurityOpen((v) => !v)} style={securityOpen ? primaryButtonStyle : buttonStyle}>
+                Security
               </button>
             ) : null}
             <button onClick={() => void handleSignOut()} style={buttonStyle}>
@@ -1099,7 +1105,7 @@ export default function App() {
         </label>
       </div>
 
-      {!adminOpen ? (
+      {!adminOpen && securityOpen ? (
         <AccessManagementPanel
           canManageUsers={canManageUsers}
           canManageCampaignAccess={canManageCampaignAccess}
