@@ -802,7 +802,11 @@ export default function App() {
   const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
   const hasAnyCampaignAccess = Object.keys(campaignRolesByCampaignId).length > 0;
   const canCreateCampaign = isAdmin || isGm;
-  const canEditCurrentCampaign = Boolean(isAdmin || campaignRolesByCampaignId[campaignId] === "editor");
+  const canEditCurrentCampaign = Boolean(
+    isAdmin ||
+      isGm ||
+      campaignRolesByCampaignId[campaignId] === "editor"
+  );
   const canCreateCharacterInCurrentCampaign = Boolean(
     isAdmin ||
       campaignRolesByCampaignId[campaignId] === "player" ||

@@ -275,7 +275,11 @@ export async function listAccessibleCampaignRows() {
 
   return campaigns.map((campaign) => {
     const role = context.profile?.is_admin ? "editor" : context.campaignRolesByCampaignId[campaign.id] ?? null
-    const canEdit = Boolean(context.profile?.is_admin || role === "editor")
+    const canEdit = Boolean(
+      context.profile?.is_admin ||
+        context.profile?.is_gm ||
+        role === "editor"
+    )
     return {
       ...campaign,
       campaign_role: role,
