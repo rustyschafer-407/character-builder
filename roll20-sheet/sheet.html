@@ -200,6 +200,7 @@
           <div>Attr</div>
           <div>Prof</div>
           <div>Bonus</div>
+          <div>Total</div>
           <div>Roll</div>
         </div>
 
@@ -217,7 +218,8 @@
             <input type="hidden" name="attr_skillattrmod" value="0">
             <div class="sheet-check-cell"><input type="checkbox" name="attr_skillprof" value="1"></div>
             <input type="number" name="attr_skillbonus" value="0">
-            <button type="roll" name="roll_skill" value="&{template:default} {{name=@{skillname}}} {{Roll=[[1d20 + @{skillattrmod} + (@{skillprof}* @{pb}) + @{skillbonus}]]}}">Roll</button>
+            <input class="sheet-highlight-total" type="number" name="attr_skilltotal" value="0" readonly>
+            <button type="roll" name="roll_skill" value="&{template:default} {{name=@{skillname}}} {{Roll=[[1d20 + @{skilltotal}]]}}">Roll</button>
           </div>
         </fieldset>
       </div>
@@ -247,6 +249,7 @@
           <div>Attr</div>
           <div>Prof</div>
           <div>Atk</div>
+          <div>Total</div>
           <div>Dmg Dice</div>
           <div>Dmg Bonus</div>
           <div>Att</div>
@@ -267,9 +270,10 @@
             <input type="hidden" name="attr_attackattrmod" value="0">
             <div class="sheet-check-cell"><input type="checkbox" name="attr_attackprof" value="1"></div>
             <input type="number" name="attr_attackbonus" value="0">
+            <input class="sheet-highlight-total" type="number" name="attr_attacktotal" value="0" readonly>
             <input type="text" name="attr_damagedice" placeholder="1d8">
             <input type="number" name="attr_damagebonus" value="0">
-            <button type="roll" class="sheet-icon-action" name="roll_attack" value="&{template:default} {{name=@{attackname}}} {{Attack=[[1d20 + @{attackattrmod} + (@{attackprof}* @{pb}) + @{attackbonus}]]}}"></button>
+            <button type="roll" class="sheet-icon-action" name="roll_attack" value="&{template:default} {{name=@{attackname}}} {{Attack=[[1d20 + @{attacktotal}]]}}"></button>
             <button type="roll" class="sheet-icon-action" name="roll_damage" value="&{template:default} {{name=@{attackname} Damage}} {{Damage=[[@{damagedice} + @{damagebonus}]]}}"></button>
           </div>
         </fieldset>
@@ -565,29 +569,55 @@
 
       getAttrs(baseFields, function(base) {
         getSectionIDs("repeating_skills", function(skillIds) {
-          var skillFields = (skillIds || []).map(function(id) {
-            return "repeating_skills_" + id + "_skillattr";
+          var skillFields = [];
+          (skillIds || []).forEach(function(id) {
+            skillFields.push("repeating_skills_" + id + "_skillattr");
+            skillFields.push("repeating_skills_" + id + "_skillprof");
+            skillFields.push("repeating_skills_" + id + "_skillbonus");
           });
+          skillFields.push("pb");
 
           getAttrs(skillFields, function(skillValues) {
             var update = {};
+            var pb = parseInt(skillValues.pb, 10) || 0;
 
             (skillIds || []).forEach(function(id) {
               var attrKey = "repeating_skills_" + id + "_skillattr";
               var modKey = "repeating_skills_" + id + "_skillattrmod";
-              update[modKey] = resolveAttrModValue(skillValues[attrKey], base);
+              var profKey = "repeating_skills_" + id + "_skillprof";
+              var bonusKey = "repeating_skills_" + id + "_skillbonus";
+              var totalKey = "repeating_skills_" + id + "_skilltotal";
+              var attrMod = resolveAttrModValue(skillValues[attrKey], base);
+              var prof = checkedToNumber(skillValues[profKey]);
+              var misc = parseInt(skillValues[bonusKey], 10) || 0;
+
+              update[modKey] = attrMod;
+              update[totalKey] = attrMod + (prof ? pb : 0) + misc;
             });
 
             getSectionIDs("repeating_attacks", function(attackIds) {
-              var attackFields = (attackIds || []).map(function(id) {
-                return "repeating_attacks_" + id + "_attackattr";
+              var attackFields = [];
+              (attackIds || []).forEach(function(id) {
+                attackFields.push("repeating_attacks_" + id + "_attackattr");
+                attackFields.push("repeating_attacks_" + id + "_attackprof");
+                attackFields.push("repeating_attacks_" + id + "_attackbonus");
               });
+              attackFields.push("pb");
 
               getAttrs(attackFields, function(attackValues) {
+                var attackPb = parseInt(attackValues.pb, 10) || 0;
                 (attackIds || []).forEach(function(id) {
                   var attrKey = "repeating_attacks_" + id + "_attackattr";
                   var modKey = "repeating_attacks_" + id + "_attackattrmod";
-                  update[modKey] = resolveAttrModValue(attackValues[attrKey], base);
+                  var profKey = "repeating_attacks_" + id + "_attackprof";
+                  var bonusKey = "repeating_attacks_" + id + "_attackbonus";
+                  var totalKey = "repeating_attacks_" + id + "_attacktotal";
+                  var attrMod = resolveAttrModValue(attackValues[attrKey], base);
+                  var prof = checkedToNumber(attackValues[profKey]);
+                  var misc = parseInt(attackValues[bonusKey], 10) || 0;
+
+                  update[modKey] = attrMod;
+                  update[totalKey] = attrMod + (prof ? attackPb : 0) + misc;
                 });
 
                 if (Object.keys(update).length > 0) {
@@ -630,6 +660,7 @@
     on("change:pb change:str_saveprof change:dex_saveprof change:con_saveprof change:int_saveprof change:wis_saveprof change:cha_saveprof change:str_savebonus change:dex_savebonus change:con_savebonus change:int_savebonus change:wis_savebonus change:cha_savebonus", function() {
       recalcPCSaves();
       recalcPowerDCs();
+      recalcRepeatingSkillAndAttackAttrMods();
     });
 
     on("change:init_misc", function() {
@@ -648,7 +679,15 @@
       recalcRepeatingSkillAndAttackAttrMods();
     });
 
+    on("change:repeating_skills:skillprof change:repeating_skills:skillbonus", function() {
+      recalcRepeatingSkillAndAttackAttrMods();
+    });
+
     on("change:repeating_attacks:attackattr add:repeating_attacks remove:repeating_attacks", function() {
+      recalcRepeatingSkillAndAttackAttrMods();
+    });
+
+    on("change:repeating_attacks:attackprof change:repeating_attacks:attackbonus", function() {
       recalcRepeatingSkillAndAttackAttrMods();
     });
 

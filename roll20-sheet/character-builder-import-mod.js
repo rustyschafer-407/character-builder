@@ -437,16 +437,28 @@
 
     if (sectionName === "skills") {
       normalized.skillattr = normalizeAbilityRef(normalized.skillattr, baseAttrs);
-      normalized.skillattrmod = String(toInt(baseAttrs[normalized.skillattr]));
+      const skillAttrMod = toInt(baseAttrs[normalized.skillattr]);
+      const skillProf = toInt(normalized.skillprof) ? 1 : 0;
+      const skillBonus = toInt(normalized.skillbonus);
+      const pb = toInt(baseAttrs.pb);
+
+      normalized.skillattrmod = String(skillAttrMod);
+      normalized.skilltotal = String(skillAttrMod + (skillProf ? pb : 0) + skillBonus);
       // Keep proficiency as a numeric toggle; roll formulas multiply by @{pb}.
-      normalized.skillprof = toInt(normalized.skillprof) ? "1" : "";
+      normalized.skillprof = skillProf ? "1" : "";
     }
 
     if (sectionName === "attacks") {
       normalized.attackattr = normalizeAbilityRef(normalized.attackattr, baseAttrs);
-      normalized.attackattrmod = String(toInt(baseAttrs[normalized.attackattr]));
+      const attackAttrMod = toInt(baseAttrs[normalized.attackattr]);
+      const attackProf = toInt(normalized.attackprof) ? 1 : 0;
+      const attackBonus = toInt(normalized.attackbonus);
+      const pb = toInt(baseAttrs.pb);
+
+      normalized.attackattrmod = String(attackAttrMod);
+      normalized.attacktotal = String(attackAttrMod + (attackProf ? pb : 0) + attackBonus);
       // Keep proficiency as a numeric toggle; roll formulas multiply by @{pb}.
-      normalized.attackprof = toInt(normalized.attackprof) ? "1" : "";
+      normalized.attackprof = attackProf ? "1" : "";
     }
 
     if (sectionName === "powers") {
