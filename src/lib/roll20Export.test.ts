@@ -216,4 +216,45 @@ describe("buildRoll20ModPayload", () => {
     expect(payload.attributes.ac).toBe("11");
     expect(payload.attributes.initiative).toBe("1");
   });
+
+  it("exports repeating skills and attacks with prof toggles and modifier refs", () => {
+    const campaign = makeCampaign();
+    campaign.skills = [
+      { id: "skill-1", name: "Athletics", attribute: "STR", description: "" },
+    ];
+    campaign.attackTemplates = [
+      {
+        id: "atk-1",
+        name: "Longsword",
+        attribute: "STR",
+        damage: "1d8",
+        bonus: 0,
+        notes: "",
+      },
+    ];
+
+    const character = makeCharacter();
+    character.skills = [{ skillId: "skill-1", proficient: true, bonus: 2, source: "class" }];
+    character.attacks = [{ id: "atk-1", name: "Longsword", attribute: "STR", damage: "1d8", bonus: 1 }];
+
+    const gameData: GameData = {
+      campaigns: [campaign],
+      classes: campaign.classes,
+      races: campaign.races ?? [],
+      skills: campaign.skills,
+      powers: campaign.powers,
+      items: campaign.items,
+      attackTemplates: campaign.attackTemplates,
+    };
+
+    const payload = buildRoll20ModPayload(character, gameData);
+
+    expect(payload.repeating.skills).toHaveLength(1);
+    expect(payload.repeating.skills[0].attributes.skillprof).toBe("1");
+    expect(payload.repeating.skills[0].attributes.skillattr).toBe("str_mod");
+
+    expect(payload.repeating.attacks).toHaveLength(1);
+    expect(payload.repeating.attacks[0].attributes.attackprof).toBe("1");
+    expect(payload.repeating.attacks[0].attributes.attackattr).toBe("str_mod");
+  });
 });

@@ -216,7 +216,7 @@
             </select>
             <div class="sheet-check-cell"><input type="checkbox" name="attr_skillprof" value="@{pb}"></div>
             <input type="number" name="attr_skillbonus" value="0">
-            <button type="roll" name="roll_skill" value="&{template:default} {{name=@{skillname}}} {{Roll=[[1d20 + @{skillattr} + @{skillprof} + @{skillbonus}]]}}">Roll</button>
+            <button type="roll" name="roll_skill" value="&{template:default} {{name=@{skillname}}} {{Roll=[[1d20 + @{skillattr} + (@{skillprof}* @{pb}) + @{skillbonus}]]}}">Roll</button>
           </div>
         </fieldset>
       </div>
@@ -267,7 +267,7 @@
             <input type="number" name="attr_attackbonus" value="0">
             <input type="text" name="attr_damagedice" placeholder="1d8">
             <input type="number" name="attr_damagebonus" value="0">
-            <button type="roll" class="sheet-icon-action" name="roll_attack" value="&{template:default} {{name=@{attackname}}} {{Attack=[[1d20 + @{attackattr} + @{attackprof} + @{attackbonus}]]}}"></button>
+            <button type="roll" class="sheet-icon-action" name="roll_attack" value="&{template:default} {{name=@{attackname}}} {{Attack=[[1d20 + @{attackattr} + (@{attackprof}* @{pb}) + @{attackbonus}]]}}"></button>
             <button type="roll" class="sheet-icon-action" name="roll_damage" value="&{template:default} {{name=@{attackname} Damage}} {{Damage=[[@{damagedice} + @{damagebonus}]]}}"></button>
           </div>
         </fieldset>

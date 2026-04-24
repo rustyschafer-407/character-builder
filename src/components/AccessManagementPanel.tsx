@@ -678,7 +678,7 @@ export default function AccessManagementPanel({
                     Save
                   </button>
                   <button style={buttonStyle} disabled={busy} onClick={requestCloseEditModal}>
-                    Cancel
+                    Close
                   </button>
                   <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255, 122, 157, 0.3)", margin: "0 4px" }} />
                   <button
@@ -810,7 +810,7 @@ export default function AccessManagementPanel({
                       setShowSetPasswordPanel(false);
                     }}
                   >
-                    Cancel
+                    Close
                   </button>
                 </div>
               </div>
@@ -1165,7 +1165,7 @@ export default function AccessManagementPanel({
                     disabled={busy}
                     onClick={() => setCampaignRemoveModalUserId("")}
                   >
-                    Cancel
+                    Close
                   </button>
                   <button
                     style={primaryButtonStyle}

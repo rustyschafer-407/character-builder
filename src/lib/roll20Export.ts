@@ -321,7 +321,7 @@ export function buildRoll20AttributeMap(
 
     const skillName = clean(definition?.name ?? skill.skillId);
     const skillAttr = clean(getAttributeModifier(character.attributes[attr]));
-    const skillProf = clean(character.proficiencyBonus);
+    const skillProf = "1";
     const skillBonus = clean(skill.bonus ?? 0);
 
     setRepeatingValue("skills", rowId, "skillname", skillName);
@@ -337,7 +337,7 @@ export function buildRoll20AttributeMap(
 
     const attackName = clean(attack.name);
     const attackAttr = clean(getAttributeModifier(character.attributes[attack.attribute]));
-    const attackProf = clean(character.proficiencyBonus);
+    const attackProf = "1";
     const attackBonus = clean(attack.bonus ?? 0);
     const damageDice = clean(attack.damage);
 

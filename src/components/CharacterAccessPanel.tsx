@@ -377,7 +377,7 @@ export default function CharacterAccessPanel({
               Remove access for {getUserLabel(removeModalUserId)}?
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button style={buttonStyle} disabled={busy} onClick={() => setRemoveModalUserId("")}>Cancel</button>
+              <button style={buttonStyle} disabled={busy} onClick={() => setRemoveModalUserId("")}>Close</button>
               <button
                 style={primaryButtonStyle}
                 disabled={busy}

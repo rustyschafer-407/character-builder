@@ -445,14 +445,14 @@
 
     if (sectionName === "skills") {
       normalized.skillattr = normalizeAbilityRef(normalized.skillattr, baseAttrs);
-      // Checkbox is rendered checked when current matches the input's value.
-      normalized.skillprof = "@{pb}";
+      // Keep proficiency as a numeric toggle; roll formulas multiply by @{pb}.
+      normalized.skillprof = toInt(normalized.skillprof) ? "1" : "";
     }
 
     if (sectionName === "attacks") {
       normalized.attackattr = normalizeAbilityRef(normalized.attackattr, baseAttrs);
-      // Per requirement: imported attacks are always proficient.
-      normalized.attackprof = "@{pb}";
+      // Keep proficiency as a numeric toggle; roll formulas multiply by @{pb}.
+      normalized.attackprof = toInt(normalized.attackprof) ? "1" : "";
     }
 
     if (sectionName === "powers") {
