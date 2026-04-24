@@ -406,17 +406,19 @@
 .charsheet .sheet-skill-head,
 .charsheet .sheet-skill-row-compact {
   display: grid !important;
-  grid-template-columns: minmax(200px, 1fr) 100px 56px 76px 76px 92px !important;
+  grid-template-columns: minmax(0, 1fr) 90px 55px 70px 70px 90px !important;
   gap: 8px;
   align-items: center;
+  width: 100%;
 }
 
 .charsheet .sheet-attack-head,
 .charsheet .sheet-attack-row-compact {
   display: grid !important;
-  grid-template-columns: minmax(130px, 1fr) 104px 56px 64px 64px 72px 72px 52px 52px !important;
+  grid-template-columns: minmax(0, 1fr) 90px 55px 70px 70px 95px 85px 55px 55px !important;
   gap: 8px;
   align-items: center;
+  width: 100%;
 }
 
 .charsheet .sheet-skill-row-compact > *,
@@ -424,26 +426,34 @@
   min-width: 0;
 }
 
-/* Skills row child mapping (hide helper field and keep one-row layout). */
-.charsheet .sheet-skill-row-compact > :nth-child(1) { grid-column: 1; }
-.charsheet .sheet-skill-row-compact > :nth-child(2) { grid-column: 2; }
-.charsheet .sheet-skill-row-compact > :nth-child(3) { display: none !important; }
-.charsheet .sheet-skill-row-compact > :nth-child(4) { grid-column: 3; }
-.charsheet .sheet-skill-row-compact > :nth-child(5) { grid-column: 4; }
-.charsheet .sheet-skill-row-compact > :nth-child(6) { grid-column: 5; }
-.charsheet .sheet-skill-row-compact > :nth-child(7) { grid-column: 6; }
+.charsheet .sheet-skill-row-compact input,
+.charsheet .sheet-skill-row-compact select,
+.charsheet .sheet-skill-row-compact button,
+.charsheet .sheet-attack-row-compact input,
+.charsheet .sheet-attack-row-compact select,
+.charsheet .sheet-attack-row-compact button {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
 
-/* Attack row child mapping (hide helper field and keep one-row layout). */
-.charsheet .sheet-attack-row-compact > :nth-child(1) { grid-column: 1; }
-.charsheet .sheet-attack-row-compact > :nth-child(2) { grid-column: 2; }
-.charsheet .sheet-attack-row-compact > :nth-child(3) { display: none !important; }
-.charsheet .sheet-attack-row-compact > :nth-child(4) { grid-column: 3; }
-.charsheet .sheet-attack-row-compact > :nth-child(5) { grid-column: 4; }
-.charsheet .sheet-attack-row-compact > :nth-child(6) { grid-column: 5; }
-.charsheet .sheet-attack-row-compact > :nth-child(7) { grid-column: 6; }
-.charsheet .sheet-attack-row-compact > :nth-child(8) { grid-column: 7; }
-.charsheet .sheet-attack-row-compact > :nth-child(9) { grid-column: 8; }
-.charsheet .sheet-attack-row-compact > :nth-child(10) { grid-column: 9; }
+.charsheet .sheet-skill-row-compact .sheet-check-cell,
+.charsheet .sheet-attack-row-compact .sheet-check-cell {
+  width: 100%;
+}
+
+.charsheet .sheet-skill-row-compact button[type="roll"],
+.charsheet .sheet-attack-row-compact button[type="roll"] {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  min-width: 0 !important;
+  line-height: 1 !important;
+  padding: 6px 8px !important;
+}
 
 .charsheet .sheet-skill-row-compact button,
 .charsheet .sheet-attack-row-compact button {
