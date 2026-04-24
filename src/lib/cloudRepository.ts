@@ -85,6 +85,33 @@ export async function getCurrentProfile() {
   return (data as ProfileRow | null) ?? null
 }
 
+export async function ensureProfileExists(): Promise<ProfileRow> {
+  const supabase = getSupabaseClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!userData.user) throw new Error("No authenticated user")
+
+  const profile = await getCurrentProfile()
+
+  if (profile) {
+    return profile
+  }
+
+  // Fallback: profile trigger should have created this, but if it hasn't,
+  // try once more after a brief delay to allow database to catch up
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  const retryProfile = await getCurrentProfile()
+  
+  if (retryProfile) {
+    return retryProfile
+  }
+
+  // If still missing, something went wrong
+  throw new Error(
+    "Profile could not be created. Contact support if this persists."
+  )
+}
+
 export async function listCampaignAccessRowsForCurrentUser() {
   const supabase = getSupabaseClient()
   const { data: userData, error: userError } = await supabase.auth.getUser()
@@ -300,6 +327,18 @@ export async function listManageableProfiles() {
 
   if (error) throw error
   return (data ?? []) as ProfileRow[]
+}
+
+export async function getProfileByEmail(email: string): Promise<ProfileRow | null> {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+    .eq("email", email.toLowerCase().trim())
+    .maybeSingle()
+
+  if (error) throw error
+  return (data as ProfileRow | null) ?? null
 }
 
 export async function listCampaignAccessRows(campaignRowId: string) {

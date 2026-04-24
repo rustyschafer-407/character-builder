@@ -3,15 +3,28 @@ import { getSupabaseClient } from "./supabaseClient"
 
 export type AuthListener = (event: AuthChangeEvent, session: Session | null) => void
 
+export async function signInWithGoogle() {
+  const supabase = getSupabaseClient()
+  const redirectTo = typeof window === "undefined" ? undefined : window.location.origin
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  })
+  if (error) throw error
+  return data
+}
+
 export async function requestEmailSignIn(email: string) {
   const supabase = getSupabaseClient()
-  const emailRedirectTo = typeof window === "undefined" ? undefined : window.location.origin
-  const { data, error } = await supabase.auth.signInWithOtp({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    options: {
-      emailRedirectTo,
-      shouldCreateUser: true,
-    },
+    password: email,
   })
   if (error) throw error
   return data
@@ -39,6 +52,13 @@ export async function getCurrentSession() {
   const { data, error } = await supabase.auth.getSession()
   if (error) throw error
   return data.session
+}
+
+export async function syncProfileFromAuth() {
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase.rpc("sync_profile_from_auth")
+  if (error) throw error
+  return data
 }
 
 export function onAuthStateChange(listener: AuthListener) {

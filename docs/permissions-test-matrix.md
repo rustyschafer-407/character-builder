@@ -3,10 +3,11 @@
 Use this matrix for migration validation, local QA, and pre-deploy smoke checks.
 
 ## Test Accounts
-- `admin1`: `is_admin=true`, `is_gm=true`
-- `gm1`: `is_admin=false`, `is_gm=true`
-- `player1`: no global flags
-- `player2`: no global flags
+- `admin1`: `is_admin=true`, `is_gm=true` (setup via email/password bootstrap)
+- `gm1`: `is_admin=false`, `is_gm=true` (via Google OAuth)
+- `player1`: no global flags (via Google OAuth)
+- `player2`: no global flags (via Google OAuth)
+- `player3`: no global flags (via email/password fallback)
 
 ## Seed Setup
 - Campaign `C1` created by `gm1`.
@@ -20,6 +21,20 @@ Use this matrix for migration validation, local QA, and pre-deploy smoke checks.
 - Explicit character access:
 - `player1` gets `viewer` on `CH_B`
 - `player2` gets no access to `CH_A`
+
+## Authentication Tests
+
+| ID | Scenario | Expected |
+|---|---|---|
+| OAuth1 | Player signs in with Google OAuth via login screen | Create `profiles` row if missing; grant session; redirect to app |
+| OAuth2 | OAuth callback redirected back to app with valid token | Session established; `profiles` populated with OAuth email and display name |
+| OAuth3 | OAuth provider denies permission | Show error message; allow user to retry or switch to email sign-in |
+| Email1 | Player signs in with email/password via fallback option | Session established if credentials valid; else show error |
+| Email2 | Player creates account with email/password (if enabled) | Create auth user and `profiles` row; session established |
+| Email3 | New player (no campaign access) signs in | Show friendly message: "Ask your GM to add you to a campaign" |
+| AdminBoot1 | Admin bootstrap script signs in with email/password | Session established; `profiles.is_admin=true` and `is_gm=true` |
+| Session1 | User closes and reopens browser tab | Session persisted; user remains signed in (no re-login required) |
+| Session2 | User signs out | Session cleared; redirect to login screen; cannot access protected data |
 
 ## Authorization Matrix
 
@@ -71,10 +86,14 @@ Use this matrix for migration validation, local QA, and pre-deploy smoke checks.
 - Attempt privileged profile role change (`is_admin`/`is_gm`) from client: must fail.
 
 ## Minimal UX/Auth Checks
-- Sign-up works with minimal password UX (no custom strength rules).
-- Sign-in persists session across refresh.
+- Google OAuth button displayed and functional on login screen.
+- Email/password fallback option accessible on login screen.
+- OAuth redirects to Google, then back to app with valid session.
+- Email/password login accepts valid credentials and establishes session.
+- Session persists across browser refresh (no re-login required).
 - Sign-out removes access to protected data immediately.
 - Permission-denied actions surface clear, non-technical errors.
+- New user with no campaign access sees friendly guidance ("Ask your GM to add you").
 
 ## Exit Criteria
 - All matrix rows pass in staging.

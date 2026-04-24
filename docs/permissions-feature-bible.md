@@ -16,28 +16,30 @@ This design is intentionally small and implementation-friendly for Supabase + Ve
 
 Authentication Assumption
 
-Use standard Supabase email/password authentication for v1.
+Use Supabase OAuth (Google) as the primary authentication method for player login, with email/password as a fallback and admin bootstrap mechanism.
 
-Requirements:
+Requirements for player login:
 
-* Password rules should be intentionally minimal at the app UX level.
-* Do not add extra complexity like custom password strength meters, forced symbols, forced uppercase, or custom validation beyond what Supabase requires.
-* Keep sign-in and sign-up simple for players.
+* Primary: Google OAuth via Supabase provider (no rate limits, simple UX, leverages existing Google accounts).
+* Fallback: Email/password authentication for players who don't have Google or prefer email.
+* On first login, automatically create a `profiles` row with the user's email and display name from OAuth metadata (for Google: `full_name` claim).
 * The app should rely on real authenticated sessions so Row Level Security remains trustworthy.
 
 Bootstrap admin requirement:
 
-* The system must support creation of an initial admin account whose email and password are known to the app owner.
+* The system must support creation of an initial admin account via email/password (not OAuth).
+* Credentials are known to the app owner.
 * The app owner must be able to sign in after the permissions feature is deployed.
-* The initial admin account must have profiles.is_admin = true and profiles.is_gm = true.
+* The initial admin account must have `profiles.is_admin = true` and `profiles.is_gm = true`.
 * This bootstrap process must be safe to run once and must not overwrite or downgrade an existing admin.
 * Prefer using environment variables for bootstrap credentials or a one-time SQL/admin script, not hardcoded credentials committed to the repo.
 
 Notes:
 
-* Admin can still create or invite users via server-only flows later if needed.
-* Passwordless auth can be revisited later, but is not part of this feature packet.
+* Google OAuth requires Supabase provider setup: enable Google OAuth in Supabase Auth → Providers and configure Google Cloud OAuth 2.0 credentials.
+* Email/password auth is only exposed to admin bootstrap (server-side script) and as a fallback login option for regular players.
 * Do not implement any fake authentication based only on selecting a user id or display name.
+* Passwordless auth (magic links) is not used; rely on OAuth and email/password instead.
 
 ⸻
 
@@ -314,14 +316,23 @@ Environment Variables
 
 Client-safe
 
-* NEXT_PUBLIC_SUPABASE_URL
-* NEXT_PUBLIC_SUPABASE_ANON_KEY
+* VITE_SUPABASE_URL
+* VITE_SUPABASE_ANON_KEY
 
-Server-only
+Server-only (bootstrap script only)
 
 * SUPABASE_SERVICE_ROLE_KEY
+* BOOTSTRAP_ADMIN_EMAIL
+* BOOTSTRAP_ADMIN_PASSWORD
 
-If using Next.js on Vercel, ensure server-only vars are never referenced from client bundles.
+If using Vite on Vercel, ensure server-only vars are never referenced from client bundles.
+
+Google OAuth Configuration
+
+* Enable Google OAuth in Supabase Dashboard → Authentication → Providers → Google.
+* Provide Google Cloud OAuth 2.0 client ID and secret.
+* Set authorized redirect URIs to include your app's callback URLs (e.g., `https://yourapp.com/auth/callback`).
+* Supabase will handle token refresh and session management automatically.
 
 ⸻
 

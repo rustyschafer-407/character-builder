@@ -27,6 +27,8 @@ import {
   deleteCharacterRow,
   getAccessContext,
   getCurrentProfile,
+  ensureProfileExists,
+  getProfileByEmail,
   listCampaignAccessRows,
   listCharacterAccessRows,
   listManageableProfiles,
@@ -42,6 +44,8 @@ import {
   getSessionUser,
   onAuthStateChange,
   requestEmailSignIn,
+  signInWithGoogle,
+  syncProfileFromAuth,
   signOut,
 } from "./lib/authRepository";
 import { hasSupabaseEnv } from "./lib/supabaseClient";
@@ -205,10 +209,10 @@ export default function App() {
   const [authEmail, setAuthEmail] = useState("");
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
-  const [authCodeRequested, setAuthCodeRequested] = useState(false);
-  const [authResendCooldownSeconds, setAuthResendCooldownSeconds] = useState(0);
   const [authLoading, setAuthLoading] = useState(false);
+  const [useEmailFallback, setUseEmailFallback] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<ProfileRow | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGm, setIsGm] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
@@ -248,6 +252,7 @@ export default function App() {
         if (user) {
           const context = await getAccessContext();
           if (isCancelled) return;
+          setCurrentUserProfile(context.profile);
           setIsAdmin(Boolean(context.profile?.is_admin));
           setIsGm(Boolean(context.profile?.is_gm));
           setCampaignRolesByCampaignId(context.campaignRolesByCampaignId);
@@ -271,6 +276,7 @@ export default function App() {
       cloudInitDoneRef.current = false;
 
       if (!user) {
+        setCurrentUserProfile(null);
         setIsAdmin(false);
         setIsGm(false);
         setCampaignRolesByCampaignId({});
@@ -279,7 +285,13 @@ export default function App() {
       }
 
       try {
+        // Sync profile from auth metadata (updates display_name without overwriting admin/gm)
+        await syncProfileFromAuth();
+        
+        // Ensure profile exists and load access context
+        await ensureProfileExists();
         const context = await getAccessContext();
+        setCurrentUserProfile(context.profile);
         setIsAdmin(Boolean(context.profile?.is_admin));
         setIsGm(Boolean(context.profile?.is_gm));
         setCampaignRolesByCampaignId(context.campaignRolesByCampaignId);
@@ -463,26 +475,31 @@ export default function App() {
   }
 
   async function handleEmailCodeRequest() {
-    if (authResendCooldownSeconds > 0) {
-      return;
-    }
-
     setAuthLoading(true);
     setAuthError("");
     setAuthMessage("");
     try {
       await requestEmailSignIn(authEmail.trim());
-      setAuthCodeRequested(true);
-      setAuthResendCooldownSeconds(60);
-      setAuthMessage("Check your email and click the sign-in link.");
+      setAuthMessage("Check your email and sign in.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
-      if (/rate limit/i.test(message)) {
-        setAuthResendCooldownSeconds((current) => Math.max(current, 60));
-        setAuthError("Too many email requests. Please wait about a minute before requesting another link.");
-      } else {
-        setAuthError(message);
-      }
+      setAuthError(message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleGoogleSignIn() {
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      await signInWithGoogle();
+      // OAuth will redirect, but ensure profile exists when we return
+      setAuthMessage("Redirecting to Google sign-in...");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Google sign-in failed";
+      setAuthError(message);
     } finally {
       setAuthLoading(false);
     }
@@ -491,8 +508,6 @@ export default function App() {
   async function handleSignOut() {
     try {
       await signOut();
-      setAuthCodeRequested(false);
-      setAuthResendCooldownSeconds(0);
       setAuthError("");
       setAuthMessage("");
       setCloudStatus("Signed out");
@@ -771,6 +786,7 @@ export default function App() {
   }
 
   const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
+  const hasAnyCampaignAccess = Object.keys(campaignRolesByCampaignId).length > 0;
   const canCreateCampaign = isAdmin || isGm;
   const canEditCurrentCampaign = Boolean(isAdmin || campaignRolesByCampaignId[campaignId] === "editor");
   const canCreateCharacterInCurrentCampaign = Boolean(
@@ -903,6 +919,34 @@ export default function App() {
     });
   }
 
+  async function handleAddPlayerByEmail(input: { email: string; role: "player" | "editor" }) {
+    if (!canManageCampaignAccess) return;
+    
+    await runAccessMutation(async () => {
+      const profile = await getProfileByEmail(input.email);
+      
+      if (!profile) {
+        throw new Error(
+          `Player with email "${input.email}" not found. They must sign in with Google using this email first.`
+        );
+      }
+      
+      // Verify admin/editor can grant requested role
+      if (input.role === "editor" && !isAdmin && campaignRolesByCampaignId[campaignId] !== "editor") {
+        throw new Error("Only campaign editors and admins can grant editor access.");
+      }
+      
+      // Grant campaign access
+      if (!currentCampaignRowId) throw new Error("Campaign ID is missing");
+      
+      await upsertCampaignAccessRow({
+        campaignRowId: currentCampaignRowId,
+        userId: profile.id,
+        role: input.role,
+      });
+    });
+  }
+
   async function handleUpdateCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
     await handleAssignCampaignAccess(input);
   }
@@ -949,19 +993,7 @@ export default function App() {
     }
   }, [adminOpen, canEditCurrentCampaign, cancelAdmin]);
 
-  useEffect(() => {
-    if (authResendCooldownSeconds <= 0) {
-      return;
-    }
 
-    const timer = window.setInterval(() => {
-      setAuthResendCooldownSeconds((current) => (current > 0 ? current - 1 : 0));
-    }, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [authResendCooldownSeconds]);
 
   useEffect(() => {
     if (securityOpen && !canManageUsers && !canManageCampaignAccess && !canManageCharacterAccess) {
@@ -997,51 +1029,112 @@ export default function App() {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
-          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Email Sign In</h2>
+          {useEmailFallback ? (
+            <>
+              <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Email Sign In</h2>
+              <p style={{ ...mutedTextStyle }}>
+                Enter your email and password to sign in.
+              </p>
+
+              <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
+                Email
+                <input
+                  type="email"
+                  value={authEmail}
+                  onChange={(e) => {
+                    setAuthEmail(e.target.value);
+                    setAuthError("");
+                    setAuthMessage("");
+                  }}
+                  autoComplete="email"
+                  style={inputStyle}
+                />
+              </label>
+
+              {authError ? (
+                <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
+              ) : null}
+
+              {authMessage ? (
+                <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
+              ) : null}
+
+              <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+                <button
+                  onClick={() => void handleEmailCodeRequest()}
+                  style={primaryButtonStyle}
+                  disabled={authLoading || !authEmail.trim()}
+                >
+                  {authLoading ? "Signing in..." : "Sign In"}
+                </button>
+                <button
+                  onClick={() => setUseEmailFallback(false)}
+                  style={buttonStyle}
+                >
+                  Back to Google Sign In
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Character Builder</h2>
+              <p style={{ ...mutedTextStyle }}>
+                Sign in with Google to get started.
+              </p>
+
+              {authError ? (
+                <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
+              ) : null}
+
+              {authMessage ? (
+                <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
+              ) : null}
+
+              <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+                <button
+                  onClick={() => void handleGoogleSignIn()}
+                  style={primaryButtonStyle}
+                  disabled={authLoading}
+                >
+                  {authLoading ? "Signing in..." : "Continue with Google"}
+                </button>
+                <button
+                  onClick={() => setUseEmailFallback(true)}
+                  style={buttonStyle}
+                >
+                  Sign In with Email Instead
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Show friendly no-access state for signed-in players with no campaign access
+  if (currentUserId && !isAdmin && !isGm && !hasAnyCampaignAccess) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...panelStyle, maxWidth: 520 }}>
+          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Welcome!</h2>
           <p style={{ ...mutedTextStyle }}>
-            Enter your email and we will send a magic sign-in link.
+            You're signed in, but you don't have access to any campaigns yet.
           </p>
-
-          <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
-            Email
-            <input
-              type="email"
-              value={authEmail}
-              onChange={(e) => {
-                setAuthEmail(e.target.value);
-                setAuthCodeRequested(false);
-                setAuthResendCooldownSeconds(0);
-                setAuthError("");
-                setAuthMessage("");
-              }}
-              autoComplete="email"
-              style={inputStyle}
-            />
-          </label>
-
-          {authError ? (
-            <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
-          ) : null}
-
-          {authMessage ? (
-            <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
-          ) : null}
-
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() => void handleEmailCodeRequest()}
-              style={primaryButtonStyle}
-              disabled={authLoading || !authEmail.trim() || authResendCooldownSeconds > 0}
-            >
-              {authLoading
-                ? "Sending..."
-                : authResendCooldownSeconds > 0
-                  ? `Wait ${authResendCooldownSeconds}s`
-                  : authCodeRequested
-                    ? "Resend Magic Link"
-                    : "Email Me a Magic Link"}
-            </button>
-          </div>
+          {currentUserProfile?.display_name && (
+            <p style={{ ...mutedTextStyle, marginBottom: 16 }}>
+              <strong>{currentUserProfile.display_name}</strong> ({currentUserProfile.email || "No email"})
+            </p>
+          )}
+          <p style={{ color: "#9ee7c2", fontWeight: 600, marginBottom: 24 }}>
+            Ask your GM to add you to a campaign.
+          </p>
+          <button
+            onClick={() => void handleSignOut()}
+            style={buttonStyle}
+          >
+            Sign Out
+          </button>
         </div>
       </div>
     );
@@ -1179,6 +1272,7 @@ export default function App() {
           getUserLabel={getUserLabel}
           onSaveUserRoles={handleSaveUserRoles}
           onAssignCampaignAccess={handleAssignCampaignAccess}
+          onAddPlayerByEmail={handleAddPlayerByEmail}
           onUpdateCampaignAccess={handleUpdateCampaignAccess}
           onRemoveCampaignAccess={handleRemoveCampaignAccess}
           onAssignCharacterAccess={handleAssignCharacterAccess}

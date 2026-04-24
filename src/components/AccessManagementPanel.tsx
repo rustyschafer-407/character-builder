@@ -22,6 +22,7 @@ interface AccessManagementPanelProps {
   getUserLabel: (userId: string) => string;
   onSaveUserRoles: (input: { userId: string; isAdmin: boolean; isGm: boolean }) => Promise<void>;
   onAssignCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
+  onAddPlayerByEmail: (input: { email: string; role: CampaignAccessRole }) => Promise<void>;
   onUpdateCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
   onRemoveCampaignAccess: (userId: string) => Promise<void>;
   onAssignCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
@@ -45,6 +46,7 @@ export default function AccessManagementPanel({
   getUserLabel,
   onSaveUserRoles,
   onAssignCampaignAccess,
+  onAddPlayerByEmail,
   onUpdateCampaignAccess,
   onRemoveCampaignAccess,
   onAssignCharacterAccess,
@@ -60,9 +62,12 @@ export default function AccessManagementPanel({
 
   const [campaignAssignUserId, setCampaignAssignUserId] = useState("");
   const [campaignAssignRole, setCampaignAssignRole] = useState<CampaignAccessRole>("player");
-
+  
   const [characterAssignUserId, setCharacterAssignUserId] = useState("");
   const [characterAssignRole, setCharacterAssignRole] = useState<CharacterAccessRole>("viewer");
+  
+  const [addPlayerEmail, setAddPlayerEmail] = useState("");
+  const [addPlayerRole, setAddPlayerRole] = useState<CampaignAccessRole>("player");
 
   const selectedProfile = useMemo(
     () => users.find((user) => user.id === selectedUserId) ?? null,
@@ -228,6 +233,52 @@ export default function AccessManagementPanel({
             >
               Assign
             </button>
+          </div>
+
+          <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid var(--border-soft)" }}>
+            <h4 style={{ marginTop: 0, marginBottom: 8, color: "var(--text-primary)" }}>Add by Email</h4>
+            <p style={{ color: "var(--text-secondary)", fontSize: 12, margin: "0 0 8px 0" }}>
+              Enter a player's email to grant them campaign access.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 10, alignItems: "end" }}>
+              <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                Player Email
+                <input
+                  type="email"
+                  value={addPlayerEmail}
+                  onChange={(e) => setAddPlayerEmail(e.target.value)}
+                  placeholder="player@example.com"
+                  style={inputStyle}
+                  disabled={busy}
+                />
+              </label>
+              <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                Role
+                <select
+                  value={addPlayerRole}
+                  onChange={(e) => setAddPlayerRole(e.target.value as CampaignAccessRole)}
+                  style={inputStyle}
+                  disabled={busy}
+                >
+                  <option value="player">player</option>
+                  <option value="editor">editor</option>
+                </select>
+              </label>
+              <button
+                style={primaryButtonStyle}
+                disabled={busy || !addPlayerEmail.trim()}
+                onClick={() => {
+                  if (!addPlayerEmail.trim()) return;
+                  void runAction(async () => {
+                    await onAddPlayerByEmail({ email: addPlayerEmail.trim(), role: addPlayerRole });
+                    setAddPlayerEmail("");
+                    setAddPlayerRole("player");
+                  });
+                }}
+              >
+                Add
+              </button>
+            </div>
           </div>
 
           <div style={{ marginTop: 12, display: "grid", gap: 8 }}>

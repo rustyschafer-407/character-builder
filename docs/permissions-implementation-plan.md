@@ -4,13 +4,14 @@
 Ship enforceable RBAC for Character Builder using Supabase email/password auth, RLS, and minimal UX changes.
 
 ## Canonical Model (v1)
-- Auth: Supabase email/password.
+- Auth: Supabase Google OAuth (primary) with email/password fallback for players and admin bootstrap.
 - Global roles on `profiles`: `is_admin`, `is_gm`.
 - Campaign roles: `player`, `editor` in `campaign_user_access`.
 - Character roles: `viewer`, `editor` in `character_user_access`.
 - Campaign editors can edit all characters in their campaign.
 - Campaign players can create characters, but only access characters they own or are explicitly assigned.
-- Bootstrap admin account must exist after deployment and be able to sign in.
+- Bootstrap admin account created via email/password (server-side script), not via OAuth.
+- On first OAuth login, automatically create `profiles` row with OAuth-provided email and display name.
 
 ## Current State Gap (from existing code)
 - `supabase/migrations/0001_initial_shared_access.sql` uses open policies (`using (true)`) for campaigns/characters.
@@ -86,14 +87,22 @@ Recommended env vars:
 - `BOOTSTRAP_ADMIN_PASSWORD`
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only)
 
-### Phase 4: Client auth wiring (minimal UX)
+### Phase 4: Client auth wiring (OAuth + fallback)
 Update auth/client wiring:
 1. `src/lib/supabaseClient.ts`
-- Enable normal auth session behavior (`persistSession: true`, `autoRefreshToken: true`).
-2. Add auth flows (sign-in/sign-up/sign-out) with minimal password UX.
-- No custom strength meter/rules beyond Supabase requirements.
-3. Require authenticated session before loading protected app data.
-4. Load current `profiles` row after login and keep in app state.
+   - Enable normal auth session behavior (`persistSession: true`, `autoRefreshToken: true`).
+   - Set `detectSessionInUrl: true` to handle OAuth callback redirects.
+2. Add auth flows (OAuth, email sign-in, sign-out):
+   - **Google OAuth (primary):** `supabase.auth.signInWithOAuth({ provider: 'google' })` → redirects to Google, then back to callback URL.
+   - **Email/password fallback:** `supabase.auth.signInWithPassword({ email, password })` → for players without Google, and admin bootstrap.
+   - Avoid custom password strength UX; rely on Supabase requirements.
+3. **Auto-profile creation:** After successful sign-in (OAuth or email/password), check if `profiles` row exists for the user. If not, create one:
+   - For OAuth: populate `display_name` from `full_name` claim.
+   - For email/password: populate `display_name` from email prefix or leave null for user to edit later.
+4. Require authenticated session before loading protected app data.
+5. Load current `profiles` row after login and keep in app state.
+6. Handle OAuth errors explicitly (e.g., "Google sign-in failed, try email sign-in instead").
+7. Display "No campaign access" friendly state for new users with no campaign membership.
 
 ### Phase 5: Repository/query refactor
 Refactor `src/lib/cloudRepository.ts` and related hooks/components:
