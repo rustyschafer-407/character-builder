@@ -22,15 +22,6 @@
 
   const REPEATING_SECTIONS = ["skills", "attacks", "powers", "inventory"];
   const ABILITY_MOD_FIELDS = ["str_mod", "dex_mod", "con_mod", "int_mod", "wis_mod", "cha_mod"];
-  const ABILITY_MOD_REFS = [
-    "@{str_mod}",
-    "@{dex_mod}",
-    "@{con_mod}",
-    "@{int_mod}",
-    "@{wis_mod}",
-    "@{cha_mod}",
-  ];
-
   function whisper(msg) {
     sendChat(SCRIPT_NAME, "/w gm " + msg);
   }
@@ -395,14 +386,15 @@
 
   function normalizeAbilityRef(value, baseAttrs) {
     const raw = safeString(value).trim().toLowerCase();
-    if (!raw) return "@{str_mod}";
+    if (!raw) return "str_mod";
 
-    if (ABILITY_MOD_REFS.indexOf(raw) >= 0) {
+    if (ABILITY_MOD_FIELDS.indexOf(raw) >= 0) {
       return raw;
     }
 
-    if (ABILITY_MOD_FIELDS.indexOf(raw) >= 0) {
-      return "@{" + raw + "}";
+    const refMatch = raw.match(/^@\{(str_mod|dex_mod|con_mod|int_mod|wis_mod|cha_mod)\}$/);
+    if (refMatch) {
+      return refMatch[1];
     }
 
     // Backward compatibility for older payloads that exported numeric mod values.
@@ -410,11 +402,11 @@
     if (!Number.isNaN(parsed)) {
       const matches = ABILITY_MOD_FIELDS.filter((fieldName) => toInt(baseAttrs[fieldName]) === parsed);
       if (matches.length === 1) {
-        return "@{" + matches[0] + "}";
+        return matches[0];
       }
     }
 
-    return "@{str_mod}";
+    return "str_mod";
   }
 
   function normalizePowerSaveAttr(value) {
@@ -464,7 +456,7 @@
     return normalized;
   }
 
-  const VALID_ABILITY_REFS = ["@{str_mod}", "@{dex_mod}", "@{con_mod}", "@{int_mod}", "@{wis_mod}", "@{cha_mod}"];
+  const VALID_ABILITY_REFS = ["str_mod", "dex_mod", "con_mod", "int_mod", "wis_mod", "cha_mod"];
   const VALID_POWER_SAVE_ATTRS = ["none", "str_mod", "dex_mod", "con_mod", "int_mod", "wis_mod", "cha_mod"];
 
   function validateRepeatingRowSelectValues(sectionName, fields, rowIndex) {
