@@ -43,7 +43,6 @@ import {
   onAuthStateChange,
   requestEmailSignIn,
   signOut,
-  verifyEmailSignIn,
 } from "./lib/authRepository";
 import { hasSupabaseEnv } from "./lib/supabaseClient";
 import type { CharacterRecord } from "./types/character";
@@ -204,10 +203,10 @@ export default function App() {
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
-  const [authCode, setAuthCode] = useState("");
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [authCodeRequested, setAuthCodeRequested] = useState(false);
+  const [authResendCooldownSeconds, setAuthResendCooldownSeconds] = useState(0);
   const [authLoading, setAuthLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -464,33 +463,26 @@ export default function App() {
   }
 
   async function handleEmailCodeRequest() {
+    if (authResendCooldownSeconds > 0) {
+      return;
+    }
+
     setAuthLoading(true);
     setAuthError("");
     setAuthMessage("");
     try {
       await requestEmailSignIn(authEmail.trim());
       setAuthCodeRequested(true);
-      setAuthMessage(
-        "Check your email for a sign-in code. If your Supabase email template still uses magic links, clicking the link will also sign you in."
-      );
+      setAuthResendCooldownSeconds(60);
+      setAuthMessage("Check your email and click the sign-in link.");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
-      setAuthError(message);
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  async function handleEmailCodeVerify() {
-    setAuthLoading(true);
-    setAuthError("");
-    setAuthMessage("");
-    try {
-      await verifyEmailSignIn(authEmail.trim(), authCode.trim());
-      setAuthMessage("Sign-in complete. Finishing session...");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Authentication failed";
-      setAuthError(message);
+      if (/rate limit/i.test(message)) {
+        setAuthResendCooldownSeconds((current) => Math.max(current, 60));
+        setAuthError("Too many email requests. Please wait about a minute before requesting another link.");
+      } else {
+        setAuthError(message);
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -499,8 +491,8 @@ export default function App() {
   async function handleSignOut() {
     try {
       await signOut();
-      setAuthCode("");
       setAuthCodeRequested(false);
+      setAuthResendCooldownSeconds(0);
       setAuthError("");
       setAuthMessage("");
       setCloudStatus("Signed out");
@@ -958,6 +950,20 @@ export default function App() {
   }, [adminOpen, canEditCurrentCampaign, cancelAdmin]);
 
   useEffect(() => {
+    if (authResendCooldownSeconds <= 0) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setAuthResendCooldownSeconds((current) => (current > 0 ? current - 1 : 0));
+    }, 1000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [authResendCooldownSeconds]);
+
+  useEffect(() => {
     if (securityOpen && !canManageUsers && !canManageCampaignAccess && !canManageCharacterAccess) {
       setSecurityOpen(false);
     }
@@ -993,7 +999,7 @@ export default function App() {
         <div style={{ ...panelStyle, maxWidth: 520 }}>
           <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Email Sign In</h2>
           <p style={{ ...mutedTextStyle }}>
-            Enter your email and we will send a sign-in code. New players, existing users, and the admin account all use the same flow.
+            Enter your email and we will send a magic sign-in link.
           </p>
 
           <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
@@ -1003,8 +1009,8 @@ export default function App() {
               value={authEmail}
               onChange={(e) => {
                 setAuthEmail(e.target.value);
-                setAuthCode("");
                 setAuthCodeRequested(false);
+                setAuthResendCooldownSeconds(0);
                 setAuthError("");
                 setAuthMessage("");
               }}
@@ -1012,23 +1018,6 @@ export default function App() {
               style={inputStyle}
             />
           </label>
-
-          {authCodeRequested ? (
-            <label style={{ display: "block", marginBottom: 12, fontWeight: 600, color: "#b9cdf0" }}>
-              Sign-In Code
-              <input
-                type="text"
-                value={authCode}
-                onChange={(e) => {
-                  setAuthCode(e.target.value);
-                  setAuthError("");
-                }}
-                autoComplete="one-time-code"
-                inputMode="numeric"
-                style={inputStyle}
-              />
-            </label>
-          ) : null}
 
           {authError ? (
             <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
@@ -1042,19 +1031,16 @@ export default function App() {
             <button
               onClick={() => void handleEmailCodeRequest()}
               style={primaryButtonStyle}
-              disabled={authLoading || !authEmail.trim()}
+              disabled={authLoading || !authEmail.trim() || authResendCooldownSeconds > 0}
             >
-              {authLoading ? "Sending..." : authCodeRequested ? "Resend Code" : "Email Me a Sign-In Code"}
+              {authLoading
+                ? "Sending..."
+                : authResendCooldownSeconds > 0
+                  ? `Wait ${authResendCooldownSeconds}s`
+                  : authCodeRequested
+                    ? "Resend Magic Link"
+                    : "Email Me a Magic Link"}
             </button>
-            {authCodeRequested ? (
-              <button
-                onClick={() => void handleEmailCodeVerify()}
-                style={buttonStyle}
-                disabled={authLoading || !authEmail.trim() || !authCode.trim()}
-              >
-                Verify Code
-              </button>
-            ) : null}
           </div>
         </div>
       </div>

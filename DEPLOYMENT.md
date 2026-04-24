@@ -131,6 +131,46 @@ Notes:
 - This script does not update passwords.
 - Never run with service role credentials in browser/client code.
 
+### 7. Supabase setup checklist (what was required in staging)
+
+Use this exact checklist when preparing production Supabase.
+
+1. Apply SQL migrations in order:
+- `supabase/migrations/0002_permissions_foundation.sql`
+- `supabase/migrations/0003_permissions_hardening.sql`
+- `supabase/migrations/0004_fix_bootstrap_trigger.sql`
+
+2. Why `0004` is required:
+- It updates `public.enforce_profile_role_mutation()` so service-role automation can set `profiles.is_admin` and `profiles.is_gm`.
+- Without it, bootstrap can fail with: `Only admins may change is_admin or is_gm`.
+
+3. Auth URL configuration in Supabase (`Authentication -> URL Configuration`):
+- Set `Site URL` to the environment URL (staging or production web app URL).
+- Add redirect URLs for that environment URL.
+- Keep local dev URL as needed (for example `http://localhost:5173`).
+- Do not leave auth redirects pointed at `localhost` for hosted environments.
+
+4. Use the correct server key for admin scripts/workflows:
+- `SUPABASE_SERVICE_ROLE_KEY` must be the secret key from Supabase (`Secret keys`), not the publishable key.
+- Publishable keys (`sb_publishable_...`) are client-safe and will fail for server-only admin operations.
+
+5. Bootstrap the initial admin account after migrations:
+- Run `npm run bootstrap:admin` with server-only env vars, or run GitHub workflow `Bootstrap Admin` for the target environment.
+- Expected result: auth user exists and `public.profiles` has `is_admin=true` and `is_gm=true` for that email.
+
+6. Passwordless auth settings (now used by the app):
+- App login now uses email-based passwordless flow.
+- In Supabase Email auth templates:
+	- include `{{ .Token }}` for code-based OTP UX, or
+	- keep magic link template if preferred.
+- Ensure URLs in auth/email settings match the environment where users will complete sign-in.
+
+7. Production verification checks:
+- New user can sign in from email flow.
+- Existing admin email can sign in and has admin capabilities.
+- No signup/login links redirect to `localhost` in production.
+- Access policies behave the same as staging for campaigns and characters.
+
 ## Normal Staging Deploy
 
 1. Push changes to `staging`
