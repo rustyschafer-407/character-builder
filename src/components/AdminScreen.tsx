@@ -1725,29 +1725,34 @@ export default function AdminScreen({
                           marginTop: 4,
                         }}
                       >
+                        {(() => {
+                          const attackEnabled = !!selectedPower.isAttack;
+                          return (
                         <button
                           type="button"
-                          onClick={() => updatePower({ ...selectedPower, isAttack: !Boolean(selectedPower.isAttack) })}
+                          onClick={() => updatePower({ ...selectedPower, isAttack: !attackEnabled })}
                           style={{
                             ...buttonStyle,
                             minHeight: 44,
                             borderRadius: 999,
                             padding: "0 16px",
-                            border: Boolean(selectedPower.isAttack)
+                            border: attackEnabled
                               ? "1px solid var(--accent-primary)"
                               : "1px solid var(--border-soft)",
-                            background: Boolean(selectedPower.isAttack)
+                            background: attackEnabled
                               ? "rgba(73, 224, 255, 0.2)"
                               : "rgba(9, 20, 38, 0.82)",
-                            color: Boolean(selectedPower.isAttack)
+                            color: attackEnabled
                               ? "#e9fdff"
                               : "var(--text-secondary)",
                             fontWeight: 700,
                           }}
-                          aria-pressed={Boolean(selectedPower.isAttack)}
+                          aria-pressed={attackEnabled}
                         >
                           Usable as Attack
                         </button>
+                          )
+                        })()}
                       </div>
                     </div>
                   </section>
@@ -1812,29 +1817,34 @@ export default function AdminScreen({
                           marginTop: 4,
                         }}
                       >
+                        {(() => {
+                          const attackEnabled = !!selectedItem.isAttack;
+                          return (
                         <button
                           type="button"
-                          onClick={() => updateItem({ ...selectedItem, isAttack: !Boolean(selectedItem.isAttack) })}
+                          onClick={() => updateItem({ ...selectedItem, isAttack: !attackEnabled })}
                           style={{
                             ...buttonStyle,
                             minHeight: 44,
                             borderRadius: 999,
                             padding: "0 16px",
-                            border: Boolean(selectedItem.isAttack)
+                            border: attackEnabled
                               ? "1px solid var(--accent-primary)"
                               : "1px solid var(--border-soft)",
-                            background: Boolean(selectedItem.isAttack)
+                            background: attackEnabled
                               ? "rgba(73, 224, 255, 0.2)"
                               : "rgba(9, 20, 38, 0.82)",
-                            color: Boolean(selectedItem.isAttack)
+                            color: attackEnabled
                               ? "#e9fdff"
                               : "var(--text-secondary)",
                             fontWeight: 700,
                           }}
-                          aria-pressed={Boolean(selectedItem.isAttack)}
+                          aria-pressed={attackEnabled}
                         >
                           Usable as Attack
                         </button>
+                          )
+                        })()}
                       </div>
                     </div>
                   </section>

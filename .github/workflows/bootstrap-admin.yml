@@ -1,0 +1,72 @@
+name: Bootstrap Admin
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Supabase environment target"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      update_password:
+        description: "Set true only if password rotation is explicitly intended"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+jobs:
+  bootstrap-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve target secrets
+        shell: bash
+        env:
+          TARGET_PREFIX: ${{ inputs.target == 'staging' && 'STAGING' || 'PRODUCTION' }}
+          TARGET_SUPABASE_URL: ${{ secrets[format('{0}_SUPABASE_URL', inputs.target == 'staging' && 'STAGING' || 'PRODUCTION')] }}
+          TARGET_SERVICE_ROLE_KEY: ${{ secrets[format('{0}_SUPABASE_SERVICE_ROLE_KEY', inputs.target == 'staging' && 'STAGING' || 'PRODUCTION')] }}
+          TARGET_BOOTSTRAP_ADMIN_EMAIL: ${{ secrets[format('{0}_BOOTSTRAP_ADMIN_EMAIL', inputs.target == 'staging' && 'STAGING' || 'PRODUCTION')] }}
+          TARGET_BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets[format('{0}_BOOTSTRAP_ADMIN_PASSWORD', inputs.target == 'staging' && 'STAGING' || 'PRODUCTION')] }}
+        run: |
+          set -euo pipefail
+
+          echo "Resolving secrets for target prefix: ${TARGET_PREFIX}"
+          echo "SUPABASE_URL=${TARGET_SUPABASE_URL}" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=${TARGET_SERVICE_ROLE_KEY}" >> "$GITHUB_ENV"
+          echo "BOOTSTRAP_ADMIN_EMAIL=${TARGET_BOOTSTRAP_ADMIN_EMAIL}" >> "$GITHUB_ENV"
+          echo "BOOTSTRAP_ADMIN_PASSWORD=${TARGET_BOOTSTRAP_ADMIN_PASSWORD}" >> "$GITHUB_ENV"
+
+          echo "BOOTSTRAP_UPDATE_PASSWORD=${{ inputs.update_password }}" >> "$GITHUB_ENV"
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          for key in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD; do
+            if [[ -z "${!key:-}" ]]; then
+              echo "Missing required value for $key" >&2
+              exit 1
+            fi
+          done
+
+      - name: Bootstrap admin
+        run: npm run bootstrap:admin

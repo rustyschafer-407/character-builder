@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createGameData, gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
@@ -18,13 +18,33 @@ import {
 } from "./lib/campaigns";
 import { DEFAULT_EXPORTER_ID, exportCharacter } from "./lib/exporters";
 import {
+  type CampaignAccessRow,
+  type ProfileRow,
+  type CharacterAccessRow,
   deleteCampaignById,
+  deleteCampaignAccessRow,
+  deleteCharacterAccessRow,
   deleteCharacterRow,
-  listAllCharacterRows,
-  listCampaignRows,
+  getAccessContext,
+  getCurrentProfile,
+  listCampaignAccessRows,
+  listCharacterAccessRows,
+  listManageableProfiles,
+  listAccessibleCampaignRows,
+  listAccessibleCharacterRows,
+  upsertCampaignAccessRow,
+  upsertCharacterAccessRow,
   upsertCampaignBySlug,
   upsertCharacterRow,
 } from "./lib/cloudRepository";
+import {
+  getCurrentSession,
+  getSessionUser,
+  onAuthStateChange,
+  signInWithPassword,
+  signOut,
+  signUpWithPassword,
+} from "./lib/authRepository";
 import { hasSupabaseEnv } from "./lib/supabaseClient";
 import type { CharacterRecord } from "./types/character";
 import type {
@@ -38,6 +58,7 @@ import CharacterCreationWizard, {
   type CharacterCreationDraft,
 } from "./components/CharacterCreationWizard";
 import AdminScreen from "./components/AdminScreen";
+import AccessManagementPanel from "./components/AccessManagementPanel";
 import SelectedCharacterWorkspace from "./components/SelectedCharacterWorkspace";
 import { useCharacterCreation } from "./hooks/useCharacterCreation";
 import { useCampaignAdminSession } from "./hooks/useCampaignAdminSession";
@@ -181,43 +202,110 @@ function normalizeCloudCampaignRow(row: {
 
 export default function App() {
   const cloudEnabled = hasSupabaseEnv();
+  const [authReady, setAuthReady] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isGm, setIsGm] = useState(false);
+  const [campaignRolesByCampaignId, setCampaignRolesByCampaignId] = useState<Record<string, "player" | "editor">>({});
+  const [characterRolesByCharacterId, setCharacterRolesByCharacterId] = useState<Record<string, "viewer" | "editor">>({});
   const [gameData, setGameData] = useState<GameData>(() => seedGameData);
   const [characters, setCharacters] = useState<CharacterRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [campaignId, setCampaignId] = useState(() => seedGameData.campaigns[0]?.id ?? "");
   const [raceId, setRaceId] = useState("");
   const [classId, setClassId] = useState("");
-  const [cloudReady, setCloudReady] = useState(false);
   const [cloudStatus, setCloudStatus] = useState(
     cloudEnabled ? "Connecting to cloud..." : "Supabase configuration missing"
   );
   const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
+  const [manageableUsers, setManageableUsers] = useState<ProfileRow[]>([]);
+  const [campaignAccessRows, setCampaignAccessRows] = useState<CampaignAccessRow[]>([]);
+  const [characterAccessRows, setCharacterAccessRows] = useState<CharacterAccessRow[]>([]);
+  const [accessManagementError, setAccessManagementError] = useState("");
   const cloudInitDoneRef = useRef(false);
 
   useEffect(() => {
-    if (!cloudEnabled || cloudInitDoneRef.current) return;
+    if (!cloudEnabled) {
+      setAuthReady(true);
+      return;
+    }
 
     let isCancelled = false;
-    // Snapshot seed campaigns once for bootstrap — effect intentionally runs only on mount.
-    const seedCampaigns = gameData.campaigns;
 
+    async function initializeSession() {
+      try {
+        const session = await getCurrentSession();
+        if (isCancelled) return;
+        const user = getSessionUser(session);
+        setCurrentUserId(user?.id ?? null);
+
+        if (user) {
+          const context = await getAccessContext();
+          if (isCancelled) return;
+          setIsAdmin(Boolean(context.profile?.is_admin));
+          setIsGm(Boolean(context.profile?.is_gm));
+          setCampaignRolesByCampaignId(context.campaignRolesByCampaignId);
+          setCharacterRolesByCharacterId(context.characterRolesByCharacterId);
+        }
+      } catch (error) {
+        console.error("Failed to initialize auth session", error);
+      } finally {
+        if (!isCancelled) {
+          setAuthReady(true);
+        }
+      }
+    }
+
+    void initializeSession();
+
+    const unsubscribe = onAuthStateChange(async (_event, session) => {
+      const user = getSessionUser(session);
+      setCurrentUserId(user?.id ?? null);
+      setAuthError("");
+      cloudInitDoneRef.current = false;
+
+      if (!user) {
+        setIsAdmin(false);
+        setIsGm(false);
+        setCampaignRolesByCampaignId({});
+        setCharacterRolesByCharacterId({});
+        return;
+      }
+
+      try {
+        const context = await getAccessContext();
+        setIsAdmin(Boolean(context.profile?.is_admin));
+        setIsGm(Boolean(context.profile?.is_gm));
+        setCampaignRolesByCampaignId(context.campaignRolesByCampaignId);
+        setCharacterRolesByCharacterId(context.characterRolesByCharacterId);
+      } catch (error) {
+        console.error("Failed to refresh auth access context", error);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+      unsubscribe();
+    };
+  }, [cloudEnabled]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !currentUserId || cloudInitDoneRef.current) return;
+
+    let isCancelled = false;
     async function initializeCloud() {
       try {
-        setCloudStatus("Syncing from cloud...");
+        setCloudStatus("Loading campaigns and characters...");
 
-        let campaignRows = await listCampaignRows();
+        const profile = await getCurrentProfile();
+        setIsAdmin(Boolean(profile?.is_admin));
+        setIsGm(Boolean(profile?.is_gm));
 
-        // First run bootstrap: seed cloud from built-in campaign definitions.
-        if (campaignRows.length === 0) {
-          for (const campaign of seedCampaigns) {
-            await upsertCampaignBySlug({
-              slug: campaign.id,
-              name: campaign.name,
-              campaign,
-            });
-          }
-          campaignRows = await listCampaignRows();
-        }
+        const campaignRows = await listAccessibleCampaignRows();
 
         if (isCancelled) return;
 
@@ -232,6 +320,14 @@ export default function App() {
         );
         setCampaignRowIdsByAppId(nextCampaignMap);
 
+        setCampaignRolesByCampaignId(
+          Object.fromEntries(
+            campaignRows
+              .filter((row) => row.campaign_role)
+              .map((row) => [row.id, row.campaign_role] as const)
+          ) as Record<string, "player" | "editor">
+        );
+
         if (normalizedCloudCampaigns.length > 0) {
           const nextGameData = createGameData({
             campaigns: normalizedCloudCampaigns,
@@ -244,8 +340,16 @@ export default function App() {
               : nextGameData.campaigns[0]?.id ?? ""
           );
 
-          const characterRows = await listAllCharacterRows();
+          const characterRows = await listAccessibleCharacterRows();
           if (isCancelled) return;
+
+          setCharacterRolesByCharacterId(
+            Object.fromEntries(
+              characterRows
+                .filter((row) => row.character_role)
+                .map((row) => [row.id, row.character_role] as const)
+            ) as Record<string, "viewer" | "editor">
+          );
 
           const nextCharacters = characterRows
             .map((row) => row.data)
@@ -264,7 +368,7 @@ export default function App() {
           );
         }
 
-        setCloudStatus("Cloud sync active");
+        setCloudStatus("Authenticated cloud access active");
       } catch (error) {
         console.error("Failed to initialize cloud sync", error);
         if (!isCancelled) {
@@ -273,7 +377,6 @@ export default function App() {
       } finally {
         if (!isCancelled) {
           cloudInitDoneRef.current = true;
-          setCloudReady(true);
         }
       }
     }
@@ -283,139 +386,105 @@ export default function App() {
     return () => {
       isCancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cloudEnabled]); // intentionally run once on mount — no gameData.campaigns dep
+  }, [cloudEnabled, currentUserId]); // intentionally run after auth session is present
 
-  useEffect(() => {
-    if (!cloudEnabled || !cloudReady) return;
+  async function persistCampaignChanges(previousGameData: GameData, nextGameData: GameData) {
+    if (!cloudEnabled || !currentUserId) return;
 
-    let isCancelled = false;
+    try {
+      const previousById = new Map(previousGameData.campaigns.map((campaign) => [campaign.id, campaign]));
+      const nextById = new Map(nextGameData.campaigns.map((campaign) => [campaign.id, campaign]));
+      const nextCampaignMap = { ...campaignRowIdsByAppId };
 
-    async function syncCampaignsToCloud() {
-      try {
-        const existingRows = await listCampaignRows();
-        const expectedSlugs = new Set(gameData.campaigns.map((campaign) => campaign.id));
-        const nextCampaignMap: Record<string, string> = {};
+      for (const [appCampaignId, campaign] of nextById) {
+        const previous = previousById.get(appCampaignId);
+        const isChanged = !previous || JSON.stringify(previous) !== JSON.stringify(campaign);
+        if (!isChanged) continue;
 
-        for (const campaign of gameData.campaigns) {
-          const row = await upsertCampaignBySlug({
-            slug: campaign.id,
-            name: campaign.name,
-            campaign,
-          });
-          nextCampaignMap[campaign.id] = row.id;
-        }
+        const row = await upsertCampaignBySlug({
+          slug: campaign.id,
+          name: campaign.name,
+          campaign,
+        });
+        nextCampaignMap[campaign.id] = row.id;
+      }
 
-        for (const row of existingRows) {
-          if (!expectedSlugs.has(row.slug)) {
-            await deleteCampaignById(row.id);
+      for (const [appCampaignId] of previousById) {
+        if (!nextById.has(appCampaignId)) {
+          const rowId = nextCampaignMap[appCampaignId];
+          if (rowId) {
+            await deleteCampaignById(rowId);
+            delete nextCampaignMap[appCampaignId];
           }
-        }
-
-        if (!isCancelled) {
-          setCampaignRowIdsByAppId(nextCampaignMap);
-          setCloudStatus("Cloud sync active");
-        }
-      } catch (error) {
-        console.error("Failed to sync campaigns to cloud", error);
-        if (!isCancelled) {
-          setCloudStatus("Cloud campaign sync failed (see console)");
         }
       }
+
+      setCampaignRowIdsByAppId(nextCampaignMap);
+      setCloudStatus("Authenticated cloud access active");
+    } catch (error) {
+      console.error("Failed to persist campaign changes", error);
+      setCloudStatus("Campaign save failed (see console)");
+    }
+  }
+
+  async function persistCharacterUpsert(character: CharacterRecord) {
+    if (!cloudEnabled || !currentUserId) return;
+
+    const campaignRowId = campaignRowIdsByAppId[character.campaignId];
+    if (!campaignRowId) {
+      setCloudStatus("Character save blocked: campaign not yet persisted");
+      return;
     }
 
-    void syncCampaignsToCloud();
+    try {
+      await upsertCharacterRow({
+        campaignId: campaignRowId,
+        character,
+      });
+      setCloudStatus("Authenticated cloud access active");
+    } catch (error) {
+      console.error("Failed to persist character", error);
+      setCloudStatus("Character save failed (see console)");
+    }
+  }
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [cloudEnabled, cloudReady, gameData]);
+  async function persistCharacterDelete(characterId: string) {
+    if (!cloudEnabled || !currentUserId) return;
 
-  useEffect(() => {
-    if (!cloudEnabled || !cloudReady) return;
+    try {
+      await deleteCharacterRow(characterId);
+      setCloudStatus("Authenticated cloud access active");
+    } catch (error) {
+      console.error("Failed to delete character", error);
+      setCloudStatus("Character delete failed (see console)");
+    }
+  }
 
-    const knownCampaignRowIds = new Set(Object.values(campaignRowIdsByAppId));
-    if (knownCampaignRowIds.size === 0) return;
-
-    let isCancelled = false;
-
-    async function syncCharactersToCloud() {
-      try {
-        const syncStartedAt = Date.now();
-        const remoteBeforeSync = await listAllCharacterRows();
-        const remoteById = new Map(remoteBeforeSync.map((row) => [row.id, row]));
-        let conflictCount = 0;
-
-        for (const character of characters) {
-          const campaignRowId = campaignRowIdsByAppId[character.campaignId];
-          if (!campaignRowId) continue;
-
-          const remoteRow = remoteById.get(character.id);
-          if (remoteRow) {
-            const remoteUpdatedAt = Date.parse(
-              remoteRow.data?.updatedAt ?? remoteRow.updated_at ?? ""
-            );
-            const localUpdatedAt = Date.parse(character.updatedAt ?? "");
-
-            if (
-              Number.isFinite(remoteUpdatedAt) &&
-              Number.isFinite(localUpdatedAt) &&
-              remoteUpdatedAt > localUpdatedAt
-            ) {
-              conflictCount += 1;
-              continue;
-            }
-          }
-
-          await upsertCharacterRow({
-            campaignId: campaignRowId,
-            character,
-          });
-        }
-
-        const remoteRows = await listAllCharacterRows();
-        const localCharacterIds = new Set(characters.map((character) => character.id));
-
-        if (conflictCount > 0) {
-          if (!isCancelled) {
-            setCloudStatus(
-              `Cloud sync conflict detected for ${conflictCount} character${conflictCount === 1 ? "" : "s"}; remote kept`
-            );
-          }
-          return;
-        }
-
-        for (const row of remoteRows) {
-          const remoteUpdatedAt = Date.parse(row.data?.updatedAt ?? row.updated_at ?? "");
-          const updatedAfterSyncStarted =
-            Number.isFinite(remoteUpdatedAt) && remoteUpdatedAt > syncStartedAt;
-
-          if (
-            knownCampaignRowIds.has(row.campaign_id) &&
-            !localCharacterIds.has(row.id) &&
-            !updatedAfterSyncStarted
-          ) {
-            await deleteCharacterRow(row.id);
-          }
-        }
-
-        if (!isCancelled) {
-          setCloudStatus("Cloud sync active");
-        }
-      } catch (error) {
-        console.error("Failed to sync characters to cloud", error);
-        if (!isCancelled) {
-          setCloudStatus("Cloud character sync failed (see console)");
-        }
+  async function handleAuthSubmit(mode: "sign-in" | "sign-up") {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      if (mode === "sign-up") {
+        await signUpWithPassword(authEmail.trim(), authPassword);
+      } else {
+        await signInWithPassword(authEmail.trim(), authPassword);
       }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Authentication failed"
+      setAuthError(message);
+    } finally {
+      setAuthLoading(false);
     }
+  }
 
-    void syncCharactersToCloud();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [campaignRowIdsByAppId, characters, cloudEnabled, cloudReady]);
+  async function handleSignOut() {
+    try {
+      await signOut();
+      setCloudStatus("Signed out");
+    } catch (error) {
+      console.error("Sign-out failed", error);
+    }
+  }
 
   function handleCampaignChange(nextCampaignId: string) {
     setCampaignId(nextCampaignId);
@@ -473,6 +542,7 @@ export default function App() {
 
     setCharacters((prev) => [...prev, character]);
     setSelectedId(character.id);
+    void persistCharacterUpsert(character);
   }
 
   const {
@@ -568,9 +638,11 @@ export default function App() {
   }
 
   function updateCharacter(updated: CharacterRecord) {
+    const touched = touchCharacter(updated);
     setCharacters((prev) =>
-      prev.map((c) => (c.id === updated.id ? touchCharacter(updated) : c))
+      prev.map((c) => (c.id === touched.id ? touched : c))
     );
+    void persistCharacterUpsert(touched);
   }
 
   const {
@@ -581,7 +653,7 @@ export default function App() {
     createCampaignAndOpenAdmin,
     cancelAdmin,
     requestAdminSave,
-    handleAdminSave,
+    handleAdminSave: applyAdminSaveLocally,
     handleAdminGameDataChange,
   } = useCampaignAdminSession({
     gameData,
@@ -633,7 +705,15 @@ export default function App() {
     updateCharacter,
     setCharacters,
     setSelectedId,
+    onDeleteCharacter: (id) => {
+      void persistCharacterDelete(id);
+    },
   });
+
+  async function handleAdminSave(nextGameData: GameData) {
+    await persistCampaignChanges(gameData, nextGameData);
+    applyAdminSaveLocally(nextGameData);
+  }
 
   const selectedWorkspaceCallbacks = useSelectedCharacterWorkspaceCallbacks({
     selected,
@@ -648,6 +728,193 @@ export default function App() {
     addManualItem,
   });
 
+  async function refreshAccessContextState() {
+    const context = await getAccessContext();
+    setIsAdmin(Boolean(context.profile?.is_admin));
+    setIsGm(Boolean(context.profile?.is_gm));
+    setCampaignRolesByCampaignId(context.campaignRolesByCampaignId);
+    setCharacterRolesByCharacterId(context.characterRolesByCharacterId);
+  }
+
+  const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
+  const canCreateCampaign = isAdmin || isGm;
+  const canEditCurrentCampaign = Boolean(isAdmin || campaignRolesByCampaignId[campaignId] === "editor");
+  const canCreateCharacterInCurrentCampaign = Boolean(
+    isAdmin ||
+      campaignRolesByCampaignId[campaignId] === "player" ||
+      campaignRolesByCampaignId[campaignId] === "editor"
+  );
+  const canManageUsers = isAdmin;
+  const canManageCampaignAccess = Boolean(isAdmin && currentCampaignRowId);
+  const canManageCharacterAccess = Boolean(
+    selected && currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[selected.campaignId] === "editor")
+  );
+  const canEditCharacterById = (characterId: string) => {
+    if (isAdmin) return true;
+    const character = characters.find((item) => item.id === characterId);
+    if (!character) return false;
+
+    const campaignRole = campaignRolesByCampaignId[character.campaignId];
+    if (campaignRole === "editor") return true;
+
+    const directRole = characterRolesByCharacterId[characterId];
+    return directRole === "editor";
+  };
+  const canEditSelectedCharacter = Boolean(selected && canEditCharacterById(selected.id));
+  const directCharacterAccessCount = Object.keys(characterRolesByCharacterId).length;
+  const userById = new Map(manageableUsers.map((user) => [user.id, user] as const));
+  const campaignUserCandidateIds = canManageCampaignAccess
+    ? manageableUsers.map((user) => user.id)
+    : [];
+  const characterUserCandidateIds = canManageCharacterAccess
+    ? Array.from(
+        new Set(
+          isAdmin
+            ? manageableUsers.map((user) => user.id)
+            : [
+                ...campaignAccessRows.map((row) => row.user_id),
+                ...characterAccessRows.map((row) => row.user_id),
+                currentUserId ?? "",
+              ].filter(Boolean)
+        )
+      )
+    : [];
+
+  function getUserLabel(userId: string) {
+    const profile = userById.get(userId) ?? null;
+    if (!profile) return userId;
+    const name = profile.display_name?.trim();
+    if (name) return `${name} (${profile.email ?? userId})`;
+    return profile.email ?? userId;
+  }
+
+  const reloadAccessManagementData = useCallback(async () => {
+    if (!currentUserId) return;
+
+    if (canManageUsers) {
+      const users = await listManageableProfiles();
+      setManageableUsers(users);
+    } else {
+      setManageableUsers([]);
+    }
+
+    if (currentCampaignRowId && (canManageCampaignAccess || canManageCharacterAccess)) {
+      const campaignRows = await listCampaignAccessRows(currentCampaignRowId);
+      setCampaignAccessRows(campaignRows);
+    } else {
+      setCampaignAccessRows([]);
+    }
+
+    if (canManageCharacterAccess && selected) {
+      const rows = await listCharacterAccessRows(selected.id);
+      setCharacterAccessRows(rows);
+    } else {
+      setCharacterAccessRows([]);
+    }
+  }, [
+    canManageUsers,
+    canManageCampaignAccess,
+    canManageCharacterAccess,
+    currentCampaignRowId,
+    currentUserId,
+    selected,
+  ])
+
+  useEffect(() => {
+    if (!currentUserId) return;
+    let isCancelled = false;
+
+    async function load() {
+      try {
+        await reloadAccessManagementData();
+      } catch (error) {
+        if (isCancelled) return;
+        const message = error instanceof Error ? error.message : "Failed to load access management data";
+        setAccessManagementError(message);
+      }
+    }
+
+    void load();
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentUserId, reloadAccessManagementData]);
+
+  async function runAccessMutation(action: () => Promise<void>) {
+    setAccessManagementError("");
+    try {
+      await action();
+      await refreshAccessContextState();
+      await reloadAccessManagementData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Access management action failed";
+      setAccessManagementError(message);
+    }
+  }
+
+  async function handleSaveUserRoles() {
+    setAccessManagementError(
+      "Global role updates are server-only. Use npm run roles:set with SUPABASE_SERVICE_ROLE_KEY in a trusted environment."
+    );
+  }
+
+  async function handleAssignCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
+    if (!currentCampaignRowId) return;
+    await runAccessMutation(async () => {
+      await upsertCampaignAccessRow({
+        campaignRowId: currentCampaignRowId,
+        userId: input.userId,
+        role: input.role,
+      });
+    });
+  }
+
+  async function handleUpdateCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
+    await handleAssignCampaignAccess(input);
+  }
+
+  async function handleRemoveCampaignAccess(userId: string) {
+    if (!currentCampaignRowId) return;
+    await runAccessMutation(async () => {
+      await deleteCampaignAccessRow({
+        campaignRowId: currentCampaignRowId,
+        userId,
+        isAdmin,
+      });
+    });
+  }
+
+  async function handleAssignCharacterAccess(input: { userId: string; role: "viewer" | "editor" }) {
+    if (!selected) return;
+    await runAccessMutation(async () => {
+      await upsertCharacterAccessRow({
+        characterId: selected.id,
+        userId: input.userId,
+        role: input.role,
+      });
+    });
+  }
+
+  async function handleUpdateCharacterAccess(input: { userId: string; role: "viewer" | "editor" }) {
+    await handleAssignCharacterAccess(input);
+  }
+
+  async function handleRemoveCharacterAccess(userId: string) {
+    if (!selected) return;
+    await runAccessMutation(async () => {
+      await deleteCharacterAccessRow({
+        characterId: selected.id,
+        userId,
+      });
+    });
+  }
+
+  useEffect(() => {
+    if (adminOpen && !canEditCurrentCampaign) {
+      cancelAdmin();
+    }
+  }, [adminOpen, canEditCurrentCampaign, cancelAdmin]);
+
   if (!cloudEnabled) {
     return (
       <div style={pageStyle}>
@@ -656,6 +923,73 @@ export default function App() {
           <p style={{ marginBottom: 0, ...mutedTextStyle }}>
             This app is configured for Supabase-only persistence. Set <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> to continue.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authReady) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...panelStyle, maxWidth: 760 }}>
+          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Loading Session</h2>
+          <p style={{ marginBottom: 0, ...mutedTextStyle }}>Checking Supabase authentication session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUserId) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...panelStyle, maxWidth: 520 }}>
+          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Sign In</h2>
+          <p style={{ ...mutedTextStyle }}>
+            Use your Supabase email and password. No custom password rules are applied by the app.
+          </p>
+
+          <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
+            Email
+            <input
+              type="email"
+              value={authEmail}
+              onChange={(e) => setAuthEmail(e.target.value)}
+              autoComplete="email"
+              style={inputStyle}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: 12, fontWeight: 600, color: "#b9cdf0" }}>
+            Password
+            <input
+              type="password"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+              autoComplete="current-password"
+              style={inputStyle}
+            />
+          </label>
+
+          {authError ? (
+            <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
+          ) : null}
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => void handleAuthSubmit("sign-in")}
+              style={primaryButtonStyle}
+              disabled={authLoading || !authEmail.trim() || !authPassword}
+            >
+              {authLoading ? "Signing In..." : "Sign In"}
+            </button>
+            <button
+              onClick={() => void handleAuthSubmit("sign-up")}
+              style={buttonStyle}
+              disabled={authLoading || !authEmail.trim() || !authPassword}
+            >
+              Sign Up
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -694,11 +1028,18 @@ export default function App() {
           </div>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={openAdminForCurrentCampaign} style={buttonStyle} disabled={!campaignId}>
-              Edit Campaign
-            </button>
-            <button onClick={createCampaignAndOpenAdmin} style={primaryButtonStyle}>
-              New Campaign
+            {canEditCurrentCampaign ? (
+              <button onClick={openAdminForCurrentCampaign} style={buttonStyle}>
+                Edit Campaign
+              </button>
+            ) : null}
+            {canCreateCampaign ? (
+              <button onClick={createCampaignAndOpenAdmin} style={primaryButtonStyle}>
+                New Campaign
+              </button>
+            ) : null}
+            <button onClick={() => void handleSignOut()} style={buttonStyle}>
+              Sign Out
             </button>
           </div>
         )}
@@ -753,9 +1094,35 @@ export default function App() {
           </select>
           <div style={{ marginTop: 6, fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>
             {cloudStatus}
+            {directCharacterAccessCount > 0 ? ` • ${directCharacterAccessCount} direct character assignments` : ""}
           </div>
         </label>
       </div>
+
+      {!adminOpen ? (
+        <AccessManagementPanel
+          canManageUsers={canManageUsers}
+          canManageCampaignAccess={canManageCampaignAccess}
+          canManageCharacterAccess={canManageCharacterAccess}
+          campaignName={currentCampaignContextLabel}
+          characterName={selected?.identity.name?.trim() || null}
+          users={manageableUsers}
+          campaignAccessRows={campaignAccessRows}
+          characterAccessRows={characterAccessRows}
+          campaignUserCandidateIds={campaignUserCandidateIds}
+          characterUserCandidateIds={characterUserCandidateIds}
+          getUserLabel={getUserLabel}
+          onSaveUserRoles={handleSaveUserRoles}
+          onAssignCampaignAccess={handleAssignCampaignAccess}
+          onUpdateCampaignAccess={handleUpdateCampaignAccess}
+          onRemoveCampaignAccess={handleRemoveCampaignAccess}
+          onAssignCharacterAccess={handleAssignCharacterAccess}
+          onUpdateCharacterAccess={handleUpdateCharacterAccess}
+          onRemoveCharacterAccess={handleRemoveCharacterAccess}
+          errorMessage={accessManagementError}
+          onClearError={() => setAccessManagementError("")}
+        />
+      ) : null}
 
       {adminOpen ? (
         <AdminScreen
@@ -773,8 +1140,14 @@ export default function App() {
             characters={filteredCharacters}
             selectedId={selectedId}
             onSelect={setSelectedId}
-            onCreate={openWizard}
+            onCreate={() => {
+              if (canCreateCharacterInCurrentCampaign) {
+                openWizard();
+              }
+            }}
             onDelete={deleteCharacter}
+            canCreate={canCreateCharacterInCurrentCampaign}
+            canDeleteCharacter={canEditCharacterById}
             getCampaignName={getCampaignName}
             getClassName={getClassName}
           />
@@ -841,6 +1214,7 @@ export default function App() {
           ) : (
             <SelectedCharacterWorkspace
               character={selected}
+              readOnly={!canEditSelectedCharacter}
               selectedCampaignName={selectedCampaign.name}
               selectedRaceName={selectedRace?.name ?? "Unassigned"}
               selectedClassName={selectedClass?.name ?? "Unassigned"}
@@ -849,7 +1223,7 @@ export default function App() {
               selectedPowers={selectedPowers}
               selectedItems={selectedItems}
               roll20ModPayload={roll20Commands.modPayload}
-              levelUpOpen={levelUpOpen && Boolean(selectedClass)}
+              levelUpOpen={levelUpOpen && Boolean(selectedClass) && canEditSelectedCharacter}
               levelUpApplyPending={levelUpApplyPending}
               levelUpSkillSelections={levelUpSkillSelections}
               levelUpPowerSelections={levelUpPowerSelections}
@@ -862,11 +1236,19 @@ export default function App() {
               nextProficiencyBonus={nextLevelProgressionRow?.proficiencyBonus}
               availableLevelUpSkills={availableLevelUpSkills}
               availableLevelUpPowers={availableLevelUpPowers}
-              onOpenLevelUpWizard={openLevelUpWizard}
+              onOpenLevelUpWizard={() => {
+                if (canEditSelectedCharacter) {
+                  openLevelUpWizard();
+                }
+              }}
               onToggleLevelUpSkill={toggleLevelUpSkill}
               onToggleLevelUpPower={toggleLevelUpPower}
               onCloseLevelUpWizard={closeLevelUpWizard}
-              onApplyLevelUp={applyLevelUp}
+              onApplyLevelUp={() => {
+                if (canEditSelectedCharacter) {
+                  applyLevelUp();
+                }
+              }}
               {...selectedWorkspaceCallbacks}
             />
           )}

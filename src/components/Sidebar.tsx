@@ -12,6 +12,8 @@ interface Props {
   onSelect: (id: string) => void;
   onCreate: () => void;
   onDelete: (id: string) => void;
+  canCreate: boolean;
+  canDeleteCharacter: (id: string) => boolean;
   getCampaignName: (campaignId: string) => string;
   getClassName: (classId: string) => string;
 }
@@ -22,6 +24,8 @@ export default function Sidebar({
   onSelect,
   onCreate,
   onDelete,
+  canCreate,
+  canDeleteCharacter,
   getCampaignName,
   getClassName,
 }: Props) {
@@ -44,6 +48,7 @@ export default function Sidebar({
       <div style={{ display: "flex", gap: 6 }}>
         <button
           onClick={onCreate}
+          disabled={!canCreate}
           style={{
             ...primaryButtonStyle,
             flex: 1,
@@ -53,6 +58,8 @@ export default function Sidebar({
             fontWeight: 800,
             letterSpacing: "0.01em",
             boxShadow: "0 8px 18px rgba(73, 224, 255, 0.2)",
+            opacity: canCreate ? 1 : 0.55,
+            cursor: canCreate ? "pointer" : "not-allowed",
           }}
         >
           New Character
@@ -76,6 +83,7 @@ export default function Sidebar({
         {sortedCharacters.map((c) => {
           const isSelected = c.id === selectedId;
           const displayName = c.identity.name?.trim() || "Unnamed Character";
+          const canDelete = canDeleteCharacter(c.id);
 
           return (
             <div key={c.id} style={{ display: "flex", gap: 6 }}>
@@ -98,7 +106,16 @@ export default function Sidebar({
                 </div>
               </button>
 
-              <button onClick={() => onDelete(c.id)} style={dangerButtonStyle}>
+              <button
+                onClick={() => onDelete(c.id)}
+                style={{
+                  ...dangerButtonStyle,
+                  opacity: canDelete ? 1 : 0.45,
+                  cursor: canDelete ? "pointer" : "not-allowed",
+                }}
+                disabled={!canDelete}
+                title={canDelete ? "Delete character" : "You do not have permission to delete this character"}
+              >
                 ✕
               </button>
             </div>

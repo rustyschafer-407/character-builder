@@ -11,6 +11,7 @@ interface UseCharacterEditorParams {
   updateCharacter: (updated: CharacterRecord) => void;
   setCharacters: (updater: (previous: CharacterRecord[]) => CharacterRecord[]) => void;
   setSelectedId: (nextId: string) => void;
+  onDeleteCharacter?: (id: string) => void;
 }
 
 export function useCharacterEditor({
@@ -21,6 +22,7 @@ export function useCharacterEditor({
   updateCharacter,
   setCharacters,
   setSelectedId,
+  onDeleteCharacter,
 }: UseCharacterEditorParams) {
   function updateAttributeWithRules(character: CharacterRecord, key: AttributeKey, value: number) {
     updateCharacter({
@@ -249,6 +251,8 @@ export function useCharacterEditor({
     ) {
       setSelectedId(getFirstVisibleCharacterId(remaining, campaignId));
     }
+
+    onDeleteCharacter?.(id);
   }
 
   return {

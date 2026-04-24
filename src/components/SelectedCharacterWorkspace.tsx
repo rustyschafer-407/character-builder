@@ -18,6 +18,7 @@ import LevelUpWizard from "./LevelUpWizard";
 
 interface SelectedCharacterWorkspaceProps {
   character: CharacterRecord;
+  readOnly?: boolean;
   selectedCampaignName: string;
   selectedRaceName: string;
   selectedClassName: string;
@@ -70,6 +71,7 @@ interface SelectedCharacterWorkspaceProps {
 
 export default function SelectedCharacterWorkspace({
   character,
+  readOnly = false,
   selectedCampaignName,
   selectedRaceName,
   selectedClassName,
@@ -154,58 +156,87 @@ export default function SelectedCharacterWorkspace({
         levelLabel={labels.level}
         hpLabel={labels.hp}
         roll20ModPayload={roll20ModPayload}
+        readOnly={readOnly}
         onNameChange={onNameChange}
         onOpenLevelUpWizard={onOpenLevelUpWizard}
       />
 
-      <AttributesSection
-        character={character}
-        label={labels.attributes}
-        onChange={onAttributeChange}
-      />
+      {readOnly ? (
+        <div
+          style={{
+            padding: "10px 12px",
+            borderRadius: 8,
+            border: "1px solid var(--border-soft)",
+            background: "rgba(11, 22, 42, 0.65)",
+            color: "var(--text-secondary)",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          Read-only access: you can view this character, but editing is disabled.
+        </div>
+      ) : null}
 
-      <SheetFieldsSection
-        character={character}
-        onSpeedChange={onSpeedChange}
-        onAcBaseChange={onAcBaseChange}
-        onAcBonusChange={onAcBonusChange}
-        onAcUseDexChange={onAcUseDexChange}
-        onInitMiscChange={onInitMiscChange}
-        onSaveProfChange={onSaveProfChange}
-        onSaveBonusChange={onSaveBonusChange}
-      />
+      <fieldset
+        disabled={readOnly}
+        style={{
+          border: 0,
+          margin: 0,
+          padding: 0,
+          display: "grid",
+          gap: 24,
+          minWidth: 0,
+        }}
+      >
+        <AttributesSection
+          character={character}
+          label={labels.attributes}
+          onChange={onAttributeChange}
+        />
 
-      <SkillsSection
-        character={character}
-        skills={selectedSkills}
-        label={labels.skills}
-        onChange={onSkillChange}
-      />
+        <SheetFieldsSection
+          character={character}
+          onSpeedChange={onSpeedChange}
+          onAcBaseChange={onAcBaseChange}
+          onAcBonusChange={onAcBonusChange}
+          onAcUseDexChange={onAcUseDexChange}
+          onInitMiscChange={onInitMiscChange}
+          onSaveProfChange={onSaveProfChange}
+          onSaveBonusChange={onSaveBonusChange}
+        />
 
-      <PowersSection
-        character={character}
-        powers={selectedPowers}
-        label={labels.powers}
-        onTogglePower={onTogglePower}
-        onPowerChange={onPowerChange}
-      />
+        <SkillsSection
+          character={character}
+          skills={selectedSkills}
+          label={labels.skills}
+          onChange={onSkillChange}
+        />
 
-      <InventorySection
-        character={character}
-        items={selectedItems}
-        label={labels.inventory}
-        onToggleItem={onToggleItem}
-        onQuantityChange={onQuantityChange}
-        onRemoveManualItem={onRemoveManualItem}
-        onAddManualItem={onAddManualItem}
-      />
+        <PowersSection
+          character={character}
+          powers={selectedPowers}
+          label={labels.powers}
+          onTogglePower={onTogglePower}
+          onPowerChange={onPowerChange}
+        />
 
-      <AttacksSection
-        character={character}
-        label={labels.attacks}
-        onAdd={onAddAttack}
-        onChange={onAttackChange}
-      />
+        <InventorySection
+          character={character}
+          items={selectedItems}
+          label={labels.inventory}
+          onToggleItem={onToggleItem}
+          onQuantityChange={onQuantityChange}
+          onRemoveManualItem={onRemoveManualItem}
+          onAddManualItem={onAddManualItem}
+        />
+
+        <AttacksSection
+          character={character}
+          label={labels.attacks}
+          onAdd={onAddAttack}
+          onChange={onAttackChange}
+        />
+      </fieldset>
     </div>
   );
 }

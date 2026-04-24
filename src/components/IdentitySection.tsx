@@ -11,6 +11,7 @@ interface Props {
   levelLabel: string;
   hpLabel: string;
   roll20ModPayload: string;
+  readOnly?: boolean;
   onNameChange: (name: string) => void;
   onOpenLevelUpWizard: () => void;
 }
@@ -24,6 +25,7 @@ export default function IdentitySection({
   levelLabel,
   hpLabel,
   roll20ModPayload,
+  readOnly = false,
   onNameChange,
   onOpenLevelUpWizard,
 }: Props) {
@@ -77,6 +79,7 @@ export default function IdentitySection({
                 style={{ ...buttonStyle, padding: "6px 10px", minWidth: 38 }}
                 aria-label="Edit character name"
                 title="Edit name"
+                disabled={readOnly}
               >
                 ✎
               </button>
@@ -100,13 +103,14 @@ export default function IdentitySection({
                   }}
                   style={inputStyle}
                   autoFocus
+                  disabled={readOnly}
                 />
               </label>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Save name">
+                <button onClick={saveNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Save name" disabled={readOnly}>
                   ✓
                 </button>
-                <button onClick={cancelNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Cancel name edit">
+                <button onClick={cancelNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Cancel name edit" disabled={readOnly}>
                   ✕
                 </button>
               </div>
@@ -139,7 +143,7 @@ export default function IdentitySection({
           <button onClick={copyToRoll20} style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
             Copy to Roll20
           </button>
-          <button onClick={onOpenLevelUpWizard} style={{ ...buttonStyle, padding: "8px 14px" }}>
+          <button onClick={onOpenLevelUpWizard} style={{ ...buttonStyle, padding: "8px 14px" }} disabled={readOnly}>
             Level Up
           </button>
         </div>

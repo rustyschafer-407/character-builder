@@ -42,6 +42,17 @@ In GitHub repo settings, add these Actions secrets:
 - `VERCEL_ORG_ID` = Vercel Account ID or Team ID
 - `VERCEL_PROJECT_ID` = Vercel Project ID
 
+For manual bootstrap-admin workflow, also add:
+
+- `STAGING_SUPABASE_URL`
+- `STAGING_SUPABASE_SERVICE_ROLE_KEY`
+- `STAGING_BOOTSTRAP_ADMIN_EMAIL`
+- `STAGING_BOOTSTRAP_ADMIN_PASSWORD`
+- `PRODUCTION_SUPABASE_URL`
+- `PRODUCTION_SUPABASE_SERVICE_ROLE_KEY`
+- `PRODUCTION_BOOTSTRAP_ADMIN_EMAIL`
+- `PRODUCTION_BOOTSTRAP_ADMIN_PASSWORD`
+
 ### 4. Add Vercel environment variables
 
 Preview environment:
@@ -53,6 +64,72 @@ Production environment:
 
 - `VITE_SUPABASE_URL` = production Supabase URL
 - `VITE_SUPABASE_ANON_KEY` = production Supabase anon key
+
+### 5. Bootstrap initial admin account (one-time per environment)
+
+Use the server-only script. Do not run this in browser code.
+
+Required environment variables:
+
+- `SUPABASE_URL` = Supabase project URL (or use `VITE_SUPABASE_URL` as fallback)
+- `SUPABASE_SERVICE_ROLE_KEY` = service role key (server-only)
+- `BOOTSTRAP_ADMIN_EMAIL` = owner/admin email
+- `BOOTSTRAP_ADMIN_PASSWORD` = owner/admin password
+
+Optional:
+
+- `BOOTSTRAP_UPDATE_PASSWORD=true` only if you explicitly want to rotate password for an existing admin user
+
+Run:
+
+```bash
+npm run bootstrap:admin
+```
+
+GitHub Actions alternative (recommended for hosted environments):
+
+1. Open `Actions` in GitHub.
+2. Select workflow `Bootstrap Admin`.
+3. Click `Run workflow`.
+4. Choose `target` (`staging` or `production`).
+5. Keep `update_password=false` unless explicit password rotation is intended.
+6. Run the workflow and confirm success.
+
+Expected outcome:
+
+- Auth user exists for `BOOTSTRAP_ADMIN_EMAIL`
+- `public.profiles` row exists with `is_admin = true` and `is_gm = true`
+
+Safety properties:
+
+- Idempotent: safe to run multiple times
+- Existing password is not changed unless `BOOTSTRAP_UPDATE_PASSWORD=true`
+- No credentials committed to repository files
+- `SUPABASE_SERVICE_ROLE_KEY` is never exposed to client bundles
+
+### 6. Update user global roles (server-only)
+
+`profiles.is_admin` and `profiles.is_gm` updates must be performed from a trusted server-side context.
+
+Required environment variables:
+
+- `SUPABASE_URL` (or `VITE_SUPABASE_URL` fallback)
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `TARGET_USER_EMAIL`
+- `SET_IS_ADMIN` (`true` or `false`)
+- `SET_IS_GM` (`true` or `false`)
+
+Run:
+
+```bash
+npm run roles:set
+```
+
+Notes:
+
+- This script updates profile role flags only.
+- This script does not update passwords.
+- Never run with service role credentials in browser/client code.
 
 ## Normal Staging Deploy
 

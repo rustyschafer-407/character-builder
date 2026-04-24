@@ -110,6 +110,8 @@ Hosted staging deploy:
 
 This repo includes [deploy-vercel workflow](.github/workflows/deploy-vercel.yml):
 
+Bootstrap admin workflow is available at [bootstrap-admin workflow](.github/workflows/bootstrap-admin.yml) and is intended for one-time per-environment admin setup using repository secrets.
+
 Detailed setup and repeatable deploy steps live in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 - Push to `staging` deploys to Vercel preview (staging)
@@ -126,6 +128,21 @@ Recommended Vercel environment setup:
 
 - Preview environment vars point to staging Supabase (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
 - Production environment vars point to production Supabase
+
+Bootstrap initial admin (one-time per environment):
+
+1. Export server-only vars in your shell:
+- `SUPABASE_URL` (or use `VITE_SUPABASE_URL`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `BOOTSTRAP_ADMIN_EMAIL`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+2. Run:
+
+```bash
+npm run bootstrap:admin
+```
+
+This creates/updates the owner profile with `is_admin=true` and `is_gm=true` and is safe to re-run.
 
 ## Release Checklist
 
