@@ -29,6 +29,7 @@ import {
   getCurrentProfile,
   ensureProfileExists,
   getProfileByEmail,
+  deleteUserAccount,
   listCampaignAccessRows,
   listCharacterAccessRows,
   listManageableProfiles,
@@ -919,10 +920,9 @@ export default function App() {
       return;
     }
 
-    const targetHint = profile.email ? `TARGET_USER_EMAIL=${profile.email}` : `TARGET_USER_ID=${profile.id}`;
-    setAccessManagementError(
-      `User deletion is server-only. In a trusted shell, run: ${targetHint} SUPABASE_SERVICE_ROLE_KEY=... SUPABASE_URL=... npm run user:delete`
-    );
+    await runAccessMutation(async () => {
+      await deleteUserAccount(input.userId);
+    });
   }
 
   async function handleAssignCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
