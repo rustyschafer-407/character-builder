@@ -1,4 +1,24 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
 name: Bootstrap Admin
+
+# VALIDATOR NOTES:
+# This workflow references custom secret names (STAGING_SUPABASE_URL, etc.)
+# which trigger VS Code's GitHub Actions schema validator warnings.
+# These warnings are harmless - GitHub Actions handles custom secret names
+# correctly at runtime. Two ways to eliminate the warnings:
+#
+# OPTION 1 (RECOMMENDED): Use GitHub Environments (requires GitHub setup change)
+#   1. Go to your repo Settings > Environments
+#   2. Create "staging" and "production" environments
+#   3. Add identical secrets to each (SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, etc.)
+#   4. Update this workflow to use 'environment: ${{ inputs.target }}'
+#   5. Simplify secret refs to ${{ secrets.SUPABASE_URL }} (no prefix needed)
+#
+# OPTION 2 (CURRENT): Accept validation warnings
+#   - Keep prefixed secret names (current approach)
+#   - Warnings are cosmetic only, no runtime impact
+#   - Workflow executes correctly despite warnings
+
 
 on:
   workflow_dispatch:
@@ -38,42 +58,47 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Resolve staging secrets
-        if: ${{ inputs.target == 'staging' }}
+      - name: Resolve and validate secrets
         shell: bash
+        # NOTE: Custom secret names (STAGING_*, PRODUCTION_*) trigger schema validator warnings.
+        # These are harmless - GitHub Actions handles them correctly at runtime.
+        # To eliminate warnings, consider GitHub Environments approach (see comments above).
         run: |
           set -euo pipefail
 
-          echo "SUPABASE_URL=${{ secrets.STAGING_SUPABASE_URL }}" >> "$GITHUB_ENV"
-          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}" >> "$GITHUB_ENV"
-          echo "BOOTSTRAP_ADMIN_EMAIL=${{ secrets.STAGING_BOOTSTRAP_ADMIN_EMAIL }}" >> "$GITHUB_ENV"
-          echo "BOOTSTRAP_ADMIN_PASSWORD=${{ secrets.STAGING_BOOTSTRAP_ADMIN_PASSWORD }}" >> "$GITHUB_ENV"
+          TARGET='${{ inputs.target }}'
 
-          echo "BOOTSTRAP_UPDATE_PASSWORD=${{ inputs.update_password }}" >> "$GITHUB_ENV"
+          # Conditionally set based on target
+          if [[ "$TARGET" == "staging" ]]; then
+            SUPABASE_URL='${{ secrets.STAGING_SUPABASE_URL }}'  # yamllint disable-line rule:octal-values
+            SUPABASE_SERVICE_ROLE_KEY='${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}'  # yamllint disable-line rule:octal-values
+            BOOTSTRAP_ADMIN_EMAIL='${{ secrets.STAGING_BOOTSTRAP_ADMIN_EMAIL }}'  # yamllint disable-line rule:octal-values
+            BOOTSTRAP_ADMIN_PASSWORD='${{ secrets.STAGING_BOOTSTRAP_ADMIN_PASSWORD }}'  # yamllint disable-line rule:octal-values
+          elif [[ "$TARGET" == "production" ]]; then
+            SUPABASE_URL='${{ secrets.PRODUCTION_SUPABASE_URL }}'  # yamllint disable-line rule:octal-values
+            SUPABASE_SERVICE_ROLE_KEY='${{ secrets.PRODUCTION_SUPABASE_SERVICE_ROLE_KEY }}'  # yamllint disable-line rule:octal-values
+            BOOTSTRAP_ADMIN_EMAIL='${{ secrets.PRODUCTION_BOOTSTRAP_ADMIN_EMAIL }}'  # yamllint disable-line rule:octal-values
+            BOOTSTRAP_ADMIN_PASSWORD='${{ secrets.PRODUCTION_BOOTSTRAP_ADMIN_PASSWORD }}'  # yamllint disable-line rule:octal-values
+          else
+            echo "Invalid target: $TARGET" >&2
+            exit 1
+          fi
 
-      - name: Resolve production secrets
-        if: ${{ inputs.target == 'production' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          echo "SUPABASE_URL=${{ secrets.PRODUCTION_SUPABASE_URL }}" >> "$GITHUB_ENV"
-          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.PRODUCTION_SUPABASE_SERVICE_ROLE_KEY }}" >> "$GITHUB_ENV"
-          echo "BOOTSTRAP_ADMIN_EMAIL=${{ secrets.PRODUCTION_BOOTSTRAP_ADMIN_EMAIL }}" >> "$GITHUB_ENV"
-          echo "BOOTSTRAP_ADMIN_PASSWORD=${{ secrets.PRODUCTION_BOOTSTRAP_ADMIN_PASSWORD }}" >> "$GITHUB_ENV"
-
-          echo "BOOTSTRAP_UPDATE_PASSWORD=${{ inputs.update_password }}" >> "$GITHUB_ENV"
-
-      - name: Validate required secrets
-        shell: bash
-        run: |
-          set -euo pipefail
+          # Validate all required values are present
           for key in SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD; do
-            if [[ -z "${!key:-}" ]]; then
-              echo "Missing required value for $key" >&2
+            eval "value=\$$key"
+            if [[ -z "$value" ]]; then
+              echo "Missing required secret for ${TARGET}: $key" >&2
               exit 1
             fi
           done
+
+          # Export for next step
+          echo "SUPABASE_URL=$SUPABASE_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "BOOTSTRAP_ADMIN_EMAIL=$BOOTSTRAP_ADMIN_EMAIL" >> "$GITHUB_ENV"
+          echo "BOOTSTRAP_ADMIN_PASSWORD=$BOOTSTRAP_ADMIN_PASSWORD" >> "$GITHUB_ENV"
+          echo "BOOTSTRAP_UPDATE_PASSWORD=${{ inputs.update_password }}" >> "$GITHUB_ENV"
 
       - name: Bootstrap admin
         run: npm run bootstrap:admin

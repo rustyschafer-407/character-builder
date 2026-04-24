@@ -150,23 +150,34 @@ Use this exact checklist when preparing production Supabase.
 - Keep local dev URL as needed (for example `http://localhost:5173`).
 - Do not leave auth redirects pointed at `localhost` for hosted environments.
 
-4. Use the correct server key for admin scripts/workflows:
+4. Google OAuth provider setup (required for Google sign-in):
+- In Google Cloud Console, create OAuth credentials for a Web application.
+- Configure OAuth consent screen (app name, support email, developer contact email).
+- Add the exact Supabase Google callback URL from `Supabase -> Authentication -> Providers -> Google` to Google OAuth "Authorized redirect URIs".
+- Copy Google Client ID and Client Secret into `Supabase -> Authentication -> Providers -> Google` and enable the provider.
+- If Google consent screen is in Testing mode, add your production test/admin accounts as Test users before validation.
+
+5. Google OAuth redirect rules:
+- Google "Authorized redirect URIs" must contain the Supabase callback URL (not your Vercel app URL).
+- Your app domain belongs in Supabase URL Configuration (`Site URL` and `Redirect URLs`).
+- For each environment, verify Supabase URL config includes the correct environment origin.
+
+6. Use the correct server key for admin scripts/workflows:
 - `SUPABASE_SERVICE_ROLE_KEY` must be the secret key from Supabase (`Secret keys`), not the publishable key.
 - Publishable keys (`sb_publishable_...`) are client-safe and will fail for server-only admin operations.
 
-5. Bootstrap the initial admin account after migrations:
+7. Bootstrap the initial admin account after migrations:
 - Run `npm run bootstrap:admin` with server-only env vars, or run GitHub workflow `Bootstrap Admin` for the target environment.
 - Expected result: auth user exists and `public.profiles` has `is_admin=true` and `is_gm=true` for that email.
 
-6. Passwordless auth settings (now used by the app):
-- App login now uses email-based passwordless flow.
-- In Supabase Email auth templates:
-	- include `{{ .Token }}` for code-based OTP UX, or
-	- keep magic link template if preferred.
-- Ensure URLs in auth/email settings match the environment where users will complete sign-in.
+8. Email/password fallback settings:
+- App login supports Google OAuth as primary and email/password as fallback.
+- Ensure Email provider is enabled in Supabase Auth when fallback is required.
+- Ensure auth URLs in Supabase match the environment where users will complete sign-in.
 
-7. Production verification checks:
-- New user can sign in from email flow.
+9. Production verification checks:
+- New user can sign in with Google OAuth.
+- Fallback email/password sign-in works for bootstrap/admin account.
 - Existing admin email can sign in and has admin capabilities.
 - No signup/login links redirect to `localhost` in production.
 - Access policies behave the same as staging for campaigns and characters.
@@ -208,8 +219,14 @@ git push origin HEAD:staging
 1. Confirm staging validation passed
 2. Merge `staging` into `main`
 3. Wait for the `Deploy Vercel` run on `main`
-4. Verify the production site
-5. Perform a quick sanity pass
+4. Verify Google OAuth provider is enabled in production Supabase and credentials are populated
+5. Verify Supabase production `Site URL` and `Redirect URLs` match production domain
+6. Verify the production site
+7. Perform a quick sanity pass:
+	- Google sign-in succeeds and redirects back to production domain
+	- Bootstrap admin can sign in via email/password fallback
+	- New non-assigned user sees friendly no-access state
+	- No auth redirects point to localhost
 
 ## Local Validation
 

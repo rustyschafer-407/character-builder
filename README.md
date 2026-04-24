@@ -154,6 +154,17 @@ This creates/updates the owner profile with `is_admin=true` and `is_gm=true` and
 6. Confirm Deploy Vercel workflow passes for `main`.
 7. Perform a quick production sanity pass.
 
+## Production Go-Live Checklist
+
+Use this as the single launch entry point:
+
+1. Complete environment and deployment setup in [DEPLOYMENT.md](DEPLOYMENT.md).
+2. Complete Google OAuth setup and validation in [docs/auth-google-setup.md](docs/auth-google-setup.md).
+3. Confirm Supabase production auth URLs and Google provider credentials are configured.
+4. Confirm bootstrap admin exists and can sign in via email/password fallback.
+5. Confirm Google sign-in works end-to-end in production.
+6. Run [SMOKE_TEST_CHECKLIST.md](SMOKE_TEST_CHECKLIST.md) and [GOOGLE_AUTH_QA.md](GOOGLE_AUTH_QA.md) before sign-off.
+
 ## Developer Smoke Test
 
 Use [SMOKE_TEST_CHECKLIST.md](SMOKE_TEST_CHECKLIST.md) for a quick manual validation pass after changes.

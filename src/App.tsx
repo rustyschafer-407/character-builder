@@ -499,7 +499,11 @@ export default function App() {
       // OAuth will redirect, but ensure profile exists when we return
       setAuthMessage("Redirecting to Google sign-in...");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Google sign-in failed";
+      const rawMessage = error instanceof Error ? error.message : "Google sign-in failed";
+      const message =
+        rawMessage.includes("Unsupported provider") || rawMessage.includes("provider is not enabled")
+          ? "Google sign-in is not enabled for this Supabase project yet. Enable Google under Supabase Auth > Providers, then retry."
+          : rawMessage;
       setAuthError(message);
     } finally {
       setAuthLoading(false);

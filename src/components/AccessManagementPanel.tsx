@@ -61,6 +61,8 @@ export default function AccessManagementPanel({
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedUserIsAdmin, setSelectedUserIsAdmin] = useState(false);
   const [selectedUserIsGm, setSelectedUserIsGm] = useState(false);
+  const [originalIsAdmin, setOriginalIsAdmin] = useState(false);
+  const [originalIsGm, setOriginalIsGm] = useState(false);
 
   const [campaignAssignUserId, setCampaignAssignUserId] = useState("");
   const [campaignAssignRole, setCampaignAssignRole] = useState<CampaignAccessRole>("player");
@@ -89,8 +91,12 @@ export default function AccessManagementPanel({
   function onSelectUser(userId: string) {
     setSelectedUserId(userId);
     const user = users.find((item) => item.id === userId) ?? null;
-    setSelectedUserIsAdmin(Boolean(user?.is_admin));
-    setSelectedUserIsGm(Boolean(user?.is_gm));
+    const isAdmin = Boolean(user?.is_admin);
+    const isGm = Boolean(user?.is_gm);
+    setSelectedUserIsAdmin(isAdmin);
+    setSelectedUserIsGm(isGm);
+    setOriginalIsAdmin(isAdmin);
+    setOriginalIsGm(isGm);
   }
 
   if (!canManageUsers && !canManageCampaignAccess && !canManageCharacterAccess) {
@@ -153,7 +159,7 @@ export default function AccessManagementPanel({
                   onChange={(e) => setSelectedUserIsAdmin(e.target.checked)}
                   disabled={busy || !selectedProfile}
                 />
-                is_admin
+                Admin
               </label>
               <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
                 <input
@@ -162,28 +168,41 @@ export default function AccessManagementPanel({
                   onChange={(e) => setSelectedUserIsGm(e.target.checked)}
                   disabled={busy || !selectedProfile}
                 />
-                is_gm
+                GM
               </label>
             </div>
           </div>
 
-          <div style={{ marginTop: 10 }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
               <button
                 style={primaryButtonStyle}
-                disabled={busy || !selectedProfile}
+                disabled={busy || !selectedProfile || (selectedUserIsAdmin === originalIsAdmin && selectedUserIsGm === originalIsGm)}
                 onClick={() => {
                   if (!selectedProfile) return;
-                  void runAction(() =>
-                    onSaveUserRoles({
+                  void runAction(async () => {
+                    await onSaveUserRoles({
                       userId: selectedProfile.id,
                       isAdmin: selectedUserIsAdmin,
                       isGm: selectedUserIsGm,
-                    })
-                  );
+                    });
+                    setOriginalIsAdmin(selectedUserIsAdmin);
+                    setOriginalIsGm(selectedUserIsGm);
+                  });
                 }}
               >
-                Request Role Update
+                Save
+              </button>
+              <button
+                style={buttonStyle}
+                disabled={busy || !selectedProfile || (selectedUserIsAdmin === originalIsAdmin && selectedUserIsGm === originalIsGm)}
+                onClick={() => {
+                  if (!selectedProfile) return;
+                  setSelectedUserIsAdmin(originalIsAdmin);
+                  setSelectedUserIsGm(originalIsGm);
+                }}
+              >
+                Cancel
               </button>
               <button
                 style={buttonStyle}
@@ -198,9 +217,6 @@ export default function AccessManagementPanel({
               >
                 Delete User
               </button>
-            </div>
-            <div style={{ marginTop: 8, color: "var(--text-secondary)", fontSize: 12 }}>
-              Global role changes are server-only and require trusted credentials.
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ This guide walks through setting up Google OAuth for Character Builder using Sup
 
 ## Prerequisites
 
-- Active Google Cloud project with billing enabled
+- Active Google Cloud project
 - Active Supabase project
 - Vercel project linked to the Character Builder GitHub repo
 - Local development environment with `git` and `npm` installed
@@ -36,8 +36,9 @@ This guide walks through setting up Google OAuth for Character Builder using Sup
 
 5. In **Authorized redirect URIs**, add:
    - Your Supabase project's OAuth callback URL (see Part 2, Step 2 for exact URL)
-   - Format: `https://<your-supabase-project>.supabase.co/auth/v1/callback?provider=google`
-   - Example: `https://abcdef123456.supabase.co/auth/v1/callback?provider=google`
+   - Format: `https://<your-supabase-project>.supabase.co/auth/v1/callback`
+   - Example: `https://abcdef123456.supabase.co/auth/v1/callback`
+   - Use the exact callback URL shown in `Supabase -> Authentication -> Providers -> Google`
 
 6. Click **Create**
 7. Copy and securely store:
@@ -78,6 +79,16 @@ This guide walks through setting up Google OAuth for Character Builder using Sup
    - `https://character-builder.yourcompany.com/auth/callback` (production custom domain, if applicable)
    - `https://character-builder.yourcompany.com` (production custom domain fallback)
 4. Click **Save**
+
+### Step 4: Production-specific OAuth checks
+
+Before production cutover, confirm:
+
+1. Google provider is enabled in production Supabase
+2. Production Google Client ID/Secret are set in production Supabase
+3. Google OAuth redirect URI list contains the Supabase callback URL for the production Supabase project
+4. Production app domain is set in Supabase URL Configuration (`Site URL` and `Redirect URLs`)
+5. If Google consent screen is in Testing mode, production tester/admin accounts are listed as Test users
 
 Note: Supabase's `detectSessionInUrl: true` flag (configured in `src/lib/supabaseClient.ts`) automatically handles OAuth callbacks to these URLs.
 
