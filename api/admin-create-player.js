@@ -1,5 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 
+function firstEnv(...keys) {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (typeof value === "string" && value.trim()) {
+      return value;
+    }
+  }
+  return "";
+}
+
 function readBearerToken(req) {
   const header = req.headers.authorization || req.headers.Authorization;
   if (!header || typeof header !== "string") return null;
@@ -38,17 +48,31 @@ export default async function handler(req, res) {
     return;
   }
 
-  const supabaseUrl =
-    process.env.SUPABASE_URL ||
-    process.env.VITE_SUPABASE_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.SERVICE_ROLE_KEY ||
-    process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = firstEnv(
+    "SUPABASE_URL",
+    "VITE_SUPABASE_URL",
+    "NEXT_PUBLIC_SUPABASE_URL",
+    "SUPABASE_PROJECT_URL",
+    "STAGING_SUPABASE_URL",
+    "PRODUCTION_SUPABASE_URL"
+  );
+  const serviceRoleKey = firstEnv(
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "SUPABASE_SECRET_KEY",
+    "SERVICE_ROLE_KEY",
+    "VITE_SUPABASE_SERVICE_ROLE_KEY",
+    "STAGING_SUPABASE_SERVICE_ROLE_KEY",
+    "PRODUCTION_SUPABASE_SERVICE_ROLE_KEY"
+  );
 
   if (!supabaseUrl || !serviceRoleKey) {
-    res.status(500).json({ error: "Missing server environment configuration." });
+    res.status(500).json({
+      error: "Missing server environment configuration.",
+      details: {
+        missingSupabaseUrl: !supabaseUrl,
+        missingServiceRoleKey: !serviceRoleKey,
+      },
+    });
     return;
   }
 

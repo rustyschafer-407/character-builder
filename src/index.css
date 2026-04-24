@@ -100,10 +100,6 @@ textarea {
   font-family: var(--font-body);
 }
 
-.password-visibility-input[data-mask="true"] {
-  -webkit-text-security: disc;
-}
-
 input[type="number"] {
   color-scheme: dark;
   padding-right: 10px;

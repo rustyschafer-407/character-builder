@@ -742,10 +742,11 @@ export default function AccessManagementPanel({
                   <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
                     New Password
                     <input
+                      key={`set-password-new-${setPasswordVisible ? "visible" : "hidden"}`}
                       type={setPasswordVisible ? "text" : "password"}
-                      className="password-visibility-input"
-                      data-mask={setPasswordVisible ? "false" : "true"}
                       autoComplete="new-password"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       value={setPasswordNewPassword}
                       onChange={(e) => setSetPasswordNewPassword(e.target.value)}
                       style={inputStyle}
@@ -755,10 +756,11 @@ export default function AccessManagementPanel({
                   <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
                     Confirm Password
                     <input
+                      key={`set-password-confirm-${setPasswordVisible ? "visible" : "hidden"}`}
                       type={setPasswordVisible ? "text" : "password"}
-                      className="password-visibility-input"
-                      data-mask={setPasswordVisible ? "false" : "true"}
                       autoComplete="new-password"
+                      autoCapitalize="off"
+                      spellCheck={false}
                       value={setPasswordConfirmPassword}
                       onChange={(e) => setSetPasswordConfirmPassword(e.target.value)}
                       style={inputStyle}
