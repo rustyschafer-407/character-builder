@@ -437,12 +437,14 @@
 
     if (sectionName === "skills") {
       normalized.skillattr = normalizeAbilityRef(normalized.skillattr, baseAttrs);
+      normalized.skillattrmod = String(toInt(baseAttrs[normalized.skillattr]));
       // Keep proficiency as a numeric toggle; roll formulas multiply by @{pb}.
       normalized.skillprof = toInt(normalized.skillprof) ? "1" : "";
     }
 
     if (sectionName === "attacks") {
       normalized.attackattr = normalizeAbilityRef(normalized.attackattr, baseAttrs);
+      normalized.attackattrmod = String(toInt(baseAttrs[normalized.attackattr]));
       // Keep proficiency as a numeric toggle; roll formulas multiply by @{pb}.
       normalized.attackprof = toInt(normalized.attackprof) ? "1" : "";
     }
