@@ -402,7 +402,7 @@
 .charsheet .sheet-skill-head,
 .charsheet .sheet-skill-row-compact {
   display: grid;
-  grid-template-columns: minmax(150px,1fr) 128px 64px 84px 92px;
+  grid-template-columns: minmax(200px, 1fr) 100px 56px 76px 76px 92px;
   gap: 8px;
   align-items: center;
 }
@@ -410,9 +410,15 @@
 .charsheet .sheet-attack-head,
 .charsheet .sheet-attack-row-compact {
   display: grid;
-  grid-template-columns: minmax(130px,1fr) 128px 64px 72px 90px 84px 64px 64px;
+  grid-template-columns: minmax(130px, 1fr) 104px 56px 64px 64px 72px 72px 52px 52px;
   gap: 8px;
   align-items: center;
+}
+
+.charsheet .sheet-skill-row-compact button,
+.charsheet .sheet-attack-row-compact button {
+  width: 100%;
+  min-width: 0;
 }
 
 .charsheet .sheet-power-head,
