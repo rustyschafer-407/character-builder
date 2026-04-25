@@ -2,6 +2,9 @@ begin;
 
 -- Backfill campaigns.created_by for legacy rows where it is null.
 -- Strategy: use the earliest campaign editor assignment as the canonical creator.
+-- Temporarily disable immutability trigger for this one-time data repair.
+alter table public.campaigns disable trigger enforce_campaign_created_by_immutable;
+
 with first_editor as (
   select distinct on (cua.campaign_id)
     cua.campaign_id,
@@ -17,6 +20,8 @@ set
 from first_editor fe
 where c.id = fe.campaign_id
   and c.created_by is null;
+
+alter table public.campaigns enable trigger enforce_campaign_created_by_immutable;
 
 -- Ensure profiles exist for campaign creators referenced by campaigns.created_by.
 insert into public.profiles (id, email, display_name, is_admin, is_gm, created_at, updated_at)
