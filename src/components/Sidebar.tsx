@@ -233,7 +233,7 @@ export default function Sidebar({
                 </div>
               </button>
 
-              {!restrictToPcOnly ? (
+              {showNpcControls ? (
                 <span
                   style={{
                     fontSize: 10,
