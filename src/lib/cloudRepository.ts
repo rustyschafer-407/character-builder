@@ -237,12 +237,16 @@ export async function getAccessContext() {
     }
   }
 
-  const campaignRolesByCampaignId = Object.fromEntries(
-    campaignAccess.map((row) => [
-      slugByCampaignId[row.campaign_id] ?? row.campaign_id,
-      row.role,
-    ] as const)
-  )
+  const campaignRolesByCampaignId = campaignAccess.reduce((acc, row) => {
+    acc[row.campaign_id] = row.role
+
+    const slug = slugByCampaignId[row.campaign_id]
+    if (slug) {
+      acc[slug] = row.role
+    }
+
+    return acc
+  }, {} as Record<string, CampaignAccessRole>)
   const characterRolesByCharacterId = Object.fromEntries(
     characterAccess.map((row) => [row.character_id, row.role] as const)
   )
