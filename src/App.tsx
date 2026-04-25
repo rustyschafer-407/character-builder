@@ -2269,6 +2269,9 @@ export default function App() {
             <SelectedCharacterWorkspace
               character={selected}
               readOnly={!uiCanEditSelectedCharacter}
+              canEditCharacterType={
+                uiCanEditSelectedCharacter && Permissions.shouldShowNpcControls(authState)
+              }
               selectedCampaignName={selectedCampaign.name}
               selectedRaceName={selectedRace?.name ?? "Unassigned"}
               selectedClassName={selectedClass?.name ?? "Unassigned"}

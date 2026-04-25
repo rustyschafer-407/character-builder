@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CharacterRecord } from "../types/character";
 import { buttonStyle, inputStyle, labelTextStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
+import "./IdentitySection.css";
 
 interface Props {
   character: CharacterRecord;
@@ -12,6 +13,7 @@ interface Props {
   hpLabel: string;
   roll20ModPayload: string;
   readOnly?: boolean;
+  canEditCharacterType?: boolean;
   onNameChange: (name: string) => void;
   onCharacterTypeChange: (characterType: "pc" | "npc") => void;
   onOpenLevelUpWizard: () => void;
@@ -27,6 +29,7 @@ export default function IdentitySection({
   hpLabel,
   roll20ModPayload,
   readOnly = false,
+  canEditCharacterType = false,
   onNameChange,
   onCharacterTypeChange,
   onOpenLevelUpWizard,
@@ -59,29 +62,36 @@ export default function IdentitySection({
     }
   }
 
+  const isTypeEditable = canEditCharacterType && !readOnly;
+  const characterType = character.characterType ?? "pc";
+
+  function handleCharacterTypeChange(nextCharacterType: "pc" | "npc") {
+    if (!isTypeEditable) {
+      if (import.meta.env.DEV) {
+        console.warn("[permissions] ignored unauthorized character type change", {
+          requestedType: nextCharacterType,
+          characterId: character.id,
+        });
+      }
+      return;
+    }
+    onCharacterTypeChange(nextCharacterType);
+  }
+
   return (
-    <section style={panelStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 24, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 360px", minWidth: 280, display: "grid", gap: 16 }}>
-          <div style={{ display: "grid", gap: 8 }}>
+    <section style={panelStyle} className="character-identity-card">
+      <div className="character-identity-layout">
+        <div className="character-identity-main">
+          <div>
             {!editingName ? (
-              <div style={{ display: "inline-flex", alignItems: "baseline", gap: 8 }}>
-                <div
-                  style={{
-                    fontSize: 26,
-                    fontWeight: 800,
-                    lineHeight: 1.08,
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  {character.identity.name || "Unnamed Character"}
-                </div>
+              <div className="character-name-row">
+                <div className="character-name">{character.identity.name || "Unnamed Character"}</div>
                 <button
                   onClick={startNameEdit}
-                  className="button-control"
+                  className="button-control character-name-edit"
                   style={{
                     ...buttonStyle,
-                    padding: "2px 8px",
+                    padding: "0 8px",
                     minWidth: 0,
                     minHeight: 24,
                     fontSize: 13,
@@ -113,16 +123,29 @@ export default function IdentitySection({
                       }
                     }}
                     placeholder="Character name"
-                    className="form-control" style={inputStyle}
+                    className="form-control"
+                    style={inputStyle}
                     autoFocus
                     disabled={readOnly}
                   />
                 </label>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={saveNameEdit} className="button-control" style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Save name" disabled={readOnly}>
+                  <button
+                    onClick={saveNameEdit}
+                    className="button-control"
+                    style={{ ...buttonStyle, padding: "6px 10px" }}
+                    aria-label="Save name"
+                    disabled={readOnly}
+                  >
                     ✓
                   </button>
-                  <button onClick={cancelNameEdit} className="button-control" style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Cancel name edit" disabled={readOnly}>
+                  <button
+                    onClick={cancelNameEdit}
+                    className="button-control"
+                    style={{ ...buttonStyle, padding: "6px 10px" }}
+                    aria-label="Cancel name edit"
+                    disabled={readOnly}
+                  >
                     ✕
                   </button>
                 </div>
@@ -130,57 +153,74 @@ export default function IdentitySection({
             )}
 
             {!editingName ? (
-              <div style={{ fontSize: 15, color: "var(--cb-text-muted)", opacity: 0.82 }}>
+              <div className="character-subtitle">
                 {classLabel}: {className} • {raceName}
               </div>
             ) : null}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", color: "var(--cb-text-muted)", fontSize: 13.5, lineHeight: 1.2 }}>
-            <span>
-              {levelLabel} {character.level}
+          <div className="character-meta-row">
+            <span className="character-meta-chip">
+              <span className="character-meta-label">{levelLabel}</span>
+              <span className="character-meta-value">{character.level}</span>
             </span>
-            <span>
-              {hpLabel} {character.hp.current}/{character.hp.max}
+            <span className="character-meta-chip">
+              <span className="character-meta-label">{hpLabel}</span>
+              <span className="character-meta-value">
+                {character.hp.current}/{character.hp.max}
+              </span>
             </span>
-            <span>Campaign: {campaignName}</span>
-            <label style={{ ...labelTextStyle, display: "inline-flex", alignItems: "center", gap: 6, margin: 0 }}>
-              <span style={{ fontSize: 13.5, color: "var(--cb-text-muted)" }}>Type:</span>
-              <select
-                className="form-control"
-                style={{
-                  ...inputStyle,
-                  marginTop: 0,
-                  width: 88,
-                  minWidth: 88,
-                  height: 28,
-                  padding: "2px 10px",
-                  borderRadius: 999,
-                  fontSize: 13,
-                  lineHeight: 1,
-                  background: "var(--cb-surface-raised)",
-                  border: "1px solid var(--cb-border)",
-                }}
-                value={character.characterType ?? "pc"}
-                onChange={(event) => onCharacterTypeChange(event.target.value as "pc" | "npc")}
-                disabled={readOnly}
-                aria-label="Character type"
-              >
-                <option value="pc">PC</option>
-                <option value="npc">NPC</option>
-              </select>
-            </label>
+            <span className="character-meta-chip">
+              <span className="character-meta-label">Campaign:</span>
+              <span className="character-meta-value">{campaignName}</span>
+            </span>
+
+            {isTypeEditable ? (
+              <label className="character-meta-chip character-type-chip character-type-chip--editable">
+                <span className="character-meta-label">Type:</span>
+                <span className="character-meta-value">{characterType.toUpperCase()}</span>
+                <span className="character-type-caret" aria-hidden="true">
+                  ▾
+                </span>
+                <select
+                  className="character-type-select"
+                  value={characterType}
+                  onChange={(event) => handleCharacterTypeChange(event.target.value as "pc" | "npc")}
+                  disabled={!isTypeEditable}
+                  aria-label="Character type"
+                >
+                  <option value="pc">PC</option>
+                  <option value="npc">NPC</option>
+                </select>
+              </label>
+            ) : (
+              <span className="character-meta-chip character-type-chip character-type-chip--readonly">
+                <span className="character-meta-label">Type:</span>
+                <span className="character-meta-value">{characterType.toUpperCase()}</span>
+              </span>
+            )}
           </div>
         </div>
 
-        <div style={{ display: "grid", gap: 8, minWidth: 170, alignContent: "start" }}>
-          <button onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "7px 12px", minHeight: 36, fontSize: 14 }}>
+        <div className="character-actions">
+          <button
+            onClick={copyToRoll20}
+            className="button-control character-primary-action"
+            style={{ ...primaryButtonStyle, padding: "0 14px", minHeight: 40, fontSize: 14 }}
+          >
             Copy to Roll20
           </button>
           <button
             onClick={onOpenLevelUpWizard}
-            className="button-control"
-            style={{ ...buttonStyle, padding: "7px 12px", minHeight: 36, fontSize: 14, background: "transparent", border: "1px solid var(--cb-border)" }}
+            className="button-control character-secondary-action"
+            style={{
+              ...buttonStyle,
+              padding: "0 14px",
+              minHeight: 40,
+              fontSize: 14,
+              background: "transparent",
+              border: "1px solid var(--cb-border)",
+            }}
             disabled={readOnly}
           >
             Level Up
