@@ -69,3 +69,43 @@ export function resolveUserName(user: UserLike | null | undefined, fallback: str
 export function resolveUserEmail(user: UserLike | null | undefined, fallback: string): string {
   return asNonEmptyString(user?.email) ?? fallback;
 }
+
+/**
+ * Get display name from an enriched access row profile.
+ * Ensures a human-readable name is always returned (never a UUID).
+ */
+export function getAccessRowDisplayName(profile: { 
+  display_name: string | null; 
+  email: string | null; 
+  id?: string 
+} | null): string {
+  if (!profile) return "Unknown user";
+  
+  const displayName = asNonEmptyString(profile.display_name);
+  if (displayName) return displayName;
+  
+  const email = asNonEmptyString(profile.email);
+  if (email) {
+    const emailPrefix = getEmailPrefix(email);
+    if (emailPrefix) return emailPrefix;
+    return email;
+  }
+  
+  return "Unknown user";
+}
+
+/**
+ * Get email from an enriched access row profile.
+ * Ensures a human-readable email is always returned (never a UUID).
+ */
+export function getAccessRowEmail(profile: { 
+  email: string | null;
+  id?: string 
+} | null): string {
+  if (!profile) return "No email on profile";
+  
+  const email = asNonEmptyString(profile.email);
+  if (email) return email;
+  
+  return "No email on profile";
+}

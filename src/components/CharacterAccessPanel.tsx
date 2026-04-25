@@ -1,19 +1,17 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type {
-  CampaignAccessRow,
+  CampaignAccessRowWithProfile,
   CharacterAccessRole,
-  CharacterAccessRow,
-  ProfileRow,
+  CharacterAccessRowWithProfile,
 } from "../lib/cloudRepository";
-import { resolveUserEmail, resolveUserName } from "../lib/userDisplay";
+import { getAccessRowDisplayName, getAccessRowEmail } from "../lib/userDisplay";
 import { buttonStyle, inputStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
 
 interface CharacterAccessPanelProps {
   characterName: string;
-  users: ProfileRow[];
-  campaignAccessRows: CampaignAccessRow[];
-  characterAccessRows: CharacterAccessRow[];
+  campaignAccessRows: CampaignAccessRowWithProfile[];
+  characterAccessRows: CharacterAccessRowWithProfile[];
   characterUserCandidateIds: string[];
   getUserLabel: (userId: string) => string;
   onAssignCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
@@ -24,7 +22,6 @@ interface CharacterAccessPanelProps {
 }
 
 export default function CharacterAccessPanel({
-  users,
   campaignAccessRows,
   characterAccessRows,
   characterUserCandidateIds,
@@ -42,7 +39,6 @@ export default function CharacterAccessPanel({
   const [accessResult, setAccessResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [removeModalUserId, setRemoveModalUserId] = useState("");
 
-  const usersById = useMemo(() => new Map(users.map((user) => [user.id, user] as const)), [users]);
   const explicitAccessUserIds = useMemo(() => new Set(characterAccessRows.map((row) => row.user_id)), [characterAccessRows]);
 
   const inheritedCampaignEditors = useMemo(
@@ -60,29 +56,27 @@ export default function CharacterAccessPanel({
 
   const explicitRows = useMemo(() => {
     return characterAccessRows.map((row) => {
-      const profile = usersById.get(row.user_id);
-      const displayName = resolveUserName(profile, row.user_id);
-      const email = resolveUserEmail(profile, row.user_id);
+      const displayName = getAccessRowDisplayName(row.profile);
+      const email = getAccessRowEmail(row.profile);
       return {
         ...row,
         displayName,
         email,
       };
     });
-  }, [characterAccessRows, usersById]);
+  }, [characterAccessRows]);
 
   const inheritedRows = useMemo(() => {
     return inheritedCampaignEditors.map((row) => {
-      const profile = usersById.get(row.user_id);
-      const displayName = resolveUserName(profile, row.user_id);
-      const email = resolveUserEmail(profile, row.user_id);
+      const displayName = getAccessRowDisplayName(row.profile);
+      const email = getAccessRowEmail(row.profile);
       return {
         ...row,
         displayName,
         email,
       };
     });
-  }, [inheritedCampaignEditors, usersById]);
+  }, [inheritedCampaignEditors]);
 
   async function runAction(action: () => Promise<void>) {
     onClearError();

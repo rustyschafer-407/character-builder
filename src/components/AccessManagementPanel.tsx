@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
   CampaignAccessRole,
-  CampaignAccessRow,
+  CampaignAccessRowWithProfile,
   CharacterAccessRole,
-  CharacterAccessRow,
+  CharacterAccessRowWithProfile,
   ProfileRow,
 } from "../lib/cloudRepository";
 import { getSupabaseClient } from "../lib/supabaseClient";
-import { resolveUserEmail, resolveUserName } from "../lib/userDisplay";
+import { getAccessRowDisplayName, getAccessRowEmail } from "../lib/userDisplay";
 import { buttonStyle, dangerButtonStyle, inputStyle, panelStyle, primaryButtonStyle, sectionTitleStyle } from "./uiStyles";
 
 interface AccessManagementPanelProps {
@@ -17,8 +17,8 @@ interface AccessManagementPanelProps {
   campaignName: string;
   characterName: string | null;
   users: ProfileRow[];
-  campaignAccessRows: CampaignAccessRow[];
-  characterAccessRows: CharacterAccessRow[];
+  campaignAccessRows: CampaignAccessRowWithProfile[];
+  characterAccessRows: CharacterAccessRowWithProfile[];
   characterUserCandidateIds: string[];
   getUserLabel: (userId: string) => string;
   onSaveUserRoles: (input: { userId: string; isAdmin: boolean; isGm: boolean }) => Promise<void>;
@@ -120,10 +120,6 @@ export default function AccessManagementPanel({
   );
 
   const characterRoleOptions: CharacterAccessRole[] = characterViewerInUse ? ["viewer", "editor"] : ["editor"];
-  const usersById = useMemo(
-    () => new Map(users.map((user) => [user.id, user] as const)),
-    [users]
-  );
   const campaignEditorCount = useMemo(
     () => campaignAccessRows.filter((row) => row.role === "editor").length,
     [campaignAccessRows]
@@ -418,7 +414,7 @@ export default function AccessManagementPanel({
                     onMouseLeave={() => setHoveredPeopleRowId("")}
                   >
                     <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                      {resolveUserName(user, user.id)}
+                      {user.display_name || user.id}
                     </div>
                     <div style={{ color: "var(--text-secondary)" }}>{user.email || "No email"}</div>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -617,7 +613,7 @@ export default function AccessManagementPanel({
                     Display Name
                     <input
                       type="text"
-                      value={resolveUserName(selectedEditUser, selectedEditUser.id)}
+                      value={selectedEditUser?.display_name ?? ""}
                       className="form-control" style={inputStyle}
                       readOnly
                       disabled
@@ -733,7 +729,7 @@ export default function AccessManagementPanel({
                 </div>
 
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                  User: {resolveUserName(selectedEditUser, selectedEditUser.id)} ({selectedEditUser.email || selectedEditUser.id})
+                  User: {selectedEditUser?.display_name || selectedEditUser?.id} ({selectedEditUser?.email || selectedEditUser?.id})
                 </div>
 
                 <div style={{ display: "grid", gap: 12 }}>
@@ -967,9 +963,8 @@ export default function AccessManagementPanel({
                 </div>
               ) : (
                 campaignAccessRows.map((row) => {
-                  const profile = usersById.get(row.user_id);
-                  const displayName = resolveUserName(profile, row.user_id);
-                  const email = resolveUserEmail(profile, row.user_id);
+                  const displayName = getAccessRowDisplayName(row.profile);
+                  const email = getAccessRowEmail(row.profile);
                   const removingLastEditor = row.role === "editor" && campaignEditorCount <= 1;
 
                   return (

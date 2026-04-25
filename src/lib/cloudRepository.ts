@@ -35,6 +35,16 @@ export interface CampaignAccessRow {
   updated_at: string
 }
 
+export interface CampaignAccessRowWithProfile extends CampaignAccessRow {
+  profile: {
+    id: string
+    email: string | null
+    display_name: string | null
+    is_admin: boolean
+    is_gm: boolean
+  }
+}
+
 export interface AccessibleCampaignRow extends CampaignRow {
   campaign_role: CampaignAccessRole | null
   can_edit: boolean
@@ -57,6 +67,16 @@ export interface CharacterAccessRow {
   granted_by: string | null
   created_at: string
   updated_at: string
+}
+
+export interface CharacterAccessRowWithProfile extends CharacterAccessRow {
+  profile: {
+    id: string
+    email: string | null
+    display_name: string | null
+    is_admin: boolean
+    is_gm: boolean
+  }
 }
 
 export interface AccessibleCharacterRow extends CharacterRow {
@@ -529,12 +549,26 @@ export async function listCampaignAccessRows(campaignRowId: string) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from("campaign_user_access")
-    .select("campaign_id, user_id, role, granted_by, created_at, updated_at")
+    .select("campaign_id, user_id, role, granted_by, created_at, updated_at, profile:user_id(id, email, display_name, is_admin, is_gm)")
     .eq("campaign_id", campaignRowId)
     .order("created_at", { ascending: true })
 
   if (error) throw error
-  return (data ?? []) as CampaignAccessRow[]
+  
+  // Transform flat response to nested structure
+  const rows = (data ?? []).map((row: any) => ({
+    campaign_id: row.campaign_id,
+    user_id: row.user_id,
+    role: row.role,
+    granted_by: row.granted_by,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    profile: Array.isArray(row.profile) && row.profile.length > 0 
+      ? row.profile[0] 
+      : { id: row.user_id, email: null, display_name: null, is_admin: false, is_gm: false }
+  }))
+  
+  return rows as CampaignAccessRowWithProfile[]
 }
 
 export async function upsertCampaignAccessRow(input: {
@@ -616,12 +650,26 @@ export async function listCharacterAccessRows(characterId: string) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from("character_user_access")
-    .select("character_id, user_id, role, granted_by, created_at, updated_at")
+    .select("character_id, user_id, role, granted_by, created_at, updated_at, profile:user_id(id, email, display_name, is_admin, is_gm)")
     .eq("character_id", characterId)
     .order("created_at", { ascending: true })
 
   if (error) throw error
-  return (data ?? []) as CharacterAccessRow[]
+  
+  // Transform flat response to nested structure
+  const rows = (data ?? []).map((row: any) => ({
+    character_id: row.character_id,
+    user_id: row.user_id,
+    role: row.role,
+    granted_by: row.granted_by,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    profile: Array.isArray(row.profile) && row.profile.length > 0 
+      ? row.profile[0] 
+      : { id: row.user_id, email: null, display_name: null, is_admin: false, is_gm: false }
+  }))
+  
+  return rows as CharacterAccessRowWithProfile[]
 }
 
 export async function upsertCharacterAccessRow(input: {

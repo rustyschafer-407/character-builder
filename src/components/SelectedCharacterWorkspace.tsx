@@ -18,10 +18,9 @@ import AttacksSection from "./AttacksSection";
 import LevelUpWizard from "./LevelUpWizard";
 import CharacterAccessPanel from "./CharacterAccessPanel";
 import type {
-  CampaignAccessRow,
+  CampaignAccessRowWithProfile,
   CharacterAccessRole,
-  CharacterAccessRow,
-  ProfileRow,
+  CharacterAccessRowWithProfile,
 } from "../lib/cloudRepository";
 
 interface CollapsibleSectionProps {
@@ -160,9 +159,8 @@ interface SelectedCharacterWorkspaceProps {
   onAddAttack: () => void;
   onAttackChange: (id: string, field: "name" | "damage" | "bonus", value: string | number) => void;
   canManageCharacterAccess: boolean;
-  characterAccessUsers: ProfileRow[];
-  campaignAccessRows: CampaignAccessRow[];
-  characterAccessRows: CharacterAccessRow[];
+  campaignAccessRows: CampaignAccessRowWithProfile[];
+  characterAccessRows: CharacterAccessRowWithProfile[];
   characterUserCandidateIds: string[];
   getUserLabel: (userId: string) => string;
   onAssignCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
@@ -221,7 +219,6 @@ export default function SelectedCharacterWorkspace({
   onAddAttack,
   onAttackChange,
   canManageCharacterAccess,
-  characterAccessUsers,
   campaignAccessRows,
   characterAccessRows,
   characterUserCandidateIds,
@@ -354,7 +351,6 @@ export default function SelectedCharacterWorkspace({
         >
           <CharacterAccessPanel
             characterName={character.identity.name?.trim() || "this character"}
-            users={characterAccessUsers}
             campaignAccessRows={campaignAccessRows}
             characterAccessRows={characterAccessRows}
             characterUserCandidateIds={characterUserCandidateIds}

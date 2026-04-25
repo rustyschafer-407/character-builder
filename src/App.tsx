@@ -11,9 +11,9 @@ import {
 import { makePointBuyBaseAttributes } from "./lib/pointBuy";
 import { DEFAULT_EXPORTER_ID, exportCharacter } from "./lib/exporters";
 import {
-  type CampaignAccessRow,
+  type CampaignAccessRowWithProfile,
   type ProfileRow,
-  type CharacterAccessRow,
+  type CharacterAccessRowWithProfile,
   deleteCampaignAccessRow,
   deleteCharacterAccessRow,
   getAccessContext,
@@ -251,8 +251,8 @@ export default function App() {
   const [raceId, setRaceId] = useState("");
   const [classId, setClassId] = useState("");
   const [manageableUsers, setManageableUsers] = useState<ProfileRow[]>([]);
-  const [campaignAccessRows, setCampaignAccessRows] = useState<CampaignAccessRow[]>([]);
-  const [characterAccessRows, setCharacterAccessRows] = useState<CharacterAccessRow[]>([]);
+  const [campaignAccessRows, setCampaignAccessRows] = useState<CampaignAccessRowWithProfile[]>([]);
+  const [characterAccessRows, setCharacterAccessRows] = useState<CharacterAccessRowWithProfile[]>([]);
   const [accessManagementError, setAccessManagementError] = useState("");
   const [inviteAcceptStatus, setInviteAcceptStatus] = useState<"idle" | "accepting" | "success" | "error">("idle");
   const [inviteAcceptError, setInviteAcceptError] = useState("");
@@ -857,8 +857,8 @@ export default function App() {
     if (!currentUserId) return;
 
     let users: ProfileRow[] = [];
-    let campaignRows: CampaignAccessRow[] = [];
-    let characterRows: CharacterAccessRow[] = [];
+    let campaignRows: CampaignAccessRowWithProfile[] = [];
+    let characterRows: CharacterAccessRowWithProfile[] = [];
 
     if (currentCampaignRowId && (uiCanManageCampaignAccess || uiCanManageCharacterAccess)) {
       campaignRows = await listCampaignAccessRows(currentCampaignRowId);
@@ -1928,7 +1928,6 @@ export default function App() {
                 }
               }}
               canManageCharacterAccess={uiCanManageCharacterAccess}
-              characterAccessUsers={manageableUsers}
               campaignAccessRows={campaignAccessRows}
               characterAccessRows={characterAccessRows}
               characterUserCandidateIds={characterUserCandidateIds}
