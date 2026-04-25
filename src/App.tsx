@@ -30,11 +30,9 @@ import {
 import {
   getCurrentSession,
   getSessionUser,
-  listLoginPickerProfiles,
   onAuthStateChange,
   requestEmailSignIn,
   requestPasswordReset,
-  resolveLoginPickerEmail,
   signInWithGoogle,
   signOut,
   updateCurrentUserPassword,
@@ -71,31 +69,30 @@ import {
   type DisplayPreferences,
 } from "./lib/displayPreferences";
 
-const rememberedProfileStorageKey = "character-builder.rememberedProfile";
-const includeAdminInLoginPicker = String(import.meta.env.VITE_LOGIN_PICKER_INCLUDE_ADMINS ?? "").toLowerCase() === "true";
+const rememberedEmailStorageKey = "character-builder.rememberedEmail";
 
-function readRememberedProfileId() {
+function readRememberedEmail() {
   if (typeof window === "undefined") return "";
   try {
-    return window.localStorage.getItem(rememberedProfileStorageKey) ?? "";
+    return window.localStorage.getItem(rememberedEmailStorageKey) ?? "";
   } catch {
     return "";
   }
 }
 
-function writeRememberedProfileId(profileId: string) {
+function writeRememberedEmail(email: string) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(rememberedProfileStorageKey, profileId);
+    window.localStorage.setItem(rememberedEmailStorageKey, email);
   } catch {
-    // Ignore storage write errors; auth still works without remembered profile.
+    // Ignore storage write errors; auth still works without remembered email.
   }
 }
 
-function clearRememberedProfileId() {
+function clearRememberedEmail() {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.removeItem(rememberedProfileStorageKey);
+    window.localStorage.removeItem(rememberedEmailStorageKey);
   } catch {
     // Ignore storage removal errors.
   }
@@ -211,9 +208,7 @@ export default function App() {
   const [authCardMode, setAuthCardMode] = useState<"sign-in" | "reset-request">(() =>
     authActionFromQuery === "reset" ? "reset-request" : "sign-in"
   );
-  const [loginPickerProfiles, setLoginPickerProfiles] = useState<Array<{ id: string; label: string }>>([]);
-  const [loginPickerLoading, setLoginPickerLoading] = useState(false);
-  const [authProfileId, setAuthProfileId] = useState(() => (getRememberMePreference() ? readRememberedProfileId() : ""));
+  const [authEmail, setAuthEmail] = useState(() => (getRememberMePreference() ? readRememberedEmail() : ""));
   const [authPassword, setAuthPassword] = useState("");
   const [resetEmail, setResetEmail] = useState("");
   const [updatePasswordValue, setUpdatePasswordValue] = useState("");
@@ -370,43 +365,6 @@ export default function App() {
   }, [cloudEnabled]);
 
   useEffect(() => {
-    if (!cloudEnabled || currentUserId || !useEmailFallback) {
-      return;
-    }
-
-    let isCancelled = false;
-
-    async function loadPickerProfiles() {
-      setLoginPickerLoading(true);
-      try {
-        const profiles = await listLoginPickerProfiles(includeAdminInLoginPicker);
-        if (isCancelled) return;
-        setLoginPickerProfiles(profiles);
-        setAuthProfileId((previous) => {
-          if (previous && profiles.some((profile) => profile.id === previous)) {
-            return previous;
-          }
-          return profiles[0]?.id ?? "";
-        });
-      } catch (error) {
-        if (isCancelled) return;
-        const message = error instanceof Error ? error.message : "Unable to load user list";
-        setAuthError(message);
-      } finally {
-        if (!isCancelled) {
-          setLoginPickerLoading(false);
-        }
-      }
-    }
-
-    void loadPickerProfiles();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [cloudEnabled, currentUserId, useEmailFallback]);
-
-  useEffect(() => {
     if (!cloudEnabled || !updatePasswordRouteActive) {
       return;
     }
@@ -437,19 +395,18 @@ export default function App() {
     };
   }, [cloudEnabled, updatePasswordRouteActive, updatePasswordRecoveryReady]);
 
-  async function handlePickerPasswordSignIn() {
+  async function handleEmailPasswordSignIn() {
     setAuthLoading(true);
     setAuthError("");
     setAuthMessage("");
     try {
       setRememberMePreference(authRememberMe);
       if (authRememberMe) {
-        writeRememberedProfileId(authProfileId.trim());
+        writeRememberedEmail(authEmail.trim());
       } else {
-        clearRememberedProfileId();
+        clearRememberedEmail();
       }
-      const email = await resolveLoginPickerEmail(authProfileId, includeAdminInLoginPicker);
-      await requestEmailSignIn(email, authPassword);
+      await requestEmailSignIn(authEmail.trim(), authPassword);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
       setAuthError(message);
@@ -529,9 +486,9 @@ export default function App() {
     try {
       setRememberMePreference(authRememberMe);
       if (authRememberMe) {
-        writeRememberedProfileId(authProfileId.trim());
+        writeRememberedEmail(authEmail.trim());
       } else {
-        clearRememberedProfileId();
+        clearRememberedEmail();
       }
       await signInWithGoogle();
       // OAuth will redirect, but ensure profile exists when we return
@@ -1396,33 +1353,23 @@ export default function App() {
                 <>
                   <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Password Sign In</h2>
                   <p style={{ ...mutedTextStyle }}>
-                    Choose your name and enter your password to sign in.
+                    Enter your email and password to sign in.
                   </p>
 
                   <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "var(--cb-muted-label)" }}>
-                    User
-                    <select
-                      value={authProfileId}
+                    Email
+                    <input
+                      type="email"
+                      value={authEmail}
                       onChange={(e) => {
-                        setAuthProfileId(e.target.value);
+                        setAuthEmail(e.target.value);
                         setAuthError("");
                         setAuthMessage("");
                       }}
+                      autoComplete="email"
                       className="form-control"
                       style={inputStyle}
-                      disabled={authLoading || loginPickerLoading}
-                    >
-                      {loginPickerProfiles.length === 0 ? (
-                        <option value="">
-                          {loginPickerLoading ? "Loading users..." : "No users available"}
-                        </option>
-                      ) : null}
-                      {loginPickerProfiles.map((profile) => (
-                        <option key={profile.id} value={profile.id}>
-                          {profile.label}
-                        </option>
-                      ))}
-                    </select>
+                    />
                   </label>
 
                   <label style={{ display: "block", marginBottom: 4, fontWeight: 600, color: "var(--cb-muted-label)" }}>
@@ -1470,7 +1417,7 @@ export default function App() {
                         setAuthRememberMe(checked);
                         setRememberMePreference(checked);
                         if (!checked) {
-                          clearRememberedProfileId();
+                          clearRememberedEmail();
                         }
                       }}
                     />
@@ -1487,10 +1434,10 @@ export default function App() {
 
                   <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
                     <button
-                      onClick={() => void handlePickerPasswordSignIn()}
+                      onClick={() => void handleEmailPasswordSignIn()}
                       className="button-control"
                       style={primaryButtonStyle}
-                      disabled={authLoading || loginPickerLoading || !authProfileId || authPassword.length === 0}
+                      disabled={authLoading || !authEmail.trim() || authPassword.length === 0}
                     >
                       {authLoading ? "Signing in..." : "Sign In"}
                     </button>
