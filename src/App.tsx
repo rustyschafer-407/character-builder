@@ -659,6 +659,16 @@ export default function App() {
     },
   });
 
+  // Build auth state for centralized permission checks before any derived render logic uses it.
+  const authState: AuthState = useMemo(
+    () => ({
+      profile: currentUserProfile,
+      campaignRolesByCampaignId,
+      characterRolesByCharacterId,
+    }),
+    [currentUserProfile, campaignRolesByCampaignId, characterRolesByCharacterId]
+  );
+
   const selected = useMemo(
     () => characters.find((c) => c.id === selectedId) ?? null,
     [characters, selectedId]
@@ -859,16 +869,6 @@ export default function App() {
 
   const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
   const hasAnyCampaignAccess = gameData.campaigns.length > 0;
-
-  // Build auth state for centralized permission checks
-  const authState: AuthState = useMemo(
-    () => ({
-      profile: currentUserProfile,
-      campaignRolesByCampaignId,
-      characterRolesByCharacterId,
-    }),
-    [currentUserProfile, campaignRolesByCampaignId, characterRolesByCharacterId]
-  );
 
   // Permission checks using centralized module
   const uiCanCreateCampaign = Permissions.canCreateCampaign(authState);
