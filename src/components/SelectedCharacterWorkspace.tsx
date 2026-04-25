@@ -110,6 +110,7 @@ function CollapsibleSection({
 interface SelectedCharacterWorkspaceProps {
   character: CharacterRecord;
   readOnly?: boolean;
+  canEditCharacterType?: boolean;
   selectedCampaignName: string;
   selectedRaceName: string;
   selectedClassName: string;
@@ -174,6 +175,7 @@ interface SelectedCharacterWorkspaceProps {
 export default function SelectedCharacterWorkspace({
   character,
   readOnly = false,
+  canEditCharacterType = false,
   selectedCampaignName,
   selectedRaceName,
   selectedClassName,
@@ -352,6 +354,7 @@ export default function SelectedCharacterWorkspace({
         hpLabel={labels.hp}
         roll20ModPayload={roll20ModPayload}
         readOnly={readOnly}
+        canEditCharacterType={canEditCharacterType}
         onNameChange={onNameChange}
         onCharacterTypeChange={onCharacterTypeChange}
         onOpenLevelUpWizard={onOpenLevelUpWizard}
