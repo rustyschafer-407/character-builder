@@ -1,3 +1,4 @@
+import { useState, type ReactNode } from "react";
 import type { CharacterRecord } from "../types/character";
 import type {
   AttributeBonusRule,
@@ -22,6 +23,84 @@ import type {
   CharacterAccessRow,
   ProfileRow,
 } from "../lib/cloudRepository";
+
+interface CollapsibleSectionProps {
+  id: string;
+  title: string;
+  summary?: string;
+  defaultExpanded?: boolean;
+  children: ReactNode;
+}
+
+function CollapsibleSection({
+  id,
+  title,
+  summary,
+  defaultExpanded = false,
+  children,
+}: CollapsibleSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+
+  return (
+    <section
+      style={{
+        border: "1px solid var(--cb-border)",
+        borderRadius: 12,
+        background: "var(--cb-surface-raised)",
+        overflow: "hidden",
+      }}
+    >
+      <button
+        type="button"
+        aria-expanded={isExpanded}
+        aria-controls={id}
+        onClick={() => setIsExpanded((previous) => !previous)}
+        className="button-control"
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          border: "none",
+          borderBottom: isExpanded ? "1px solid var(--cb-border)" : "none",
+          borderRadius: 0,
+          background: "transparent",
+          color: "var(--cb-text)",
+          padding: "12px 14px",
+          minHeight: 48,
+          textAlign: "left",
+          cursor: "pointer",
+        }}
+      >
+        <span style={{ display: "grid", gap: 2 }}>
+          <span style={{ fontSize: 14, fontWeight: 700 }}>{title}</span>
+          {summary ? (
+            <span style={{ fontSize: 12, color: "var(--cb-text-muted)" }}>{summary}</span>
+          ) : null}
+        </span>
+        <span
+          aria-hidden="true"
+          style={{
+            fontSize: 14,
+            fontWeight: 700,
+            color: "var(--cb-text-muted)",
+            minWidth: 10,
+            textAlign: "center",
+          }}
+        >
+          {isExpanded ? "v" : ">"}
+        </span>
+      </button>
+
+      {isExpanded ? (
+        <div id={id} style={{ padding: "var(--space-3)" }}>
+          {children}
+        </div>
+      ) : null}
+    </section>
+  );
+}
 
 interface SelectedCharacterWorkspaceProps {
   character: CharacterRecord;
@@ -146,6 +225,22 @@ export default function SelectedCharacterWorkspace({
   characterAccessErrorMessage,
   onClearCharacterAccessError,
 }: SelectedCharacterWorkspaceProps) {
+  const attributeSummary = ["STR", "DEX", "CON"]
+    .map((key) => `${key} ${character.attributes[key as AttributeKey]}`)
+    .join(", ");
+
+  const configuredSkillsCount = character.skills.filter(
+    (skill) => skill.proficient || skill.bonus !== 0
+  ).length;
+
+  const powersCount = character.powers.length;
+  const inventoryCount = character.inventory.length;
+  const attacksCount = character.attacks.length;
+  const accessSummary = `${characterAccessRows.length} direct, ${campaignAccessRows.length} inherited`;
+  const coreSummary = `AC ${character.sheet.acBase + character.sheet.acBonus}, Init ${
+    character.sheet.initMisc
+  }, Speed ${character.sheet.speed || "-"}`;
+
   if (levelUpOpen) {
     return (
       <div style={{ flex: 1 }}>
@@ -191,19 +286,25 @@ export default function SelectedCharacterWorkspace({
       />
 
       {canManageCharacterAccess ? (
-        <CharacterAccessPanel
-          characterName={character.identity.name?.trim() || "this character"}
-          users={characterAccessUsers}
-          campaignAccessRows={campaignAccessRows}
-          characterAccessRows={characterAccessRows}
-          characterUserCandidateIds={characterUserCandidateIds}
-          getUserLabel={getUserLabel}
-          onAssignCharacterAccess={onAssignCharacterAccess}
-          onUpdateCharacterAccess={onUpdateCharacterAccess}
-          onRemoveCharacterAccess={onRemoveCharacterAccess}
-          errorMessage={characterAccessErrorMessage}
-          onClearError={onClearCharacterAccessError}
-        />
+        <CollapsibleSection
+          id="character-access-section"
+          title="Accounts & Permissions"
+          summary={accessSummary}
+        >
+          <CharacterAccessPanel
+            characterName={character.identity.name?.trim() || "this character"}
+            users={characterAccessUsers}
+            campaignAccessRows={campaignAccessRows}
+            characterAccessRows={characterAccessRows}
+            characterUserCandidateIds={characterUserCandidateIds}
+            getUserLabel={getUserLabel}
+            onAssignCharacterAccess={onAssignCharacterAccess}
+            onUpdateCharacterAccess={onUpdateCharacterAccess}
+            onRemoveCharacterAccess={onRemoveCharacterAccess}
+            errorMessage={characterAccessErrorMessage}
+            onClearError={onClearCharacterAccessError}
+          />
+        </CollapsibleSection>
       ) : null}
 
       {readOnly ? (
@@ -222,66 +323,124 @@ export default function SelectedCharacterWorkspace({
         </div>
       ) : null}
 
-      <fieldset
-        disabled={readOnly}
+      <div
         style={{
-          border: 0,
-          margin: 0,
-          padding: 0,
           display: "grid",
-          gap: 24,
+          gap: 16,
           minWidth: 0,
         }}
       >
-        <AttributesSection
-          character={character}
-          label={labels.attributes}
-          onChange={onAttributeChange}
-        />
+        <CollapsibleSection
+          id="attributes-section"
+          title={labels.attributes}
+          summary={attributeSummary}
+        >
+          <fieldset
+            disabled={readOnly}
+            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+          >
+            <AttributesSection
+              character={character}
+              label={labels.attributes}
+              onChange={onAttributeChange}
+            />
+          </fieldset>
+        </CollapsibleSection>
 
-        <SheetFieldsSection
-          character={character}
-          onSpeedChange={onSpeedChange}
-          onAcBaseChange={onAcBaseChange}
-          onAcBonusChange={onAcBonusChange}
-          onAcUseDexChange={onAcUseDexChange}
-          onInitMiscChange={onInitMiscChange}
-          onSaveProfChange={onSaveProfChange}
-          onSaveBonusChange={onSaveBonusChange}
-        />
+        <CollapsibleSection id="core-section" title="Core" summary={coreSummary}>
+          <fieldset
+            disabled={readOnly}
+            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+          >
+            <SheetFieldsSection
+              character={character}
+              onSpeedChange={onSpeedChange}
+              onAcBaseChange={onAcBaseChange}
+              onAcBonusChange={onAcBonusChange}
+              onAcUseDexChange={onAcUseDexChange}
+              onInitMiscChange={onInitMiscChange}
+              onSaveProfChange={onSaveProfChange}
+              onSaveBonusChange={onSaveBonusChange}
+            />
+          </fieldset>
+        </CollapsibleSection>
 
-        <SkillsSection
-          character={character}
-          skills={selectedSkills}
-          label={labels.skills}
-          onChange={onSkillChange}
-        />
+        <CollapsibleSection
+          id="skills-section"
+          title={labels.skills}
+          summary={`${configuredSkillsCount} configured`}
+        >
+          <fieldset
+            disabled={readOnly}
+            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+          >
+            <SkillsSection
+              character={character}
+              skills={selectedSkills}
+              label={labels.skills}
+              onChange={onSkillChange}
+            />
+          </fieldset>
+        </CollapsibleSection>
 
-        <PowersSection
-          character={character}
-          powers={selectedPowers}
-          label={labels.powers}
-          onTogglePower={onTogglePower}
-          onPowerChange={onPowerChange}
-        />
+        <CollapsibleSection
+          id="powers-section"
+          title={labels.powers}
+          summary={`${powersCount} powers`}
+        >
+          <fieldset
+            disabled={readOnly}
+            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+          >
+            <PowersSection
+              character={character}
+              powers={selectedPowers}
+              label={labels.powers}
+              onTogglePower={onTogglePower}
+              onPowerChange={onPowerChange}
+            />
+          </fieldset>
+        </CollapsibleSection>
 
-        <InventorySection
-          character={character}
-          items={selectedItems}
-          label={labels.inventory}
-          onToggleItem={onToggleItem}
-          onQuantityChange={onQuantityChange}
-          onRemoveManualItem={onRemoveManualItem}
-          onAddManualItem={onAddManualItem}
-        />
+        <CollapsibleSection
+          id="inventory-section"
+          title={labels.inventory}
+          summary={`${inventoryCount} items`}
+        >
+          <fieldset
+            disabled={readOnly}
+            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+          >
+            <InventorySection
+              character={character}
+              items={selectedItems}
+              label={labels.inventory}
+              onToggleItem={onToggleItem}
+              onQuantityChange={onQuantityChange}
+              onRemoveManualItem={onRemoveManualItem}
+              onAddManualItem={onAddManualItem}
+            />
+          </fieldset>
+        </CollapsibleSection>
 
-        <AttacksSection
-          character={character}
-          label={labels.attacks}
-          onAdd={onAddAttack}
-          onChange={onAttackChange}
-        />
-      </fieldset>
+        <CollapsibleSection
+          id="attacks-section"
+          title={labels.attacks}
+          summary={`${attacksCount} attacks`}
+        >
+          <fieldset
+            disabled={readOnly}
+            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
+          >
+            <AttacksSection
+              character={character}
+              label={labels.attacks}
+              onAdd={onAddAttack}
+              onChange={onAttackChange}
+            />
+          </fieldset>
+        </CollapsibleSection>
+      </div>
     </div>
   );
 }
