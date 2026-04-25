@@ -32,24 +32,25 @@ function normalizeAppUrl(value) {
 }
 
 function getAppUrl(req) {
+  const host = req.headers["x-forwarded-host"] || req.headers.host;
+  if (host && typeof host === "string") {
+    const proto = req.headers["x-forwarded-proto"] || "https";
+    return `${proto}://${host}`.replace(/\/+$/, "");
+  }
+
   const configured = firstEnv(
     "APP_URL",
     "VITE_APP_URL",
     "NEXT_PUBLIC_APP_URL",
     "SITE_URL",
-    "VERCEL_PROJECT_PRODUCTION_URL",
-    "VERCEL_URL"
+    "VERCEL_URL",
+    "VERCEL_PROJECT_PRODUCTION_URL"
   );
   if (configured) {
     return normalizeAppUrl(configured);
   }
 
-  const host = req.headers["x-forwarded-host"] || req.headers.host;
-  if (!host || typeof host !== "string") {
-    return "";
-  }
-  const proto = req.headers["x-forwarded-proto"] || "https";
-  return `${proto}://${host}`.replace(/\/+$/, "");
+  return "";
 }
 
 function parseOptionalEmail(email) {
