@@ -63,29 +63,63 @@ export default function IdentitySection({
         {/* Left: name + details */}
         <div style={{ flex: 1, display: "grid", gap: 12 }}>
           {!editingName ? (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                width: "fit-content",
+                padding: "10px 12px",
+                borderRadius: 14,
+                border: "1px solid var(--border-soft)",
+                background: "linear-gradient(180deg, rgba(10, 24, 45, 0.82), rgba(7, 16, 33, 0.82))",
+                boxShadow: "0 0 0 1px rgba(73, 224, 255, 0.08), inset 0 1px 0 rgba(255,255,255,0.03)",
+              }}
+            >
               <div
                 style={{
-                  fontSize: 34,
+                  fontSize: "clamp(38px, 5vw, 58px)",
                   fontWeight: 800,
                   lineHeight: 1.05,
                   color: "var(--text-primary)",
+                  letterSpacing: "-0.02em",
                 }}
               >
                 {character.identity.name || "Unnamed Character"}
               </div>
               <button
                 onClick={startNameEdit}
-                style={{ ...buttonStyle, padding: "6px 10px", minWidth: 38 }}
+                style={{
+                  ...buttonStyle,
+                  width: 44,
+                  height: 44,
+                  minWidth: 44,
+                  padding: 0,
+                  borderRadius: 10,
+                  border: "1px solid rgba(73, 224, 255, 0.45)",
+                  background: "rgba(6, 19, 39, 0.7)",
+                  color: "#9feefe",
+                  fontSize: 18,
+                }}
                 aria-label="Edit character name"
                 title="Edit name"
                 disabled={readOnly}
               >
-                ✎
+                ✏
               </button>
             </div>
           ) : (
-            <div style={{ display: "grid", gap: 8 }}>
+            <div
+              style={{
+                display: "grid",
+                gap: 8,
+                width: "min(520px, 100%)",
+                padding: "10px 12px",
+                borderRadius: 14,
+                border: "1px solid var(--border-soft)",
+                background: "linear-gradient(180deg, rgba(10, 24, 45, 0.82), rgba(7, 16, 33, 0.82))",
+              }}
+            >
               <label style={labelTextStyle}>
                 Name
                 <input
