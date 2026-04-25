@@ -22,7 +22,7 @@ import type {
   CharacterAccessRole,
   CharacterAccessRowWithProfile,
 } from "../lib/cloudRepository";
-import { getAccessRowDisplayName, getAccessRowEmail } from "../lib/userDisplay";
+import { getAccessRowDisplayName } from "../lib/userDisplay";
 
 interface CollapsibleSectionProps {
   id: string;
@@ -289,11 +289,11 @@ export default function SelectedCharacterWorkspace({
   const accessSummaryRows = [
     ...characterAccessRows.map((row) => ({
       key: `direct:${row.user_id}`,
-      label: `${getAccessRowDisplayName(row.profile)} (${getAccessRowEmail(row.profile)})`,
+      label: getAccessRowDisplayName(row.profile),
     })),
     ...campaignAccessRows.map((row) => ({
       key: `campaign:${row.user_id}`,
-      label: `${getAccessRowDisplayName(row.profile)} (${getAccessRowEmail(row.profile)})`,
+      label: getAccessRowDisplayName(row.profile),
     })),
   ];
 
