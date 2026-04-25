@@ -4,6 +4,7 @@
   overflow: hidden;
 }
 
+.character-creation-wizard.wizard-container::before,
 .character-creation-wizard.wizard-container::after {
   content: "";
   position: absolute;
@@ -45,15 +46,31 @@
   animation: wizardCrackShake 120ms linear 2;
 }
 
+.character-creation-wizard.wizard-container.effect-crack::before {
+  background:
+    linear-gradient(84deg, transparent 0 47.8%, rgba(238, 246, 255, 0.74) 48%, rgba(198, 222, 255, 0.2) 48.3%, transparent 48.6%),
+    linear-gradient(298deg, transparent 0 53.8%, rgba(235, 244, 255, 0.62) 54%, rgba(196, 220, 252, 0.18) 54.35%, transparent 54.7%),
+    linear-gradient(12deg, transparent 0 62.8%, rgba(232, 243, 255, 0.5) 63%, transparent 63.3%),
+    linear-gradient(336deg, transparent 0 41.7%, rgba(235, 245, 255, 0.42) 42%, transparent 42.35%),
+    linear-gradient(128deg, transparent 0 70.8%, rgba(232, 243, 255, 0.36) 71%, transparent 71.3%);
+  mix-blend-mode: screen;
+  filter: drop-shadow(0 0 2px rgba(220, 236, 255, 0.45));
+  animation: wizardCrackVeinFade 1s ease-out forwards;
+}
+
 .character-creation-wizard.wizard-container.effect-crack::after {
   background:
-    linear-gradient(72deg, transparent 0 41%, rgba(220, 236, 255, 0.28) 41.5%, transparent 42%),
-    linear-gradient(286deg, transparent 0 58%, rgba(220, 236, 255, 0.24) 58.5%, transparent 59%),
-    linear-gradient(318deg, transparent 0 25%, rgba(220, 236, 255, 0.2) 25.5%, transparent 26%),
-    linear-gradient(18deg, transparent 0 74%, rgba(220, 236, 255, 0.2) 74.5%, transparent 75%),
-    radial-gradient(circle at 58% 36%, rgba(200, 220, 255, 0.18), rgba(200, 220, 255, 0) 56%),
-    radial-gradient(circle at 44% 62%, rgba(200, 220, 255, 0.14), rgba(200, 220, 255, 0) 58%);
-  filter: contrast(120%);
+    repeating-conic-gradient(
+      from 10deg at 56% 44%,
+      rgba(225, 240, 255, 0.16) 0deg 8deg,
+      rgba(120, 160, 210, 0.05) 8deg 14deg,
+      rgba(225, 240, 255, 0) 14deg 22deg
+    ),
+    radial-gradient(circle at 55% 43%, rgba(240, 248, 255, 0.36), rgba(210, 228, 255, 0.16) 26%, rgba(170, 200, 240, 0.06) 45%, rgba(140, 170, 220, 0) 65%),
+    radial-gradient(circle at 42% 62%, rgba(236, 246, 255, 0.2), rgba(180, 205, 235, 0.06) 38%, rgba(150, 178, 220, 0) 62%);
+  mix-blend-mode: screen;
+  backdrop-filter: blur(0.7px) saturate(112%);
+  filter: contrast(124%);
   animation: wizardCrackFade 1s ease-out forwards;
 }
 
@@ -108,10 +125,35 @@
 @keyframes wizardCrackFade {
   0% {
     opacity: 0;
+    transform: scale(1.02);
+  }
+
+  15% {
+    opacity: 0.86;
+    transform: scale(1);
+  }
+
+  55% {
+    opacity: 0.56;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.995);
+  }
+}
+
+@keyframes wizardCrackVeinFade {
+  0% {
+    opacity: 0;
   }
 
   18% {
-    opacity: 0.9;
+    opacity: 1;
+  }
+
+  58% {
+    opacity: 0.62;
   }
 
   100% {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   CharacterAttack,
   CharacterAttributeGeneration,
@@ -169,6 +169,10 @@ export default function CharacterCreationWizard({
   onFinish,
 }: Props) {
   const [rollEffect, setRollEffect] = useState<"glow" | "crack" | null>(null);
+  const glowSoundRef = useRef<HTMLAudioElement | null>(null);
+  const crackSoundRef = useRef<HTMLAudioElement | null>(null);
+  const hasUserInteractedRef = useRef(false);
+  const lastSoundPlayedAtRef = useRef(0);
   const method = draft.attributeGeneration?.method ?? selectedCampaign?.attributeRules.generationMethods[0] ?? "pointBuy";
   const stepTitles = getStepTitles(labels);
   const classModifiersText = formatClassAttributeModifiers(selectedClass);
@@ -187,7 +191,55 @@ export default function CharacterCreationWizard({
     };
   }, [rollEffect]);
 
+  useEffect(() => {
+    const glowAudio = new Audio("/sounds/chime.wav");
+    const crackAudio = new Audio("/sounds/crack.wav");
+
+    glowAudio.preload = "auto";
+    crackAudio.preload = "auto";
+    glowAudio.volume = 0.15;
+    crackAudio.volume = 0.2;
+
+    glowSoundRef.current = glowAudio;
+    crackSoundRef.current = crackAudio;
+
+    return () => {
+      glowAudio.pause();
+      crackAudio.pause();
+      glowSoundRef.current = null;
+      crackSoundRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!rollEffect || !hasUserInteractedRef.current) return;
+
+    const soundCooldownMs = 500;
+    const now = Date.now();
+    if (now - lastSoundPlayedAtRef.current < soundCooldownMs) {
+      return;
+    }
+
+    const audioToPlay = rollEffect === "glow" ? glowSoundRef.current : crackSoundRef.current;
+    if (!audioToPlay) return;
+
+    lastSoundPlayedAtRef.current = now;
+
+    const playSound = async () => {
+      try {
+        audioToPlay.pause();
+        audioToPlay.currentTime = 0;
+        await audioToPlay.play();
+      } catch {
+        // Ignore autoplay or decoding issues; visual feedback still runs.
+      }
+    };
+
+    void playSound();
+  }, [rollEffect]);
+
   function handleRollAttributesClick() {
+    hasUserInteractedRef.current = true;
     const rolls = onRollAttributes();
     const hasHighRoll = rolls.some((r) => r === 18);
     const hasLowRoll = rolls.some((r) => r <= 7);
