@@ -10,8 +10,17 @@ export interface ProfileRow {
   id: string
   email: string | null
   display_name: string | null
+  default_theme_id?: string | null
   is_admin: boolean
   is_gm: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface UserCampaignPreferenceRow {
+  user_id: string
+  campaign_id: string
+  theme_id: string
   created_at: string
   updated_at: string
 }
@@ -98,7 +107,7 @@ export async function getCurrentProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
     .eq("id", userData.user.id)
     .maybeSingle()
 
@@ -177,7 +186,7 @@ export async function syncProfileFromAuthUser(): Promise<ProfileRow> {
       .from("profiles")
       .update(updatePayload as never)
       .eq("id", user.id)
-      .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+      .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
       .single()
 
     if (error) throw error
@@ -194,7 +203,7 @@ export async function syncProfileFromAuthUser(): Promise<ProfileRow> {
       } as never,
       { onConflict: "id" }
     )
-    .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
     .single()
 
   if (error) throw error
@@ -499,12 +508,99 @@ export async function getProfileByEmail(email: string): Promise<ProfileRow | nul
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
     .eq("email", email.toLowerCase().trim())
     .maybeSingle()
 
   if (error) throw error
   return (data as ProfileRow | null) ?? null
+}
+
+export async function upsertCurrentUserDefaultTheme(themeId: string): Promise<ProfileRow> {
+  const supabase = getSupabaseClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!userData.user) throw new Error("No authenticated user")
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ default_theme_id: themeId } as never)
+    .eq("id", userData.user.id)
+    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
+    .single()
+
+  if (error) throw error
+  return data as ProfileRow
+}
+
+export async function getUserCampaignPreference(campaignId: string) {
+  const supabase = getSupabaseClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!userData.user) return null as UserCampaignPreferenceRow | null
+
+  const { data, error } = await supabase
+    .from("user_campaign_preferences")
+    .select("user_id, campaign_id, theme_id, created_at, updated_at")
+    .eq("user_id", userData.user.id)
+    .eq("campaign_id", campaignId)
+    .maybeSingle()
+
+  if (error) throw error
+  return (data as UserCampaignPreferenceRow | null) ?? null
+}
+
+export async function upsertUserCampaignTheme(campaignId: string, themeId: string) {
+  const supabase = getSupabaseClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!userData.user) throw new Error("No authenticated user")
+
+  const { data, error } = await supabase
+    .from("user_campaign_preferences")
+    .upsert(
+      {
+        user_id: userData.user.id,
+        campaign_id: campaignId,
+        theme_id: themeId,
+      } as never,
+      { onConflict: "user_id,campaign_id" }
+    )
+    .select("user_id, campaign_id, theme_id, created_at, updated_at")
+    .single()
+
+  if (error) throw error
+  return data as UserCampaignPreferenceRow
+}
+
+export async function deleteUserCampaignTheme(campaignId: string) {
+  const supabase = getSupabaseClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!userData.user) throw new Error("No authenticated user")
+
+  const { error } = await supabase
+    .from("user_campaign_preferences")
+    .delete()
+    .eq("user_id", userData.user.id)
+    .eq("campaign_id", campaignId)
+
+  if (error) throw error
+}
+
+export async function getUserCampaignPreferencesForVisibleCampaigns() {
+  const supabase = getSupabaseClient()
+  const { data: userData, error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  if (!userData.user) return [] as UserCampaignPreferenceRow[]
+
+  const { data, error } = await supabase
+    .from("user_campaign_preferences")
+    .select("user_id, campaign_id, theme_id, created_at, updated_at")
+    .eq("user_id", userData.user.id)
+
+  if (error) throw error
+  return (data ?? []) as UserCampaignPreferenceRow[]
 }
 
 export async function upsertCampaignAccessInviteByEmail(input: {

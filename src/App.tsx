@@ -26,6 +26,10 @@ import {
   listCharacterAccessRows,
   listLoginPickerProfileSummariesByIds,
   listManageableProfiles,
+  getUserCampaignPreferencesForVisibleCampaigns,
+  upsertCurrentUserDefaultTheme,
+  upsertUserCampaignTheme,
+  deleteUserCampaignTheme,
   upsertCampaignAccessRow,
   upsertCharacterAccessRow,
 } from "./lib/cloudRepository";
@@ -68,8 +72,11 @@ import { useSelectedCharacterWorkspaceCallbacks } from "./hooks/useSelectedChara
 import { buttonStyle, inputStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
 import {
   applyDisplayPreferences,
+  DISPLAY_PREFS_DEFAULTS,
+  normalizeThemeId,
   readDisplayPreferences,
   persistDisplayPreferences,
+  type CbTheme,
   type DisplayPreferences,
 } from "./lib/displayPreferences";
 
@@ -205,6 +212,7 @@ export default function App() {
   const updatePasswordRouteActive = currentPathname === "/update-password";
   const inviteSignInFlow = inviteRouteActive || returnToFromQuery.startsWith("/invite");
   const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
+  const [campaignThemesByCampaignRowId, setCampaignThemesByCampaignRowId] = useState<Record<string, CbTheme>>({});
   const [displayOpen, setDisplayOpen] = useState(false);
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
@@ -266,11 +274,6 @@ export default function App() {
     setUseEmailFallback(true);
     setAuthCardMode("reset-request");
   }, [authActionFromQuery]);
-
-  useEffect(() => {
-    applyDisplayPreferences(displayPreferences);
-    persistDisplayPreferences(displayPreferences);
-  }, [displayPreferences]);
 
   const {
     gameData,
@@ -821,6 +824,7 @@ export default function App() {
       // Invite claiming is best-effort to keep access fresh after sign-in.
     }
     const context = await getAccessContext();
+    setCurrentUserProfile(context.profile);
     setIsAdmin(Boolean(context.profile?.is_admin));
     setIsGm(Boolean(context.profile?.is_gm));
     setCampaignRolesByCampaignId(context.campaignRolesByCampaignId);
@@ -828,6 +832,105 @@ export default function App() {
   }
 
   const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
+  const campaignThemeOverride = currentCampaignRowId
+    ? campaignThemesByCampaignRowId[currentCampaignRowId] ?? null
+    : null;
+  const globalTheme = normalizeThemeId(currentUserProfile?.default_theme_id) ?? null;
+  const activeTheme = campaignThemeOverride
+    ?? globalTheme
+    ?? normalizeThemeId(displayPreferences.theme)
+    ?? DISPLAY_PREFS_DEFAULTS.theme;
+  const resolvedDisplayPreferences = useMemo<DisplayPreferences>(
+    () => ({
+      ...displayPreferences,
+      theme: activeTheme,
+    }),
+    [displayPreferences, activeTheme]
+  );
+
+  useEffect(() => {
+    applyDisplayPreferences(resolvedDisplayPreferences);
+    // Local storage is only a temporary fallback before auth/preferences load.
+    persistDisplayPreferences(displayPreferences, { persistTheme: !currentUserId });
+  }, [resolvedDisplayPreferences, displayPreferences, currentUserId]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !currentUserId) {
+      setCampaignThemesByCampaignRowId({});
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadCampaignThemes() {
+      try {
+        const rows = await getUserCampaignPreferencesForVisibleCampaigns();
+        if (isCancelled) return;
+
+        const next: Record<string, CbTheme> = {};
+        for (const row of rows) {
+          const theme = normalizeThemeId(row.theme_id);
+          if (!theme) continue;
+          next[row.campaign_id] = theme;
+        }
+        setCampaignThemesByCampaignRowId(next);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn("[theme-preferences] failed to load campaign theme preferences", error);
+        }
+        if (!isCancelled) {
+          setCampaignThemesByCampaignRowId({});
+        }
+      }
+    }
+
+    void loadCampaignThemes();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [cloudEnabled, currentUserId]);
+
+  const handleThemePreferenceChange = useCallback(
+    async (nextTheme: CbTheme | "default") => {
+      const normalizedTheme = nextTheme === "default" ? null : normalizeThemeId(nextTheme);
+      if (nextTheme !== "default" && !normalizedTheme) return;
+
+      if (!cloudEnabled || !currentUserId) {
+        if (normalizedTheme) {
+          setDisplayPreferences((prev) => ({ ...prev, theme: normalizedTheme }));
+        }
+        return;
+      }
+
+      if (currentCampaignRowId) {
+        if (nextTheme === "default") {
+          await deleteUserCampaignTheme(currentCampaignRowId);
+          setCampaignThemesByCampaignRowId((prev) => {
+            const next = { ...prev };
+            delete next[currentCampaignRowId];
+            return next;
+          });
+          return;
+        }
+
+        await upsertUserCampaignTheme(currentCampaignRowId, normalizedTheme as CbTheme);
+        setCampaignThemesByCampaignRowId((prev) => ({
+          ...prev,
+          [currentCampaignRowId]: normalizedTheme as CbTheme,
+        }));
+        return;
+      }
+
+      if (!normalizedTheme) return;
+      const updatedProfile = await upsertCurrentUserDefaultTheme(normalizedTheme);
+      setCurrentUserProfile(updatedProfile);
+      // Keep local fallback in sync for pre-auth/preference-load sessions.
+      setDisplayPreferences((prev) => ({ ...prev, theme: normalizedTheme }));
+    },
+    [cloudEnabled, currentUserId, currentCampaignRowId]
+  );
+
   const hasAnyCampaignAccess = gameData.campaigns.length > 0;
 
   // Permission checks using centralized module
@@ -1896,10 +1999,24 @@ export default function App() {
             </div>
 
             <DisplaySettings
-              theme={displayPreferences.theme}
+              themeValue={currentCampaignRowId ? (campaignThemeOverride ?? "default") : activeTheme}
               textSize={displayPreferences.textSize}
               density={displayPreferences.density}
-              onThemeChange={(theme) => setDisplayPreferences((prev) => ({ ...prev, theme }))}
+              isCampaignThemeScope={Boolean(currentCampaignRowId)}
+              onThemeChange={(theme) => {
+                void (async () => {
+                  try {
+                    await handleThemePreferenceChange(theme);
+                    setCloudStatus("Display preferences saved");
+                  } catch (error) {
+                    const message = error instanceof Error ? error.message : "Failed to save theme preference";
+                    setCloudStatus(`Display preference save failed: ${message}`);
+                    if (import.meta.env.DEV) {
+                      console.error("[display-preferences] failed to save theme preference", error);
+                    }
+                  }
+                })();
+              }}
               onTextSizeChange={(textSize) => setDisplayPreferences((prev) => ({ ...prev, textSize }))}
               onDensityChange={(density) => setDisplayPreferences((prev) => ({ ...prev, density }))}
             />
