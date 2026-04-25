@@ -808,6 +808,7 @@ export default function App() {
   );
   const canCreateCharacterInCurrentCampaign = Boolean(
     isAdmin ||
+      isGm ||
       campaignRolesByCampaignId[campaignId] === "player" ||
       campaignRolesByCampaignId[campaignId] === "editor"
   );
