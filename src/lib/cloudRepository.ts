@@ -433,6 +433,50 @@ export async function listManageableProfiles() {
   return (data ?? []) as ProfileRow[]
 }
 
+export async function listLoginPickerProfileSummariesByIds(userIds: string[]) {
+  const uniqueIds = Array.from(new Set(userIds.map((id) => id.trim()).filter(Boolean)))
+  if (uniqueIds.length === 0) return [] as ProfileRow[]
+
+  const supabase = getSupabaseClient()
+  const { data: loginPickerRows, error: loginPickerError } = await supabase.rpc(
+    "list_login_picker_profiles",
+    { p_include_admin: true } as never
+  )
+  if (loginPickerError) throw loginPickerError
+
+  const labelById = new Map<string, string>()
+  for (const row of (loginPickerRows ?? []) as { profile_id: string; display_label: string | null }[]) {
+    if (!row.profile_id) continue
+    labelById.set(row.profile_id, row.display_label?.trim() || "")
+  }
+
+  const emailEntries = await Promise.all(
+    uniqueIds.map(async (userId) => {
+      const { data, error } = await supabase.rpc("resolve_login_profile_email", {
+        p_profile_id: userId,
+        p_include_admin: true,
+      } as never)
+      if (error) {
+        return [userId, null] as const
+      }
+      const resolvedEmail = data as unknown
+      const email = typeof resolvedEmail === "string" ? resolvedEmail.trim() : ""
+      return [userId, email || null] as const
+    })
+  )
+  const emailById = new Map(emailEntries)
+
+  return uniqueIds.map((userId) => ({
+    id: userId,
+    email: emailById.get(userId) ?? null,
+    display_name: labelById.get(userId) || null,
+    is_admin: false,
+    is_gm: false,
+    created_at: "",
+    updated_at: "",
+  })) as ProfileRow[]
+}
+
 export async function getProfileByEmail(email: string): Promise<ProfileRow | null> {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase

@@ -23,6 +23,7 @@ import {
   claimCampaignEmailAccessInvites,
   listCampaignAccessRows,
   listCharacterAccessRows,
+  listLoginPickerProfileSummariesByIds,
   listManageableProfiles,
   upsertCampaignAccessRow,
   upsertCharacterAccessRow,
@@ -854,34 +855,51 @@ export default function App() {
   const reloadAccessManagementData = useCallback(async () => {
     if (!currentUserId) return;
 
+    let users: ProfileRow[] = [];
+    let campaignRows: CampaignAccessRow[] = [];
+    let characterRows: CharacterAccessRow[] = [];
+
+    if (currentCampaignRowId && (uiCanManageCampaignAccess || uiCanManageCharacterAccess)) {
+      campaignRows = await listCampaignAccessRows(currentCampaignRowId);
+    }
+
+    if (uiCanManageCharacterAccess && selected) {
+      characterRows = await listCharacterAccessRows(selected.id);
+    }
+
     if (uiCanManageUsers || uiCanManageCampaignAccess) {
       try {
-        const users = await listManageableProfiles();
-        setManageableUsers(users);
+        users = await listManageableProfiles();
       } catch (error) {
         if (uiCanManageUsers) {
           throw error;
         }
         // Some environments restrict profile lookups for non-admins.
-        setManageableUsers([]);
+        users = [];
       }
-    } else {
-      setManageableUsers([]);
     }
 
-    if (currentCampaignRowId && (uiCanManageCampaignAccess || uiCanManageCharacterAccess)) {
-      const campaignRows = await listCampaignAccessRows(currentCampaignRowId);
-      setCampaignAccessRows(campaignRows);
-    } else {
-      setCampaignAccessRows([]);
+    if (!uiCanManageUsers && users.length === 0) {
+      const fallbackUserIds = Array.from(
+        new Set([
+          ...campaignRows.map((row) => row.user_id),
+          ...characterRows.map((row) => row.user_id),
+          currentUserId,
+        ])
+      );
+
+      if (fallbackUserIds.length > 0) {
+        try {
+          users = await listLoginPickerProfileSummariesByIds(fallbackUserIds);
+        } catch {
+          // Keep UUID fallback labels if lookup RPCs are unavailable.
+        }
+      }
     }
 
-    if (uiCanManageCharacterAccess && selected) {
-      const rows = await listCharacterAccessRows(selected.id);
-      setCharacterAccessRows(rows);
-    } else {
-      setCharacterAccessRows([]);
-    }
+    setManageableUsers(users);
+    setCampaignAccessRows(campaignRows);
+    setCharacterAccessRows(characterRows);
   }, [
     uiCanManageUsers,
     uiCanManageCampaignAccess,
