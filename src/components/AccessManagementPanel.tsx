@@ -952,7 +952,7 @@ export default function AccessManagementPanel({
                 onClick={(event) => event.stopPropagation()}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <strong>Invite Link</strong>
+                  <strong>Invite a Player</strong>
                   <button
                     className="button-control" style={buttonStyle}
                     disabled={busy}
@@ -976,10 +976,13 @@ export default function AccessManagementPanel({
                     disabled={busy}
                   />
                 </label>
+                <div style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: -4 }}>
+                  Leave email blank to create a link anyone can use.
+                </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
                   <label style={{ fontWeight: 600, color: "var(--cb-muted-label)", maxWidth: 280 }}>
-                    Member Type
+                    Role
                     <select
                       value={campaignAssignRole}
                       onChange={(e) => setCampaignAssignRole(e.target.value as CampaignAccessRole)}
@@ -998,23 +1001,14 @@ export default function AccessManagementPanel({
                   GM: can edit the campaign and all characters
                 </div>
 
-                <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                  Add an email to lock this invite to one person, or leave it blank for an open invite.
-                </div>
-
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                   <button
-                    className="button-control" style={buttonStyle}
-                    disabled={busy || !campaignSearchOrEmail.trim()}
+                    className="button-control" style={primaryButtonStyle}
+                    disabled={busy}
                     onClick={() => {
-                      const email = campaignSearchOrEmail.trim().toLowerCase();
-                      if (!email) {
-                        setCampaignMemberResult({ type: "error", message: "Enter an email address." });
-                        return;
-                      }
-
                       void runAction(async () => {
-                        const result = await onCreateCampaignInvite({ email, role: campaignAssignRole });
+                        const email = campaignSearchOrEmail.trim().toLowerCase();
+                        const result = await onCreateCampaignInvite({ email: email || undefined, role: campaignAssignRole });
                         if (!result.ok) {
                           setCampaignMemberResult({ type: "error", message: result.message });
                           return;
@@ -1026,33 +1020,15 @@ export default function AccessManagementPanel({
                       });
                     }}
                   >
-                    Generate Link for Email
-                  </button>
-                  <button
-                    className="button-control" style={primaryButtonStyle}
-                    disabled={busy}
-                    onClick={() => {
-                      void runAction(async () => {
-                        const result = await onCreateCampaignInvite({ role: campaignAssignRole });
-                        if (!result.ok) {
-                          setCampaignMemberResult({ type: "error", message: result.message });
-                          return;
-                        }
-
-                        setCampaignInviteLink(result.inviteUrl);
-                        await reloadCampaignInvites();
-                        setCampaignMemberResult({ type: "success", message: "Open invite link ready." });
-                      });
-                    }}
-                  >
-                    Generate Open Invite
+                    Generate Invite Link
                   </button>
                 </div>
 
                 {campaignInviteLink ? (
-                  <div style={{ display: "grid", gap: 8, border: "1px solid var(--cb-success-soft-border)", background: "var(--cb-success-soft)", borderRadius: 10, padding: 12 }}>
+                  <div style={{ display: "grid", gap: 8, border: "1px solid var(--cb-success-soft-border)", background: "var(--cb-success-soft)", borderRadius: 10, padding: 12, marginTop: 8 }}>
+                    <div style={{ fontWeight: 700, color: "var(--cb-success-text)" }}>Invite link ready</div>
                     <label style={{ fontWeight: 600, color: "var(--cb-success-text)" }}>
-                      Invite Link
+                      Link
                       <input
                         type="text"
                         readOnly
@@ -1062,7 +1038,7 @@ export default function AccessManagementPanel({
                       />
                     </label>
                     <div style={{ color: "var(--cb-success-text)", fontSize: 12, fontWeight: 600 }}>
-                      {campaignInviteExpiresInText(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString())}
+                      Expires in 7 days
                     </div>
                     <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                       <button
@@ -1085,14 +1061,9 @@ export default function AccessManagementPanel({
                   </div>
                 ) : null}
 
-                <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr 1fr auto", gap: 8, padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
-                    <div>Email</div>
-                    <div>Role</div>
-                    <div>Status</div>
-                    <div>Actions</div>
-                  </div>
-                  <div style={{ display: "grid" }}>
+                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+                  <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>Existing invites</div>
+                  <div style={{ display: "grid", gap: 8 }}>
                     {campaignInvitesLoading ? (
                       <div style={{ padding: 12, color: "var(--text-secondary)", fontSize: 13 }}>Loading invites...</div>
                     ) : campaignInvites.length === 0 ? (
@@ -1100,85 +1071,76 @@ export default function AccessManagementPanel({
                     ) : (
                       campaignInvites.map((invite) => {
                         const status = campaignInviteStatus(invite);
-                        const statusColor =
-                          status === "Active"
-                            ? "var(--cb-success-text)"
-                            : status === "Used"
-                              ? "#d7e8ff"
-                              : "var(--cb-danger-text)";
                         const statusText =
                           status === "Active"
-                            ? campaignInviteExpiresInText(invite.expires_at)
+                            ? `Active • ${campaignInviteExpiresInText(invite.expires_at).replace("Invite ", "")}`
                             : status === "Used"
-                              ? "Already used"
-                              : "Invite has expired";
+                              ? "Used • Already used"
+                              : "Expired • Invite has expired";
 
                         return (
                           <div
                             key={invite.id}
                             style={{
+                              border: "1px solid var(--border-soft)",
+                              borderRadius: 10,
+                              padding: 12,
                               display: "grid",
-                              gridTemplateColumns: "1.4fr 0.9fr 1fr auto",
                               gap: 8,
-                              alignItems: "center",
-                              padding: "10px 12px",
-                              borderTop: "1px solid rgba(58, 78, 127, 0.35)",
                             }}
                           >
-                            <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                              {invite.email || "Open invite"}
-                            </div>
-                            <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>
-                              {campaignRoleLabel(invite.role)}
-                            </div>
-                            <div style={{ display: "grid", gap: 2 }}>
-                              <div style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>{status}</div>
-                              <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>{statusText}</div>
-                            </div>
-                            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                              <button
-                                className="button-control"
-                                style={buttonStyle}
-                                disabled={busy}
-                                onClick={() => {
-                                  void (async () => {
-                                    try {
-                                      await navigator.clipboard.writeText(invite.inviteUrl);
-                                      setCampaignMemberResult({ type: "success", message: "Invite link copied." });
-                                    } catch {
-                                      setCampaignMemberResult({ type: "error", message: "Could not copy. Select the link and copy it manually." });
-                                    }
-                                  })();
-                                }}
-                              >
-                                Copy
-                              </button>
-                              <button
-                                className="button-control"
-                                style={buttonStyle}
-                                disabled={busy}
-                                onClick={() => {
-                                  if (!window.confirm("Revoke this invite link?")) {
-                                    return;
-                                  }
-
-                                  void runAction(async () => {
-                                    const result = await onRevokeCampaignInvite({ inviteId: invite.id });
-                                    if (!result.ok) {
-                                      setCampaignMemberResult({ type: "error", message: result.message });
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start", flexWrap: "wrap" }}>
+                              <div style={{ display: "grid", gap: 4 }}>
+                                <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>
+                                  {invite.email || "Open Invite"} ({campaignRoleLabel(invite.role)})
+                                </div>
+                                <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>{statusText}</div>
+                              </div>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                <button
+                                  className="button-control"
+                                  style={buttonStyle}
+                                  disabled={busy}
+                                  onClick={() => {
+                                    void (async () => {
+                                      try {
+                                        await navigator.clipboard.writeText(invite.inviteUrl);
+                                        setCampaignMemberResult({ type: "success", message: "Invite link copied." });
+                                      } catch {
+                                        setCampaignMemberResult({ type: "error", message: "Could not copy. Select the link and copy it manually." });
+                                      }
+                                    })();
+                                  }}
+                                >
+                                  Copy
+                                </button>
+                                <button
+                                  className="button-control"
+                                  style={buttonStyle}
+                                  disabled={busy}
+                                  onClick={() => {
+                                    if (!window.confirm("Revoke this invite link?")) {
                                       return;
                                     }
 
-                                    await reloadCampaignInvites();
-                                    if (campaignInviteLink === invite.inviteUrl) {
-                                      setCampaignInviteLink("");
-                                    }
-                                    setCampaignMemberResult({ type: "success", message: "Invite revoked." });
-                                  });
-                                }}
-                              >
-                                Revoke
-                              </button>
+                                    void runAction(async () => {
+                                      const result = await onRevokeCampaignInvite({ inviteId: invite.id });
+                                      if (!result.ok) {
+                                        setCampaignMemberResult({ type: "error", message: result.message });
+                                        return;
+                                      }
+
+                                      await reloadCampaignInvites();
+                                      if (campaignInviteLink === invite.inviteUrl) {
+                                        setCampaignInviteLink("");
+                                      }
+                                      setCampaignMemberResult({ type: "success", message: "Invite revoked." });
+                                    });
+                                  }}
+                                >
+                                  Revoke
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1282,12 +1244,12 @@ export default function AccessManagementPanel({
                 onClick={(event) => event.stopPropagation()}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <strong>Change Member Type</strong>
+                  <strong>Change Role</strong>
                   <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => setCampaignRoleModalUserId("")}>Close</button>
                 </div>
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{getUserLabel(campaignRoleModalUserId)}</div>
                 <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
-                  Member Type
+                  Role
                   <select
                     value={campaignRoleModalValue}
                     onChange={(e) => setCampaignRoleModalValue(e.target.value as CampaignAccessRole)}
