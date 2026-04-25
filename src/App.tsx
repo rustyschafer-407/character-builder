@@ -871,7 +871,9 @@ export default function App() {
         continue;
       }
 
-      const profile = campaignCreatorProfilesByUserId[creatorId] ?? null;
+      const profile =
+        campaignCreatorProfilesByUserId[creatorId] ??
+        (currentUserId && creatorId === currentUserId ? currentUserProfile : null);
       result[campaignKey] = {
         userId: creatorId,
         displayName: getAccessRowDisplayName(profile),
@@ -880,7 +882,7 @@ export default function App() {
     }
 
     return result;
-  }, [campaignCreatedByByCampaignId, campaignCreatorProfilesByUserId]);
+  }, [campaignCreatedByByCampaignId, campaignCreatorProfilesByUserId, currentUserId, currentUserProfile]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -902,10 +904,33 @@ export default function App() {
       }
 
       try {
-        const rows = await listLoginPickerProfileSummariesByIds(creatorIds);
+        const resolved = new Map<string, ProfileRow>();
+
+        // Admin can usually load profile rows directly; use that first.
+        if (isAdmin) {
+          try {
+            const manageable = await listManageableProfiles();
+            for (const row of manageable) {
+              if (creatorIds.includes(row.id)) {
+                resolved.set(row.id, row);
+              }
+            }
+          } catch {
+            // Fall through to scoped RPC lookup.
+          }
+        }
+
+        const missingIds = creatorIds.filter((id) => !resolved.has(id));
+        if (missingIds.length > 0) {
+          const rows = await listLoginPickerProfileSummariesByIds(missingIds);
+          for (const row of rows) {
+            resolved.set(row.id, row);
+          }
+        }
+
         if (isCancelled) return;
         setCampaignCreatorProfilesByUserId(
-          Object.fromEntries(rows.map((row) => [row.id, row] as const))
+          Object.fromEntries(Array.from(resolved.entries()))
         );
       } catch {
         if (!isCancelled) {
@@ -919,7 +944,7 @@ export default function App() {
     return () => {
       isCancelled = true;
     };
-  }, [campaignCreatedByByCampaignId]);
+  }, [campaignCreatedByByCampaignId, isAdmin]);
 
   useEffect(() => {
     if (!restrictToPcOnly) return;

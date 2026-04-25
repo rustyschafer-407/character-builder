@@ -825,7 +825,15 @@ export default function AdminScreen({
                   </label>
                 </div>
 
-                <div style={{ marginTop: 12, display: "grid", gap: 4 }}>
+                <div
+                  style={{
+                    marginTop: 20,
+                    paddingTop: 12,
+                    borderTop: "1px solid var(--border-soft)",
+                    display: "grid",
+                    gap: 4,
+                  }}
+                >
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: "0.04em" }}>
                     CAMPAIGN CREATOR
                   </div>
