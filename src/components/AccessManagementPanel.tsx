@@ -230,6 +230,14 @@ export default function AccessManagementPanel({
     return role === "editor" ? "GM" : "Player";
   }
 
+  const trimmedCreatePlayerName = createPlayerDisplayName.trim();
+  const trimmedCreatePlayerEmail = createPlayerEmail.trim();
+  const createPlayerPasswordTooShort = createPlayerTemporaryPassword.length > 0 && createPlayerTemporaryPassword.length < 8;
+  const canSubmitCreatePlayer =
+    Boolean(trimmedCreatePlayerName) &&
+    Boolean(trimmedCreatePlayerEmail) &&
+    createPlayerTemporaryPassword.length >= 8;
+
   function resetSetPasswordForm() {
     setSetPasswordNewPassword("");
     setSetPasswordConfirmPassword("");
@@ -513,6 +521,11 @@ export default function AccessManagementPanel({
                   disabled={busy}
                 />
               </label>
+              {createPlayerPasswordTooShort ? (
+                <div style={{ color: "#ffd6e2", fontSize: 13, fontWeight: 600 }}>
+                  Temporary password must be at least 8 characters.
+                </div>
+              ) : null}
               <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
                   <input
@@ -550,13 +563,17 @@ export default function AccessManagementPanel({
               ) : null}
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
                 <button
-                  style={primaryButtonStyle}
-                  disabled={busy || !createPlayerDisplayName.trim() || !createPlayerEmail.trim() || createPlayerTemporaryPassword.length < 8}
+                  style={{
+                    ...primaryButtonStyle,
+                    opacity: busy || !canSubmitCreatePlayer ? 0.55 : 1,
+                    cursor: busy || !canSubmitCreatePlayer ? "not-allowed" : "pointer",
+                  }}
+                  disabled={busy || !canSubmitCreatePlayer}
                   onClick={() => {
                     void runAction(async () => {
                       const result = await onCreatePlayer({
-                        displayName: createPlayerDisplayName.trim(),
-                        email: createPlayerEmail.trim(),
+                        displayName: trimmedCreatePlayerName,
+                        email: trimmedCreatePlayerEmail,
                         temporaryPassword: createPlayerTemporaryPassword,
                         isAdmin: createPlayerIsAdmin,
                         isGm: createPlayerIsGm,
@@ -572,7 +589,7 @@ export default function AccessManagementPanel({
                     });
                   }}
                 >
-                  Create Player
+                  {busy ? "Creating..." : "Create Player"}
                 </button>
                 <button
                   style={buttonStyle}
