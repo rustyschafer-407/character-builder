@@ -654,6 +654,7 @@ export default function App() {
         draft,
         setCharacters,
         onPersistUpsert: persistCharacterUpsert,
+        currentUserId, // Pass user ID so creator can be tracked
       });
     },
   });
@@ -890,16 +891,16 @@ export default function App() {
     const character = characters.find((item) => item.id === characterId);
     if (!character) return false;
 
-    // Use centralized permission check
+    // Use centralized permission check with actual creator from CharacterRecord
     const charAccessRole = characterRolesByCharacterId[characterId] ?? null;
     return Permissions.canEditCharacter(
       authState,
       {
         campaignId: character.campaignId,
-        createdBy: character.createdAt ? currentUserId : undefined, // Note: should use actual creator_by field if available
+        createdBy: character.createdBy ?? undefined, // Use actual creator from record
         id: characterId,
       },
-      "pc", // Treat as PC for permission check (if it's an NPC, permissions still work)
+      "pc", // Reserved for future use; permissions don't currently differ by type
       charAccessRole
     );
   };

@@ -111,7 +111,14 @@ export function buildCloudHydratedState(input: {
   const accessibleCampaignIds = new Set(gameData.campaigns.map((campaign) => campaign.id))
 
   const characters = input.characterRows
-    .map((row) => row.data)
+    .map((row) => {
+      const char = row.data
+      // Preserve the creator information from the database row
+      return {
+        ...char,
+        createdBy: row.created_by ?? undefined,
+      }
+    })
     .filter((character) => accessibleCampaignIds.has(character.campaignId))
     .map((character) =>
       applySafeCharacterDefaults(
