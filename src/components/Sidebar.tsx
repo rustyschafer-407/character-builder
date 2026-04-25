@@ -101,7 +101,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className="app-sidebar"
+      className="app-sidebar mobile-stack"
       style={{
         ...panelStyle,
         width: 300,
@@ -145,6 +145,7 @@ export default function Sidebar({
         <div
           role="group"
           aria-label="Character type filter"
+          className="sidebar-type-filter"
           style={{ display: "flex", gap: 6, marginTop: 10 }}
         >
           <button className="button-control" type="button" onClick={() => setTypeFilter("all")} style={segmentButtonStyle("all")}>
@@ -159,7 +160,7 @@ export default function Sidebar({
         </div>
       ) : null}
 
-      <div style={{ marginTop: 18, display: "grid", gap: 6 }}>
+      <div className="sidebar-character-list" style={{ marginTop: 18, display: "grid", gap: 6 }}>
         {visibleCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
 
         {visibleCharacters.map((c) => {
@@ -173,6 +174,7 @@ export default function Sidebar({
           return (
             <div
               key={c.id}
+              className="sidebar-character-card mobile-card"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr auto 40px",

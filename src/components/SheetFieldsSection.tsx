@@ -55,10 +55,11 @@ export default function SheetFieldsSection({
   const initiative = dexMod + sheet.initMisc;
 
   return (
-    <section style={panelStyle}>
+    <section style={panelStyle} className="sheet-fields-section mobile-stack">
       <h2 style={sectionTitleStyle}>Core</h2>
 
       <div
+        className="sheet-core-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -138,6 +139,7 @@ export default function SheetFieldsSection({
       <div style={{ fontWeight: 700, marginBottom: 8 }}>Saving Throws</div>
 
       <div
+        className="saves-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "90px 80px 90px 90px 100px",
@@ -145,11 +147,11 @@ export default function SheetFieldsSection({
           alignItems: "center",
         }}
       >
-        <div style={{ fontWeight: 700 }}>Attr</div>
-        <div style={{ fontWeight: 700 }}>Mod</div>
-        <div style={{ fontWeight: 700 }}>Prof</div>
-        <div style={{ fontWeight: 700 }}>Bonus</div>
-        <div style={{ fontWeight: 700 }}>Total</div>
+        <div className="saves-grid-header" style={{ fontWeight: 700 }}>Attr</div>
+        <div className="saves-grid-header" style={{ fontWeight: 700 }}>Mod</div>
+        <div className="saves-grid-header" style={{ fontWeight: 700 }}>Prof</div>
+        <div className="saves-grid-header" style={{ fontWeight: 700 }}>Bonus</div>
+        <div className="saves-grid-header" style={{ fontWeight: 700 }}>Total</div>
 
         {ATTRS.map((attr) => {
           const mod = getAttributeModifier(character.attributes[attr]);
@@ -158,17 +160,17 @@ export default function SheetFieldsSection({
           const total = mod + (prof ? character.proficiencyBonus : 0) + bonus;
 
           return (
-            <div key={attr} style={{ display: "contents" }}>
-              <div>{attr}</div>
-              <div>{mod >= 0 ? `+${mod}` : mod}</div>
-              <div>
+            <div key={attr} className="save-row" style={{ display: "contents" }}>
+              <div className="save-cell" data-label="Attr">{attr}</div>
+              <div className="save-cell" data-label="Mod">{mod >= 0 ? `+${mod}` : mod}</div>
+              <div className="save-cell" data-label="Prof">
                 <input
                   type="checkbox"
                   checked={prof}
                   onChange={(e) => onSaveProfChange(attr, e.target.checked)}
                 />
               </div>
-              <div>
+              <div className="save-cell" data-label="Bonus">
                 <input
                   type="number"
                   value={bonus}
@@ -176,7 +178,7 @@ export default function SheetFieldsSection({
                   className="form-control" style={inputStyle}
                 />
               </div>
-              <div>{total >= 0 ? `+${total}` : total}</div>
+              <div className="save-cell" data-label="Total">{total >= 0 ? `+${total}` : total}</div>
             </div>
           );
         })}

@@ -1903,7 +1903,7 @@ export default function App() {
   }
 
   return (
-    <div style={pageStyle}>
+    <div style={pageStyle} className="app-shell">
       <div
         className="app-header"
         style={{

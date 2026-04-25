@@ -136,9 +136,34 @@
 }
 
 @media (max-width: 860px) {
+  .character-identity-main {
+    min-width: 0;
+  }
+
   .character-actions {
     width: 100%;
+    min-width: 0;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .character-identity-layout {
+    gap: var(--mobile-section-gap);
+  }
+
+  .character-meta-row {
+    gap: 8px;
+  }
+
+  .character-meta-chip {
+    min-height: var(--mobile-control-height);
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .character-actions .button-control {
+    width: 100%;
   }
 }
 

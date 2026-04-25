@@ -91,6 +91,12 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
+
+  --mobile-page-padding: 12px;
+  --mobile-card-gap: 12px;
+  --mobile-section-gap: 16px;
+  --mobile-control-height: 44px;
+  --mobile-radius: 14px;
 }
 
 /* Default theme preserved exactly from existing sci-fi palette. */
@@ -1230,42 +1236,379 @@ html[data-cb-theme="neon"] .button-control:hover {
     0 0 16px rgba(32, 215, 255, 0.34);
 }
 
-/* Phone-only layout layer (≤ 479px) — tablet and desktop are unchanged */
-@media screen and (max-width: 479px) {
+/* Mobile utility classes */
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: initial !important;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  .mobile-stack {
+    display: grid;
+    gap: var(--mobile-card-gap);
+    min-width: 0;
+  }
+
+  .mobile-card {
+    border-radius: var(--mobile-radius);
+    min-width: 0;
+  }
+
+  .mobile-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .mobile-card-body {
+    display: grid;
+    gap: 8px;
+  }
+
+  .mobile-field-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .mobile-action-bar {
+    position: sticky;
+    bottom: 0;
+    padding: 8px;
+    border-top: 1px solid var(--cb-border);
+    background: color-mix(in srgb, var(--cb-surface-raised) 92%, transparent);
+    backdrop-filter: blur(6px);
+    z-index: 4;
+  }
+
+  html,
+  body,
+  #root,
+  .app-shell {
+    max-width: 100%;
+  }
+
+  body,
   #root {
-    padding: 10px;
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    padding-left: var(--mobile-page-padding) !important;
+    padding-right: var(--mobile-page-padding) !important;
   }
 
   .app-header {
     flex-wrap: wrap !important;
-    gap: 10px !important;
+    gap: 12px !important;
   }
 
   .app-header h1 {
-    font-size: 28px !important;
-    line-height: 1.1 !important;
-  }
-
-  .app-header > div {
-    flex-wrap: wrap !important;
+    font-size: 34px !important;
+    line-height: 1.08 !important;
   }
 
   .camp-bar {
     grid-template-columns: 1fr !important;
+    gap: var(--mobile-card-gap) !important;
+    padding: 12px !important;
+  }
+
+  .camp-bar > * {
+    min-width: 0;
   }
 
   .app-body {
     flex-direction: column !important;
-    gap: 16px !important;
+    gap: var(--mobile-section-gap) !important;
     align-items: stretch !important;
+    min-width: 0;
   }
 
   .app-sidebar {
     width: 100% !important;
+    min-width: 0;
   }
 
-  .wizard-steps {
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)) !important;
+  .app-sidebar .button-control,
+  .app-sidebar button,
+  .app-sidebar input,
+  .app-sidebar select,
+  .app-sidebar textarea,
+  .selected-workspace .button-control,
+  .selected-workspace button,
+  .selected-workspace input,
+  .selected-workspace select,
+  .selected-workspace textarea,
+  .access-management-panel .button-control,
+  .access-management-panel button,
+  .access-management-panel input,
+  .access-management-panel select,
+  .access-management-panel textarea,
+  .admin-screen .button-control,
+  .admin-screen button,
+  .admin-screen input,
+  .admin-screen select,
+  .admin-screen textarea,
+  .character-creation-wizard .button-control,
+  .character-creation-wizard button,
+  .character-creation-wizard input,
+  .character-creation-wizard select,
+  .character-creation-wizard textarea {
+    min-height: var(--mobile-control-height) !important;
+  }
+
+  .selected-workspace,
+  .selected-workspace * {
+    min-width: 0;
+  }
+
+  .selected-workspace,
+  .app-sidebar,
+  .access-management-panel,
+  .admin-screen,
+  .character-creation-wizard {
+    overflow-wrap: anywhere;
+  }
+
+  .sidebar-type-filter {
+    flex-wrap: wrap;
+    gap: 8px !important;
+  }
+
+  .sidebar-type-filter .button-control {
+    min-width: 76px;
+    flex: 1 1 30%;
+  }
+
+  .sidebar-character-card {
+    grid-template-columns: 1fr auto !important;
+    gap: 10px !important;
+    align-items: start !important;
+    padding: 12px !important;
+  }
+
+  .sidebar-character-card > :last-child {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .workspace-collapsible-card {
+    border-radius: var(--mobile-radius) !important;
+  }
+
+  .workspace-collapsible-trigger {
+    min-height: 48px !important;
+  }
+
+  .attributes-grid,
+  .sheet-core-grid,
+  .attacks-list,
+  .skills-list,
+  .powers-list,
+  .inventory-list {
+    grid-template-columns: 1fr !important;
+    gap: var(--mobile-card-gap) !important;
+  }
+
+  .attack-row,
+  .skill-row,
+  .power-row,
+  .inventory-row,
+  .attribute-card {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .attack-row input,
+  .skill-row input,
+  .power-row input,
+  .power-row select,
+  .inventory-row input,
+  .inventory-row select,
+  .inventory-row button,
+  .sheet-fields-section input,
+  .sheet-fields-section select,
+  .attacks-section input,
+  .skills-section input,
+  .powers-section input,
+  .powers-section select,
+  .inventory-section input,
+  .inventory-section select {
+    width: 100% !important;
+    margin-left: 0 !important;
+  }
+
+  .power-details-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .saves-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .saves-grid-header {
+    display: none;
+  }
+
+  .save-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px;
+    border: 1px solid var(--cb-border);
+    border-radius: var(--mobile-radius);
+    padding: 10px;
+    background: var(--cb-surface);
+  }
+
+  .save-cell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--cb-text);
+    font-size: 14px;
+  }
+
+  .save-cell::before {
+    content: attr(data-label);
+    color: var(--cb-text-muted);
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  .character-access-list-header,
+  .access-list-header {
+    display: none !important;
+  }
+
+  .character-access-row,
+  .access-list-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    border: 1px solid var(--cb-border) !important;
+    border-radius: var(--mobile-radius);
+    margin: 8px;
+    padding: 12px !important;
+  }
+
+  .character-access-row select,
+  .character-access-row button,
+  .access-list-row select,
+  .access-list-row button,
+  .access-character-add-grid .button-control {
+    width: 100%;
+  }
+
+  .access-character-add-grid,
+  .access-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-screen {
+    height: auto !important;
+    min-height: 0;
+  }
+
+  .admin-tabs {
+    flex-wrap: wrap !important;
+    overflow-x: visible !important;
+    padding-bottom: 0 !important;
+  }
+
+  .admin-tabs .button-control {
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .admin-split-layout {
+    grid-template-columns: 1fr !important;
+    gap: var(--mobile-section-gap) !important;
+    overflow: visible !important;
+  }
+
+  .character-creation-wizard .wizard-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: color-mix(in srgb, var(--cb-surface-raised) 94%, transparent);
+    padding-bottom: 8px;
+  }
+
+  .character-creation-wizard .wizard-progress {
+    position: sticky;
+    top: 58px;
+    z-index: 4;
+    background: color-mix(in srgb, var(--cb-surface-raised) 94%, transparent);
+    padding: 6px 0;
+  }
+
+  .character-creation-wizard .wizard-step-panel {
+    display: grid;
+    gap: var(--mobile-card-gap);
+  }
+
+  .character-creation-wizard .wizard-attribute-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .character-creation-wizard .wizard-action-bar {
+    gap: 8px;
+  }
+
+  .character-creation-wizard .wizard-action-bar .button-control,
+  .character-creation-wizard .wizard-action-bar button {
+    flex: 1;
+    width: 100%;
+  }
+
+  .character-creation-wizard .wizard-action-bar {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .character-creation-wizard [style*="grid-template-columns: repeat(3, minmax(0, 1fr))"],
+  .character-creation-wizard [style*="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))"],
+  .character-creation-wizard [style*="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))"],
+  .character-creation-wizard [style*="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr))"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-shell {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .app-header h1 {
+    font-size: 28px !important;
+  }
+
+  .character-creation-wizard .wizard-action-bar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .admin-tabs .button-control {
+    flex: 1 1 100%;
   }
 }
 

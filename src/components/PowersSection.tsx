@@ -22,10 +22,10 @@ export default function PowersSection({
   onPowerChange,
 }: Props) {
   return (
-    <section style={panelStyle}>
+    <section style={panelStyle} className="powers-section mobile-stack">
       <h2 style={sectionTitleStyle}>{label}</h2>
 
-      <div style={{ display: "grid", gap: 8 }}>
+      <div className="powers-list" style={{ display: "grid", gap: 8 }}>
         {powers.map((power) => {
           const selectedPower = character.powers.find((p) => p.powerId === power.id);
           const isSelected = Boolean(selectedPower);
@@ -33,6 +33,7 @@ export default function PowersSection({
           return (
             <div
               key={power.id}
+              className="power-row mobile-card"
               style={{
                 ...cardStyle,
                 display: "grid",
@@ -71,6 +72,7 @@ export default function PowersSection({
 
                 {isSelected && onPowerChange && selectedPower && (
                   <div
+                    className="power-details-grid"
                     style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(3, 1fr)",
