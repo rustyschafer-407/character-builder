@@ -1,278 +1,227 @@
-/* ============================================================
-   Guidance / chalk-board onboarding overlay
-   Works on top of all cb themes (dark & light)
-   ============================================================ */
-
-.guidance-backdrop {
+.guide-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(2px);
-  z-index: 9997;
-  pointer-events: auto;
-  -webkit-mask-image: radial-gradient(
-    circle at var(--cx) var(--cy),
-    transparent 0px,
-    transparent var(--r),
-    black calc(var(--r) + 1px)
-  );
-  mask-image: radial-gradient(
-    circle at var(--cx) var(--cy),
-    transparent 0px,
-    transparent var(--r),
-    black calc(var(--r) + 1px)
-  );
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 9996;
+  pointer-events: none;
 }
 
-/* --- hand-drawn chalk target ring (separate overlay element) --- */
-.chalk-ring {
+.guide-target-outline {
   position: fixed;
+  border: 2px solid var(--cb-accent);
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px var(--cb-accent-soft);
+  z-index: 9997;
   pointer-events: none;
+}
+
+.guide-popover {
+  position: fixed;
   z-index: 9998;
+  width: clamp(280px, 34vw, 360px);
+  max-width: calc(100vw - 32px);
+  min-width: 280px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--cb-surface-raised);
+  color: var(--cb-text);
+  border: 1px solid var(--cb-border);
+  box-shadow: var(--cb-card-shadow);
 }
 
-.chalk-ring-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+.guide-popover-head {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 10px;
 }
 
-.chalk-ring-path {
-  fill: none;
-  stroke: rgba(245, 245, 220, 0.82);
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 4px rgba(245, 245, 220, 0.2));
+.guide-popover-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--cb-text);
 }
 
-.chalk-ring-path-shadow {
-  opacity: 0.18;
-  stroke-width: 2.8;
+.guide-popover-progress {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cb-text-muted);
 }
 
-.chalk-ring-path-main {
-  opacity: 0.9;
+.guide-popover-body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--cb-text);
 }
 
-.chalk-ring-path-secondary {
-  opacity: 0.24;
+.guide-popover-footer {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .chalk-ring {
-    animation: chalkPulse 3s ease-in-out infinite;
-  }
+.guide-popover-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-@keyframes chalkPulse {
-  0%, 100% {
-    opacity: 0.85;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* --- chalk note card --- */
-.guidance-card {
-  position: relative;
-  background: rgba(20, 22, 16, 0.96);
-  color: #f3f3e8;
-  border-radius: 18px 26px 14px 22px;
-  padding: 16px 18px;
-  box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.6),
-    0 0 16px rgba(245, 245, 220, 0.12);
-  transform: translate(-3px, 2px) rotate(-0.8deg);
-  animation: guidance-card-in 220ms ease-out both;
-  border: 1px solid rgba(245, 245, 220, 0.18);
-}
-
-.guidance-card::before,
-.guidance-card::after {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  pointer-events: none;
-  border: 2px solid rgba(245, 245, 220, 0.65);
-  border-radius: 18px 24px 16px 20px;
-}
-
-.guidance-card::after {
-  inset: -7px;
-  opacity: 0.3;
-  transform: rotate(0.6deg);
-}
-
-.guidance-card::before {
-  box-shadow:
-    inset 0 0 0 6px rgba(98, 70, 32, 0.16),
-    inset 0 0 0 8px rgba(42, 28, 12, 0.42);
-}
-
-@keyframes chalk-card-in {
-  from {
-    opacity: 0;
-    transform: translate(-3px, 8px) rotate(-0.8deg);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-3px, 2px) rotate(-0.8deg);
-  }
-}
-
-@keyframes guidance-card-in {
-  from {
-    opacity: 0;
-    transform: translate(-3px, 8px) rotate(-0.8deg);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-3px, 2px) rotate(-0.8deg);
-  }
-}
-
-/* light theme override: keep card readable */
-[data-cb-theme="paper"] .guidance-card,
-[data-cb-theme="feywild"] .guidance-card {
-  background: rgba(245, 242, 232, 0.94);
-  color: #2a2510;
-  box-shadow:
-    0 8px 20px rgba(0, 0, 0, 0.16),
-    inset 0 0 12px rgba(30, 26, 14, 0.06);
-}
-
-[data-cb-theme="paper"] .guidance-card::before,
-[data-cb-theme="feywild"] .guidance-card::before,
-[data-cb-theme="paper"] .guidance-card::after,
-[data-cb-theme="feywild"] .guidance-card::after {
-  border-color: rgba(42, 37, 16, 0.5);
-}
-
-.guidance-card-title {
-  margin: 0 0 6px;
+.guide-btn {
+  min-width: 88px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cb-border-strong);
+  background: var(--cb-surface);
+  color: var(--cb-text);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.03em;
-  color: rgba(243, 243, 232, 0.98);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-[data-cb-theme="paper"] .guidance-card-title,
-[data-cb-theme="feywild"] .guidance-card-title {
-  color: #2a2510;
-  text-shadow: none;
+.guide-popover button {
+  white-space: nowrap;
+  min-width: max-content;
 }
 
-.guidance-card-body {
-  margin: 0 0 12px;
-  font-size: 12px;
-  line-height: 1.55;
-  color: rgba(243, 243, 232, 0.9);
+.guide-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
 }
 
-[data-cb-theme="paper"] .guidance-card-body,
-[data-cb-theme="feywild"] .guidance-card-body {
-  color: #3a3520;
+.guide-btn-primary {
+  border-color: var(--cb-accent);
+  background: var(--cb-accent);
+  color: var(--cb-accent-contrast);
 }
 
-/* --- action buttons --- */
-.guidance-card-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.guide-btn-muted {
+  background: var(--cb-surface);
+  color: var(--cb-text);
 }
 
-.guidance-btn {
-  flex: 1;
-  min-width: 80px;
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  border-radius: 12px 16px 10px 14px;
-  border: 2px solid rgba(245, 245, 220, 0.6);
+.help-menu-shell {
+  position: relative;
+}
+
+.help-menu-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(240px, 86vw);
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--cb-border);
+  background: var(--cb-surface-raised);
+  box-shadow: var(--cb-card-shadow);
+  z-index: 120;
+}
+
+.help-menu-item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
   background: transparent;
-  color: #f3f3e8;
+  color: var(--cb-text);
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
-.guidance-btn:hover {
-  box-shadow: 0 0 8px rgba(245, 245, 220, 0.3);
+.help-menu-item:hover {
+  border-color: var(--cb-border);
+  background: var(--cb-accent-soft);
 }
 
-.guidance-btn:focus-visible {
-  outline: 2px solid rgba(244, 240, 224, 0.8);
-  outline-offset: 2px;
+.inline-help-toggle {
+  border: 1px solid var(--cb-border-strong);
+  background: var(--cb-surface);
+  color: var(--cb-text-muted);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  white-space: nowrap;
 }
 
-.guidance-btn-primary {
-  background: rgba(245, 245, 220, 0.08);
+.inline-help-card {
+  margin-top: 8px;
+  border: 1px solid var(--cb-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--cb-surface-raised);
+  color: var(--cb-text);
+  display: grid;
+  gap: 6px;
 }
 
-.guidance-btn-muted {
-  color: rgba(243, 243, 232, 0.92);
+.inline-help-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
 }
 
-.guidance-btn-ghost {
-  flex: 0 0 auto;
-  min-width: 120px;
-  background: rgba(245, 245, 220, 0.02);
-  color: rgba(243, 243, 232, 0.8);
-  border-color: rgba(245, 245, 220, 0.35);
+.inline-help-body {
+  margin: 0;
+  font-size: 12px;
+  color: var(--cb-text-muted);
+  line-height: 1.4;
 }
 
-[data-cb-theme="paper"] .guidance-btn,
-[data-cb-theme="feywild"] .guidance-btn {
-  border-color: rgba(42, 37, 16, 0.55);
-  color: #2a2510;
+.empty-help-card {
+  border: 1px solid var(--cb-border);
+  background: var(--cb-surface-raised);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
 }
 
-/* --- curved chalk arrow --- */
-.chalk-arrow {
-  user-select: none;
+.empty-help-title {
+  margin: 0;
+  font-size: 18px;
+  color: var(--cb-text);
 }
 
-.chalk-arrow-draw {
-  fill: none;
-  stroke: rgba(245, 245, 220, 0.22);
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.empty-help-body {
+  margin: 0;
+  font-size: 14px;
+  color: var(--cb-text-muted);
 }
 
-.chalk-arrow-soft {
-  fill: none;
-  stroke: rgba(245, 245, 220, 0.82);
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.28;
-  transform: translate(1px, 1px) rotate(0.4deg);
+.empty-help-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
-.chalk-arrow-main {
-  fill: none;
-  stroke: rgba(245, 245, 220, 0.82);
-  stroke-width: 2.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  filter: drop-shadow(0 0 5px rgba(245, 245, 220, 0.25));
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chalk-ring,
-  .guidance-card {
-    animation: none;
+@media (max-width: 640px) {
+  .guide-popover {
+    min-width: 0;
+    width: calc(100vw - 32px);
   }
-  .chalk-arrow-draw {
-    animation: none;
+
+  .guide-popover-footer {
+    flex-direction: column;
+    align-items: stretch;
   }
-  .guidance-btn {
-    transition: none;
+
+  .guide-popover-footer-right {
+    justify-content: flex-end;
+  }
+
+  .empty-help-actions {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

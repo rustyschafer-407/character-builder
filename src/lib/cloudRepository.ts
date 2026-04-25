@@ -558,7 +558,7 @@ export async function listCampaignAccessRows(campaignRowId: string) {
   if (accessRows.length === 0) return []
   
   // Collect distinct user IDs and fetch their profiles separately
-  const userIds = Array.from(new Set(accessRows.map((row: any) => row.user_id)))
+  const userIds = Array.from(new Set((accessRows as CampaignAccessRow[]).map((row) => row.user_id)))
   const resolution = await fetchProfilesByIds({
     userIds,
     sourceTable: "campaign_user_access",
@@ -567,7 +567,7 @@ export async function listCampaignAccessRows(campaignRowId: string) {
   const profilesById = new Map(resolution.profiles.map((p) => [p.id, p]))
   
   // Merge profiles onto access rows
-  const enrichedRows = accessRows.map((row: any) => ({
+  const enrichedRows = (accessRows as CampaignAccessRow[]).map((row) => ({
     campaign_id: row.campaign_id,
     user_id: row.user_id,
     role: row.role,
@@ -815,7 +815,7 @@ export async function listCharacterAccessRows(characterId: string, campaignRowId
   if (accessRows.length === 0) return []
 
   // Collect distinct user IDs and fetch their profiles separately
-  const userIds = Array.from(new Set(accessRows.map((row: any) => row.user_id)))
+  const userIds = Array.from(new Set((accessRows as CharacterAccessRow[]).map((row) => row.user_id)))
   const resolution = await fetchProfilesByIds({
     userIds,
     sourceTable: "character_user_access",
@@ -825,7 +825,7 @@ export async function listCharacterAccessRows(characterId: string, campaignRowId
   const profilesById = new Map(resolution.profiles.map((p) => [p.id, p]))
   
   // Merge profiles onto access rows
-  const enrichedRows = accessRows.map((row: any) => ({
+  const enrichedRows = (accessRows as CharacterAccessRow[]).map((row) => ({
     character_id: row.character_id,
     user_id: row.user_id,
     role: row.role,

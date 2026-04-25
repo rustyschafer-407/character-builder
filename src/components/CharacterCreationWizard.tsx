@@ -233,6 +233,7 @@ export default function CharacterCreationWizard({
   const highStats = attributeScores.filter((score) => score >= 16).length;
   const dumpStats = attributeScores.filter((score) => score <= 8).length;
   const isMinMaxed = highStats >= 2 && dumpStats >= 1;
+  const showMinMaxTooltip = isMinMaxed && isMinMaxTooltipOpen;
 
   useEffect(() => {
     if (!rollEffect) return;
@@ -315,12 +316,6 @@ export default function CharacterCreationWizard({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [onCloseQuickstart, quickstartPanelOpen]);
-
-  useEffect(() => {
-    if (!isMinMaxed) {
-      setIsMinMaxTooltipOpen(false);
-    }
-  }, [isMinMaxed]);
 
   function handleRollAttributesClick() {
     hasUserInteractedRef.current = true;
@@ -688,7 +683,7 @@ export default function CharacterCreationWizard({
                   className="wizard-minmax-badge"
                   aria-label="Optimized build warning"
                   aria-describedby="wizard-minmax-tooltip"
-                  aria-expanded={isMinMaxTooltipOpen}
+                  aria-expanded={showMinMaxTooltip}
                   onClick={() => setIsMinMaxTooltipOpen((open) => !open)}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") {
@@ -701,7 +696,7 @@ export default function CharacterCreationWizard({
                 <span
                   id="wizard-minmax-tooltip"
                   role="tooltip"
-                  className={`wizard-minmax-tooltip ${isMinMaxTooltipOpen ? "is-visible" : ""}`}
+                  className={`wizard-minmax-tooltip ${showMinMaxTooltip ? "is-visible" : ""}`}
                 >
                   Your GM is already planning your downfall.
                 </span>

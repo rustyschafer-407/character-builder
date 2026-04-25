@@ -63,11 +63,11 @@ export function useCloudSync({
     }
   }
 
-  function warnPotentialDestructiveSync(params: {
+  const warnPotentialDestructiveSync = useCallback((params: {
     entity: string;
     previousCount: number;
     nextCount: number;
-  }) {
+  }) => {
     if (!isDevelopment) return;
 
     const syncingEmptyDataset = params.nextCount === 0;
@@ -76,7 +76,7 @@ export function useCloudSync({
     if (syncingEmptyDataset || significantlyReduced) {
       console.warn("WARNING: Potential destructive sync prevented", params);
     }
-  }
+  }, [isDevelopment]);
 
   useEffect(() => {
     if (!cloudEnabled) {
@@ -225,7 +225,7 @@ export function useCloudSync({
         setCloudStatus("Campaign save failed (see console)");
       }
     },
-    [campaignRowIdsByAppId, cloudEnabled, currentUserId, gameData.campaigns, isDevelopment]
+    [campaignRowIdsByAppId, cloudEnabled, currentUserId, gameData.campaigns, warnPotentialDestructiveSync]
   );
 
   const persistCharacterUpsert = useCallback(

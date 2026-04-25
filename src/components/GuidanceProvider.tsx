@@ -1,48 +1,72 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import {
-  evaluateGuideStep,
-  pickNextStep,
-  readDismissedSteps,
-  resetAllDismissedSteps,
-  writeDismissedSteps,
+  getPrimaryRole,
+  hasPermission,
+  isStepValidForContext,
+  readCompletedTourIds,
+  readDismissedEmptyStateIds,
+  readHelpDisabled,
+  resetHelpCoachState,
+  type EmptyStateGuideCard,
+  type GuidePermission,
+  type GuideSession,
   type GuideStep,
   type GuidanceContext,
-  type GuidanceMode,
+  type GuidancePage,
+  type GuidanceRole,
+  writeCompletedTourIds,
+  writeDismissedEmptyStateIds,
+  writeHelpDisabled,
 } from "../lib/guidance";
-import { ALL_GUIDE_STEPS } from "../lib/guidanceSteps";
+import { EMPTY_STATE_GUIDE_CARDS, GUIDE_TOUR_STEPS } from "../lib/guidanceSteps";
 
 interface GuidanceState {
+  guideSession: GuideSession;
   activeStep: GuideStep | null;
-  hasNextStep: boolean;
-  mode: GuidanceMode;
-  dismissCurrent: () => void;
-  dismissPermanently: () => void;
-  advance: () => void;
-  resetGuidance: () => void;
-  startWalkthrough: () => void;
-  finishWalkthrough: () => void;
-  /** Call this after major layout changes (flyout open/close, campaign switch, panel transitions) */
+  totalSteps: number;
+  emptyStateCard: EmptyStateGuideCard | null;
+  helpDisabled: boolean;
+  isInlineHelpVisible: boolean;
+  tourRepositionToken: number;
+  startPageTour: () => void;
+  showInlineHelpForPage: () => void;
+  hideInlineHelpForPage: () => void;
+  nextStep: () => void;
+  previousStep: () => void;
+  endTour: () => void;
+  completeTour: () => void;
+  dismissEmptyStateCard: (id: string) => void;
+  resetHelpCoach: () => void;
+  setHelpDisabled: (disabled: boolean) => void;
   notifyLayoutChanged: () => void;
 }
 
 const GuidanceCtx = createContext<GuidanceState>({
+  guideSession: { mode: "closed", stepIndex: 0, startedByUser: false },
   activeStep: null,
-  hasNextStep: false,
-  mode: "contextual",
-  dismissCurrent: () => undefined,
-  dismissPermanently: () => undefined,
-  advance: () => undefined,
-  resetGuidance: () => undefined,
-  startWalkthrough: () => undefined,
-  finishWalkthrough: () => undefined,
+  totalSteps: 0,
+  emptyStateCard: null,
+  helpDisabled: false,
+  isInlineHelpVisible: false,
+  tourRepositionToken: 0,
+  startPageTour: () => undefined,
+  showInlineHelpForPage: () => undefined,
+  hideInlineHelpForPage: () => undefined,
+  nextStep: () => undefined,
+  previousStep: () => undefined,
+  endTour: () => undefined,
+  completeTour: () => undefined,
+  dismissEmptyStateCard: () => undefined,
+  resetHelpCoach: () => undefined,
+  setHelpDisabled: () => undefined,
   notifyLayoutChanged: () => undefined,
 });
 
@@ -55,27 +79,20 @@ interface GuidanceProviderProps {
   isGm: boolean;
   campaignRoles: Record<string, "player" | "editor">;
   selectedCampaignRole?: "player" | "editor" | null;
+  page: GuidancePage;
   hasCampaigns: boolean;
   hasCharacters: boolean;
   hasCharactersInSelectedCampaign: boolean;
-  hasSelectedCharacter: boolean;
-  suppressGuidance?: boolean;
-  /** Optional key that changes when route/panel context shifts. */
-  contextKey?: string;
-  /** Minimum delay before re-showing a contextual hint that was already shown. */
-  cooldownMs?: number;
-  /**
-   * Pass true once auth + initial data are resolved.
-   * Guidance is suppressed while loading to prevent flicker on stale role data.
-   */
-  isReady?: boolean;
-  /**
-   * Authenticated user ID. When provided, dismissed steps are stored under a
-   * user-scoped localStorage key so different users on the same device see
-   * their own dismissed state.
-   */
   userId?: string | null;
+  permissions: Partial<Record<GuidePermission, boolean>>;
   children: ReactNode;
+}
+
+function getDefaultTourId(page: GuidancePage, role: GuidanceRole): string | null {
+  if (page !== "main") return null;
+  if (role === "admin") return "main-admin";
+  if (role === "gm") return "main-gm";
+  return "main-player";
 }
 
 export function GuidanceProvider({
@@ -83,303 +100,218 @@ export function GuidanceProvider({
   isGm,
   campaignRoles,
   selectedCampaignRole = null,
+  page,
   hasCampaigns,
   hasCharacters,
   hasCharactersInSelectedCampaign,
-  hasSelectedCharacter,
-  suppressGuidance = false,
-  contextKey,
-  cooldownMs = 5 * 60 * 1000,
-  isReady = true,
   userId,
+  permissions,
   children,
 }: GuidanceProviderProps) {
-  const [mode, setMode] = useState<GuidanceMode>("contextual");
-
-  // Permanent dismissals — persisted to localStorage under a user-scoped key
-  const [dismissed, setDismissed] = useState<Set<string>>(() =>
-    readDismissedSteps(userId)
+  const userRole = useMemo(
+    () =>
+      getPrimaryRole({
+        isAdmin,
+        isGm,
+        selectedCampaignRole,
+        campaignRoles,
+      }),
+    [campaignRoles, isAdmin, isGm, selectedCampaignRole]
   );
 
-  // Re-read persisted dismissals when userId changes (user signs in/out)
-  useEffect(() => {
-    setDismissed(readDismissedSteps(userId));
+  const guidanceContext: GuidanceContext = useMemo(
+    () => ({
+      userRole,
+      page,
+      permissions,
+    }),
+    [userRole, page, permissions]
+  );
+
+  const [guideSession, setGuideSession] = useState<GuideSession>({
+    mode: "closed",
+    stepIndex: 0,
+    startedByUser: false,
+  });
+  const [dismissedEmptyStateIds, setDismissedEmptyStateIds] = useState<Set<string>>(() =>
+    readDismissedEmptyStateIds(userId)
+  );
+  const [completedTourIds, setCompletedTourIds] = useState<Set<string>>(() => readCompletedTourIds(userId));
+  const [helpDisabled, setHelpDisabledState] = useState<boolean>(() => readHelpDisabled(userId));
+  const [tourRepositionToken, setTourRepositionToken] = useState(0);
+
+  const emptyStateCard = useMemo(() => {
+    if (helpDisabled) return null;
+    if (page !== "main") return null;
+
+    const candidates = EMPTY_STATE_GUIDE_CARDS.filter((card) => {
+      if (card.page !== page) return false;
+      if (!card.allowedRoles.includes(userRole)) return false;
+      if (!hasPermission(permissions, card.requiredPermission)) return false;
+      if (dismissedEmptyStateIds.has(card.id)) return false;
+
+      if (card.id === "main-no-campaigns") {
+        return !hasCampaigns;
+      }
+
+      if (card.id === "main-no-characters") {
+        return hasCampaigns && !hasCharacters && !hasCharactersInSelectedCampaign;
+      }
+
+      return false;
+    });
+
+    return candidates[0] ?? null;
+  }, [dismissedEmptyStateIds, hasCampaigns, hasCharacters, hasCharactersInSelectedCampaign, helpDisabled, page, permissions, userRole]);
+
+  const resolvedMode: GuideSession["mode"] = useMemo(() => {
+    if (helpDisabled) return "closed";
+    if (guideSession.mode === "tour" || guideSession.mode === "inline") {
+      return guideSession.mode;
+    }
+    return emptyStateCard ? "emptyState" : "closed";
+  }, [emptyStateCard, guideSession.mode, helpDisabled]);
+
+  const activeTourSteps = useMemo(() => {
+    if (resolvedMode !== "tour" || !guideSession.tourId || helpDisabled) return [];
+
+    return GUIDE_TOUR_STEPS.filter(
+      (step) => step.tourId === guideSession.tourId && isStepValidForContext(step, guidanceContext)
+    );
+  }, [guideSession.tourId, guidanceContext, helpDisabled, resolvedMode]);
+
+  const resolvedStepIndex = useMemo(() => {
+    if (resolvedMode !== "tour") return 0;
+    if (activeTourSteps.length === 0) return 0;
+    return Math.min(guideSession.stepIndex, activeTourSteps.length - 1);
+  }, [activeTourSteps.length, guideSession.stepIndex, resolvedMode]);
+
+  const activeStep = useMemo(() => {
+    if (resolvedMode !== "tour") return null;
+    return activeTourSteps[resolvedStepIndex] ?? null;
+  }, [activeTourSteps, resolvedMode, resolvedStepIndex]);
+
+  const startPageTour = useCallback(() => {
+    if (helpDisabled) return;
+    const tourId = getDefaultTourId(page, userRole);
+    if (!tourId) return;
+    setGuideSession({
+      mode: "tour",
+      tourId,
+      stepIndex: 0,
+      startedByUser: true,
+    });
+  }, [helpDisabled, page, userRole]);
+
+  const showInlineHelpForPage = useCallback(() => {
+    if (helpDisabled) return;
+    setGuideSession((prev) => ({ ...prev, mode: "inline" }));
+  }, [helpDisabled]);
+
+  const hideInlineHelpForPage = useCallback(() => {
+    setGuideSession((prev) => ({ ...prev, mode: emptyStateCard ? "emptyState" : "closed" }));
+  }, [emptyStateCard]);
+
+  const endTour = useCallback(() => {
+    setGuideSession((prev) => ({
+      ...prev,
+      mode: emptyStateCard ? "emptyState" : "closed",
+      stepIndex: 0,
+      startedByUser: false,
+      tourId: undefined,
+    }));
+  }, [emptyStateCard]);
+
+  const completeTour = useCallback(() => {
+    const tourId = guideSession.tourId;
+    if (tourId) {
+      const next = new Set(completedTourIds);
+      next.add(tourId);
+      writeCompletedTourIds(next, userId);
+      setCompletedTourIds(next);
+    }
+    setGuideSession((prev) => ({
+      ...prev,
+      mode: emptyStateCard ? "emptyState" : "closed",
+      stepIndex: 0,
+      startedByUser: false,
+      tourId: undefined,
+    }));
+  }, [completedTourIds, emptyStateCard, guideSession.tourId, userId]);
+
+  const nextStep = useCallback(() => {
+    if (resolvedMode !== "tour") return;
+    const nextIndex = resolvedStepIndex + 1;
+    if (nextIndex >= activeTourSteps.length) {
+      completeTour();
+      return;
+    }
+    setGuideSession((prev) => ({ ...prev, stepIndex: prev.stepIndex + 1 }));
+  }, [activeTourSteps.length, completeTour, resolvedMode, resolvedStepIndex]);
+
+  const previousStep = useCallback(() => {
+    if (resolvedMode !== "tour") return;
+    if (resolvedStepIndex <= 0) return;
+    setGuideSession((prev) => ({ ...prev, stepIndex: Math.max(0, prev.stepIndex - 1) }));
+  }, [resolvedMode, resolvedStepIndex]);
+
+  const dismissEmptyStateCard = useCallback(
+    (id: string) => {
+      const next = new Set(dismissedEmptyStateIds);
+      next.add(id);
+      writeDismissedEmptyStateIds(next, userId);
+      setDismissedEmptyStateIds(next);
+      setGuideSession((prev) => ({ ...prev, mode: "closed" }));
+    },
+    [dismissedEmptyStateIds, userId]
+  );
+
+  const resetHelpCoach = useCallback(() => {
+    resetHelpCoachState(userId);
+    setDismissedEmptyStateIds(new Set());
+    setCompletedTourIds(new Set());
+    setHelpDisabledState(false);
+    setGuideSession({ mode: "closed", stepIndex: 0, startedByUser: false });
   }, [userId]);
 
-  // Session-only dismissals ("Got it") — cleared on reload, stored in state
-  // so effectiveDismissed memo recomputes correctly (avoids stale ref bug).
-  const [sessionDismissed, setSessionDismissed] = useState<Set<string>>(
-    new Set()
-  );
-
-  // Tracks hints shown in this tab/session so contextual mode avoids repeats.
-  const [seenThisSession, setSeenThisSession] = useState<Set<string>>(new Set());
-
-  const shownKey = useMemo(
-    () => (userId ? `cb.guidance.lastShown.${userId}` : "cb.guidance.lastShown"),
+  const setHelpDisabled = useCallback(
+    (disabled: boolean) => {
+      writeHelpDisabled(disabled, userId);
+      setHelpDisabledState(disabled);
+      if (disabled) {
+        setGuideSession({ mode: "closed", stepIndex: 0, startedByUser: false });
+      }
+    },
     [userId]
   );
 
-  const [lastShownByStep, setLastShownByStep] = useState<Record<string, number>>(() => {
-    try {
-      const raw = localStorage.getItem(userId ? `cb.guidance.lastShown.${userId}` : "cb.guidance.lastShown");
-      if (!raw) return {};
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== "object") return {};
-      return parsed as Record<string, number>;
-    } catch {
-      return {};
-    }
-  });
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(shownKey);
-      if (!raw) {
-        setLastShownByStep({});
-        return;
-      }
-      const parsed = JSON.parse(raw) as unknown;
-      if (!parsed || typeof parsed !== "object") {
-        setLastShownByStep({});
-        return;
-      }
-      setLastShownByStep(parsed as Record<string, number>);
-    } catch {
-      setLastShownByStep({});
-    }
-  }, [shownKey]);
-
-  const ctx: GuidanceContext = useMemo(
-    () => ({
-      isAdmin,
-      isGm,
-      campaignRoles,
-      selectedCampaignRole,
-      hasCampaigns,
-      hasCharacters,
-      hasCharactersInSelectedCampaign,
-      hasSelectedCharacter,
-    }),
-    [
-      isAdmin,
-      isGm,
-      campaignRoles,
-      selectedCampaignRole,
-      hasCampaigns,
-      hasCharacters,
-      hasCharactersInSelectedCampaign,
-      hasSelectedCharacter,
-    ]
-  );
-
-  // Combined set used for step selection
-  const effectiveDismissed = useMemo(() => {
-    const combined = new Set(dismissed);
-    for (const id of sessionDismissed) combined.add(id);
-    return combined;
-  }, [dismissed, sessionDismissed]);
-
-  const [activeStep, setActiveStep] = useState<GuideStep | null>(null);
-  // Bumped to force re-evaluation after layout changes (flyouts, panels, resize)
-  const [tick, setTick] = useState(0);
-
-  const debugEnabled = useMemo(() => {
-    try {
-      return localStorage.getItem("cb.guidance.debug") === "1";
-    } catch {
-      return false;
-    }
-  }, []);
-
-  const logDebug = useCallback(
-    (message: string, detail?: unknown) => {
-      if (!debugEnabled) return;
-      // eslint-disable-next-line no-console
-      console.info(`[guidance] ${message}`, detail ?? "");
-    },
-    [debugEnabled]
-  );
-
-  const markStepShown = useCallback(
-    (stepId: string) => {
-      const now = Date.now();
-      setSeenThisSession((prev) => {
-        if (prev.has(stepId)) return prev;
-        return new Set([...prev, stepId]);
-      });
-      setLastShownByStep((prev) => {
-        const next = { ...prev, [stepId]: now };
-        try {
-          localStorage.setItem(shownKey, JSON.stringify(next));
-        } catch {
-          // ignore storage errors
-        }
-        return next;
-      });
-    },
-    [shownKey]
-  );
-
-  // Re-evaluate active step whenever context, dismissed set, tick, or readiness changes.
-  // Delayed slightly so newly rendered target elements are present in the DOM.
-  useEffect(() => {
-    if (!isReady || suppressGuidance) {
-      setActiveStep(null);
-      return;
-    }
-
-    const now = Date.now();
-    const baseDismissed = new Set(effectiveDismissed);
-    let dismissedForMode = baseDismissed;
-
-    if (mode === "contextual") {
-      dismissedForMode = new Set(baseDismissed);
-      for (const id of seenThisSession) dismissedForMode.add(id);
-      for (const [id, shownAt] of Object.entries(lastShownByStep)) {
-        if (Number.isFinite(shownAt) && now - shownAt < cooldownMs) {
-          dismissedForMode.add(id);
-        }
-      }
-    }
-
-    const timer = setTimeout(() => {
-      const next = pickNextStep(ALL_GUIDE_STEPS, dismissedForMode, ctx);
-      if (!next) {
-        logDebug("no active step", { mode, contextKey });
-      } else {
-        logDebug("picked active step", { stepId: next.id, mode, contextKey });
-      }
-      setActiveStep(next);
-    }, 260);
-    return () => clearTimeout(timer);
-  }, [
-    ctx,
-    effectiveDismissed,
-    tick,
-    isReady,
-    suppressGuidance,
-    mode,
-    seenThisSession,
-    lastShownByStep,
-    cooldownMs,
-    contextKey,
-    logDebug,
-  ]);
-
-  // Re-evaluate on window resize so targets that appear/disappear are caught
-  useEffect(() => {
-    const bump = () => setTick((t) => t + 1);
-    window.addEventListener("resize", bump, { passive: true });
-    return () => window.removeEventListener("resize", bump);
-  }, []);
-
-  const dismissCurrent = useCallback(() => {
-    if (!activeStep) return;
-    markStepShown(activeStep.id);
-    // Add to session dismissed — effectiveDismissed will recompute and trigger re-evaluation
-    setSessionDismissed((prev) => new Set([...prev, activeStep.id]));
-    setActiveStep(null);
-  }, [activeStep, markStepShown]);
-
-  const dismissPermanently = useCallback(() => {
-    if (!activeStep) return;
-    markStepShown(activeStep.id);
-    const next = new Set(dismissed);
-    next.add(activeStep.id);
-    writeDismissedSteps(next, userId);
-    setDismissed(next);
-    setActiveStep(null);
-  }, [activeStep, dismissed, markStepShown, userId]);
-
-  const advance = useCallback(() => {
-    if (!activeStep) return;
-    markStepShown(activeStep.id);
-    setSessionDismissed((prev) => new Set([...prev, activeStep.id]));
-    setActiveStep(null);
-  }, [activeStep, markStepShown]);
-
-  const resetGuidance = useCallback(() => {
-    resetAllDismissedSteps(userId);
-    try {
-      localStorage.removeItem(shownKey);
-    } catch {
-      // ignore
-    }
-    setDismissed(new Set());
-    setSessionDismissed(new Set());
-    setSeenThisSession(new Set());
-    setLastShownByStep({});
-    setMode("contextual");
-    setTick((t) => t + 1);
-  }, [shownKey, userId]);
-
-  const startWalkthrough = useCallback(() => {
-    setMode("walkthrough");
-    setSessionDismissed(new Set());
-    setTick((t) => t + 1);
-  }, []);
-
-  const finishWalkthrough = useCallback(() => {
-    if (activeStep) {
-      markStepShown(activeStep.id);
-    }
-    setMode("contextual");
-    setSessionDismissed(new Set());
-    setActiveStep(null);
-    setTick((t) => t + 1);
-  }, [activeStep, markStepShown]);
-
   const notifyLayoutChanged = useCallback(() => {
-    // Only reposition the active hint; do not pick a new hint just because layout changed.
-    // New hints are triggered by ctx/effectiveDismissed/suppressGuidance/contextKey changes.
-    setActiveStep((current) => {
-      if (!current) return current; // No active hint — nothing to reposition.
-      // Return same reference to avoid re-render, but schedule a tick to recompute position.
-      setTick((t) => t + 1);
-      return current;
-    });
-  }, []);
-
-  // Compute whether there is a next step after dismissing the current one
-  const hasNextStep = useMemo(() => {
-    if (!activeStep) return false;
-    const withCurrent = new Set(effectiveDismissed);
-    withCurrent.add(activeStep.id);
-    if (mode === "walkthrough") {
-      return pickNextStep(ALL_GUIDE_STEPS, withCurrent, ctx) !== null;
-    }
-
-    const now = Date.now();
-    for (const id of seenThisSession) withCurrent.add(id);
-    for (const [id, shownAt] of Object.entries(lastShownByStep)) {
-      if (Number.isFinite(shownAt) && now - shownAt < cooldownMs) {
-        withCurrent.add(id);
-      }
-    }
-    return pickNextStep(ALL_GUIDE_STEPS, withCurrent, ctx) !== null;
-  }, [activeStep, effectiveDismissed, ctx, mode, seenThisSession, lastShownByStep, cooldownMs]);
-
-  // Lightweight diagnostics for debugging role/condition/target mismatches.
-  useEffect(() => {
-    if (!debugEnabled || !isReady || suppressGuidance || activeStep) return;
-    const reasons = ALL_GUIDE_STEPS.map((step) => evaluateGuideStep(step, effectiveDismissed, ctx)).map((x) => ({
-      id: x.step.id,
-      reason: x.skippedReason ?? "eligible",
-    }));
-    logDebug("step evaluations", reasons);
-  }, [activeStep, ctx, debugEnabled, effectiveDismissed, isReady, logDebug, suppressGuidance]);
+    if (resolvedMode !== "tour" || !activeStep) return;
+    setTourRepositionToken((token) => token + 1);
+  }, [activeStep, resolvedMode]);
 
   const value: GuidanceState = {
+    guideSession: {
+      ...guideSession,
+      mode: resolvedMode,
+      stepIndex: resolvedStepIndex,
+    },
     activeStep,
-    hasNextStep,
-    mode,
-    dismissCurrent,
-    dismissPermanently,
-    advance,
-    resetGuidance,
-    startWalkthrough,
-    finishWalkthrough,
+    totalSteps: activeTourSteps.length,
+    emptyStateCard,
+    helpDisabled,
+    isInlineHelpVisible: resolvedMode === "inline",
+    tourRepositionToken,
+    startPageTour,
+    showInlineHelpForPage,
+    hideInlineHelpForPage,
+    nextStep,
+    previousStep,
+    endTour,
+    completeTour,
+    dismissEmptyStateCard,
+    resetHelpCoach,
+    setHelpDisabled,
     notifyLayoutChanged,
   };
 

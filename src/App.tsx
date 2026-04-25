@@ -59,6 +59,7 @@ import AccessManagementPanel from "./components/AccessManagementPanel";
 import SelectedCharacterWorkspace from "./components/SelectedCharacterWorkspace";
 import { GuidanceProvider, useGuidance } from "./components/GuidanceProvider";
 import GuidanceOverlay from "./components/GuidanceOverlay";
+import type { GuidePermission, GuidancePage } from "./lib/guidance";
 import { useCharacterCreation } from "./hooks/useCharacterCreation";
 import { useCampaignState } from "./hooks/useCampaignState";
 import { useCampaignAdminSession } from "./hooks/useCampaignAdminSession";
@@ -189,41 +190,149 @@ function makeDraftFromCampaignClassAndRace(
   return draft;
 }
 
-/** Watches app panel state and notifies the guidance system when layout changes. */
-function GuidanceLayoutSync({
-  adminOpen,
-  securityOpen,
-  displayOpen,
-  selectedCampaignId,
-  selectedCharacterId,
-}: {
-  adminOpen: boolean;
-  securityOpen: boolean;
-  displayOpen: boolean;
-  selectedCampaignId: string;
-  selectedCharacterId: string;
-}) {
-  const { notifyLayoutChanged } = useGuidance();
-  useEffect(() => {
-    notifyLayoutChanged();
-  }, [adminOpen, securityOpen, displayOpen, selectedCampaignId, selectedCharacterId, notifyLayoutChanged]);
-  return null;
-}
+function HelpMenu() {
+  const {
+    startPageTour,
+    showInlineHelpForPage,
+    hideInlineHelpForPage,
+    isInlineHelpVisible,
+    resetHelpCoach,
+    helpDisabled,
+    setHelpDisabled,
+  } = useGuidance();
+  const [open, setOpen] = useState(false);
 
-function ResetGuidanceRow() {
-  const { resetGuidance } = useGuidance();
   return (
-    <div style={{ borderTop: "1px solid var(--cb-border)", paddingTop: 12, marginTop: 4 }}>
+    <div className="help-menu-shell">
       <button
         className="button-control"
-        onClick={() => { resetGuidance(); }}
-        style={{ fontSize: 12, padding: "6px 12px", opacity: 0.75 }}
+        style={buttonStyle}
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
       >
-        Replay Hints
+        Help
       </button>
-      <span style={{ marginLeft: 10, fontSize: 11, color: "var(--cb-text-muted)" }}>
-        Reset all dismissed guidance hints
-      </span>
+      {open ? (
+        <div className="help-menu-pop" role="menu">
+          <button
+            className="help-menu-item"
+            onClick={() => {
+              startPageTour();
+              setOpen(false);
+            }}
+          >
+            Start page tour
+          </button>
+          <button
+            className="help-menu-item"
+            onClick={() => {
+              if (isInlineHelpVisible) {
+                hideInlineHelpForPage();
+              } else {
+                showInlineHelpForPage();
+              }
+              setOpen(false);
+            }}
+          >
+            {isInlineHelpVisible ? "Hide inline help" : "Show help for this page"}
+          </button>
+          <button
+            className="help-menu-item"
+            onClick={() => {
+              resetHelpCoach();
+              setOpen(false);
+            }}
+          >
+            Reset dismissed help
+          </button>
+          <button
+            className="help-menu-item"
+            onClick={() => {
+              setHelpDisabled(!helpDisabled);
+              setOpen(false);
+            }}
+          >
+            {helpDisabled ? "Enable help" : "Disable help"}
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function InlinePageHelp({
+  title,
+  body,
+}: {
+  title: string;
+  body: string;
+}) {
+  const { isInlineHelpVisible, showInlineHelpForPage, hideInlineHelpForPage } = useGuidance();
+
+  return (
+    <div>
+      <button
+        className="inline-help-toggle"
+        onClick={() => {
+          if (isInlineHelpVisible) {
+            hideInlineHelpForPage();
+          } else {
+            showInlineHelpForPage();
+          }
+        }}
+      >
+        {isInlineHelpVisible ? "Hide" : "Learn more"}
+      </button>
+      {isInlineHelpVisible ? (
+        <div className="inline-help-card">
+          <p className="inline-help-title">{title}</p>
+          <p className="inline-help-body">{body}</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function EmptyStateHelpCard({
+  onCreateCharacter,
+  onCreateCampaign,
+  fallbackMessage,
+}: {
+  onCreateCharacter: () => void;
+  onCreateCampaign: () => void;
+  fallbackMessage: string;
+}) {
+  const { emptyStateCard, dismissEmptyStateCard } = useGuidance();
+  if (!emptyStateCard) {
+    return <p style={{ margin: 0, ...mutedTextStyle }}>{fallbackMessage}</p>;
+  }
+
+  return (
+    <div className="empty-help-card">
+      <h3 className="empty-help-title">{emptyStateCard.title}</h3>
+      <p className="empty-help-body">{emptyStateCard.body}</p>
+      <div className="empty-help-actions">
+        <button
+          className="button-control"
+          style={primaryButtonStyle}
+          onClick={() => {
+            if (emptyStateCard.id === "main-no-campaigns") {
+              onCreateCampaign();
+            } else {
+              onCreateCharacter();
+            }
+          }}
+        >
+          {emptyStateCard.primaryLabel}
+        </button>
+        <button
+          className="button-control"
+          style={buttonStyle}
+          onClick={() => dismissEmptyStateCard(emptyStateCard.id)}
+        >
+          {emptyStateCard.dismissLabel}
+        </button>
+      </div>
     </div>
   );
 }
@@ -1054,7 +1163,7 @@ export default function App() {
 
     const nextVisiblePc = sidebarCharacters[0]?.id ?? "";
     setSelectedId(nextVisiblePc);
-  }, [campaignId, authState, selected, sidebarCharacters]);
+  }, [campaignId, authState, selected, setSelectedId, sidebarCharacters]);
 
   const reloadAccessManagementData = useCallback(async () => {
     if (!currentUserId) return;
@@ -1842,20 +1951,39 @@ export default function App() {
     );
   }
 
+  const guidePage: GuidancePage = adminOpen
+    ? "admin"
+    : securityOpen
+      ? "access"
+      : displayOpen
+        ? "display"
+        : wizardOpen
+          ? "wizard"
+          : "main";
+
+  const guidePermissions: Partial<Record<GuidePermission, boolean>> = {
+    createCampaign: uiCanCreateCampaign,
+    editCampaign: uiCanEditCurrentCampaign,
+    manageCampaignAccess: uiCanOpenAccessManagement,
+    createCharacter: uiCanCreateCharacterInCurrentCampaign,
+    viewCharacter: sidebarCharacters.length > 0,
+    exportRoll20: Boolean(selected),
+    openDisplay: true,
+  };
+
   return (
     <GuidanceProvider
+      key={currentUserId ?? "anon"}
       isAdmin={isAdmin}
       isGm={isGm}
       campaignRoles={campaignRolesByCampaignId}
       selectedCampaignRole={currentCampaignRole}
+      page={guidePage}
       hasCampaigns={gameData.campaigns.length > 0}
       hasCharacters={characters.length > 0}
       hasCharactersInSelectedCampaign={filteredCharacters.length > 0}
-      hasSelectedCharacter={Boolean(selected)}
-      suppressGuidance={adminOpen || securityOpen || displayOpen || wizardOpen || levelUpOpen}
-      contextKey={`${campaignId}:${selectedId}:${adminOpen ? "1" : "0"}:${securityOpen ? "1" : "0"}:${displayOpen ? "1" : "0"}:${wizardOpen ? "1" : "0"}`}
-      isReady={authReady && cloudLoadComplete}
       userId={currentUserId}
+      permissions={guidePermissions}
     >
     <div style={pageStyle}>
       <div
@@ -1908,6 +2036,7 @@ export default function App() {
                   Access
                 </button>
               ) : null}
+              <HelpMenu />
               <button data-guide="display-settings" onClick={() => setDisplayOpen(true)} className="button-control" style={buttonStyle}>
                 Display
               </button>
@@ -1960,7 +2089,6 @@ export default function App() {
               onTextSizeChange={(textSize) => setDisplayPreferences((prev) => ({ ...prev, textSize }))}
               onDensityChange={(density) => setDisplayPreferences((prev) => ({ ...prev, density }))}
             />
-            <ResetGuidanceRow />
           </div>
         </div>
       ) : null}
@@ -2005,7 +2133,13 @@ export default function App() {
         </div>
 
         <label style={{ display: "block", fontWeight: 600, color: "var(--cb-muted-label)" }}>
-          Switch Campaign
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <span>Switch Campaign</span>
+            <InlinePageHelp
+              title="Campaign context"
+              body="Switching campaign updates the visible character list and editor context. Use this before creating or editing a sheet."
+            />
+          </div>
           <select className="form-control" value={campaignId} onChange={(e) => handleCampaignChange(e.target.value)} style={inputStyle}>
             {gameData.campaigns.map((campaign) => (
               <option key={campaign.id} value={campaign.id}>
@@ -2152,9 +2286,19 @@ export default function App() {
                 flex: 1,
               }}
             >
-              <p style={{ margin: 0, ...mutedTextStyle }}>
-                Select a character from the sidebar, or create a new one to get started.
-              </p>
+              <EmptyStateHelpCard
+                onCreateCharacter={() => {
+                  if (uiCanCreateCharacterInCurrentCampaign) {
+                    openWizard();
+                  }
+                }}
+                onCreateCampaign={() => {
+                  if (uiCanCreateCampaign) {
+                    openNewCampaignAdminScreen();
+                  }
+                }}
+                fallbackMessage="Select a character from the sidebar, or create a new one to get started."
+              />
             </div>
           ) : (
             <SelectedCharacterWorkspace
@@ -2209,13 +2353,6 @@ export default function App() {
           )}
         </div>
       ) : null}
-      <GuidanceLayoutSync
-        adminOpen={adminOpen}
-        securityOpen={securityOpen}
-        displayOpen={displayOpen}
-        selectedCampaignId={campaignId}
-        selectedCharacterId={selectedId}
-      />
       <GuidanceOverlay />
     </div>
     </GuidanceProvider>
