@@ -48,9 +48,9 @@
   width: max-content;
   max-width: min(280px, calc(100vw - 48px));
   border-radius: 8px;
-  border: 1px solid var(--border-soft);
-  background: rgba(10, 20, 39, 0.96);
-  color: var(--text-primary);
+  border: 1px solid var(--cb-border);
+  background: var(--cb-surface-raised);
+  color: var(--cb-text);
   font-size: 12px;
   line-height: 1.4;
   padding: 8px 10px;

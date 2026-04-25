@@ -26,6 +26,10 @@ import {
   listCharacterAccessRows,
   listLoginPickerProfileSummariesByIds,
   listManageableProfiles,
+  getUserCampaignPreferencesForVisibleCampaigns,
+  upsertCurrentUserDefaultTheme,
+  upsertUserCampaignTheme,
+  deleteUserCampaignTheme,
   upsertCampaignAccessRow,
   upsertCharacterAccessRow,
 } from "./lib/cloudRepository";
@@ -41,6 +45,8 @@ import {
 } from "./lib/authRepository";
 import { getRememberMePreference, hasSupabaseEnv, setRememberMePreference } from "./lib/supabaseClient";
 import { getAccessRowDisplayName, getAccessRowEmail, resolveUserEmail, resolveUserName } from "./lib/userDisplay";
+import * as Permissions from "./lib/permissions";
+import type { AuthState } from "./lib/permissions";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
@@ -66,8 +72,11 @@ import { useSelectedCharacterWorkspaceCallbacks } from "./hooks/useSelectedChara
 import { buttonStyle, inputStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
 import {
   applyDisplayPreferences,
+  DISPLAY_PREFS_DEFAULTS,
+  normalizeThemeId,
   readDisplayPreferences,
   persistDisplayPreferences,
+  type CbTheme,
   type DisplayPreferences,
 } from "./lib/displayPreferences";
 
@@ -185,7 +194,6 @@ function makeDraftFromCampaignClassAndRace(
   return draft;
 }
 
-
 export default function App() {
   const currentPathname = typeof window === "undefined" ? "/" : window.location.pathname;
   const returnToFromQuery = useMemo(() => {
@@ -204,6 +212,7 @@ export default function App() {
   const updatePasswordRouteActive = currentPathname === "/update-password";
   const inviteSignInFlow = inviteRouteActive || returnToFromQuery.startsWith("/invite");
   const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
+  const [campaignThemesByCampaignRowId, setCampaignThemesByCampaignRowId] = useState<Record<string, CbTheme>>({});
   const [displayOpen, setDisplayOpen] = useState(false);
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
@@ -265,11 +274,6 @@ export default function App() {
     setUseEmailFallback(true);
     setAuthCardMode("reset-request");
   }, [authActionFromQuery]);
-
-  useEffect(() => {
-    applyDisplayPreferences(displayPreferences);
-    persistDisplayPreferences(displayPreferences);
-  }, [displayPreferences]);
 
   const {
     gameData,
@@ -607,13 +611,27 @@ export default function App() {
     makeBaseAttributes,
     applyClassAttributeModifiers,
     onFinishDraft: (draft) => {
+      const finalDraft = Permissions.shouldShowNpcControls(authState)
+        ? draft
+        : { ...draft, characterType: "pc" as const };
       commitCreatedCharacter({
-        draft,
+        draft: finalDraft,
         setCharacters,
         onPersistUpsert: persistCharacterUpsert,
+        currentUserId, // Pass user ID so creator can be tracked
       });
     },
   });
+
+  // Build auth state for centralized permission checks before any derived render logic uses it.
+  const authState: AuthState = useMemo(
+    () => ({
+      profile: currentUserProfile,
+      campaignRolesByCampaignId,
+      characterRolesByCharacterId,
+    }),
+    [currentUserProfile, campaignRolesByCampaignId, characterRolesByCharacterId]
+  );
 
   const selected = useMemo(
     () => characters.find((c) => c.id === selectedId) ?? null,
@@ -629,11 +647,17 @@ export default function App() {
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
 
   const filteredCharacters = characters.filter((character) => character.campaignId === campaignId);
-  const currentCampaignRole = campaignRolesByCampaignId[campaignId] ?? null;
-  const restrictToPcOnly = !isAdmin && currentCampaignRole === "player";
-  const sidebarCharacters = restrictToPcOnly
-    ? filteredCharacters.filter((character) => getCharacterType(character) === "pc")
-    : filteredCharacters;
+
+  // Filter visible characters based on user permissions
+  const sidebarCharacters = filteredCharacters.filter((character) => {
+    const charType = (getCharacterType(character) ?? "pc") as "pc" | "npc";
+    const charAccess = characterRolesByCharacterId[character.id] ?? null;
+    return Permissions.shouldShowCharacterInList(
+      authState,
+      { ...character, characterType: charType },
+      charAccess
+    );
+  });
   const selectedSkills = selectedCampaign ? sortByName(selectedCampaign.skills) : [];
 
   const selectedPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
@@ -800,6 +824,7 @@ export default function App() {
       // Invite claiming is best-effort to keep access fresh after sign-in.
     }
     const context = await getAccessContext();
+    setCurrentUserProfile(context.profile);
     setIsAdmin(Boolean(context.profile?.is_admin));
     setIsGm(Boolean(context.profile?.is_gm));
     setCampaignRolesByCampaignId(context.campaignRolesByCampaignId);
@@ -807,47 +832,168 @@ export default function App() {
   }
 
   const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
+  const campaignThemeOverride = currentCampaignRowId
+    ? campaignThemesByCampaignRowId[currentCampaignRowId] ?? null
+    : null;
+  const globalTheme = normalizeThemeId(currentUserProfile?.default_theme_id) ?? null;
+  const activeTheme = campaignThemeOverride
+    ?? globalTheme
+    ?? normalizeThemeId(displayPreferences.theme)
+    ?? DISPLAY_PREFS_DEFAULTS.theme;
+  const resolvedDisplayPreferences = useMemo<DisplayPreferences>(
+    () => ({
+      ...displayPreferences,
+      theme: activeTheme,
+    }),
+    [displayPreferences, activeTheme]
+  );
+
+  useEffect(() => {
+    applyDisplayPreferences(resolvedDisplayPreferences);
+    // Local storage is only a temporary fallback before auth/preferences load.
+    persistDisplayPreferences(displayPreferences, { persistTheme: !currentUserId });
+  }, [resolvedDisplayPreferences, displayPreferences, currentUserId]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !currentUserId) {
+      setCampaignThemesByCampaignRowId({});
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadCampaignThemes() {
+      try {
+        const rows = await getUserCampaignPreferencesForVisibleCampaigns();
+        if (isCancelled) return;
+
+        const next: Record<string, CbTheme> = {};
+        for (const row of rows) {
+          const theme = normalizeThemeId(row.theme_id);
+          if (!theme) continue;
+          next[row.campaign_id] = theme;
+        }
+        setCampaignThemesByCampaignRowId(next);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn("[theme-preferences] failed to load campaign theme preferences", error);
+        }
+        if (!isCancelled) {
+          setCampaignThemesByCampaignRowId({});
+        }
+      }
+    }
+
+    void loadCampaignThemes();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [cloudEnabled, currentUserId]);
+
+  const handleThemePreferenceChange = useCallback(
+    async (nextTheme: CbTheme | "default") => {
+      const normalizedTheme = nextTheme === "default" ? null : normalizeThemeId(nextTheme);
+      if (nextTheme !== "default" && !normalizedTheme) return;
+
+      if (!cloudEnabled || !currentUserId) {
+        if (normalizedTheme) {
+          setDisplayPreferences((prev) => ({ ...prev, theme: normalizedTheme }));
+        }
+        return;
+      }
+
+      if (currentCampaignRowId) {
+        if (nextTheme === "default") {
+          await deleteUserCampaignTheme(currentCampaignRowId);
+          setCampaignThemesByCampaignRowId((prev) => {
+            const next = { ...prev };
+            delete next[currentCampaignRowId];
+            return next;
+          });
+          return;
+        }
+
+        await upsertUserCampaignTheme(currentCampaignRowId, normalizedTheme as CbTheme);
+        setCampaignThemesByCampaignRowId((prev) => ({
+          ...prev,
+          [currentCampaignRowId]: normalizedTheme as CbTheme,
+        }));
+        return;
+      }
+
+      if (!normalizedTheme) return;
+      const updatedProfile = await upsertCurrentUserDefaultTheme(normalizedTheme);
+      setCurrentUserProfile(updatedProfile);
+      // Keep local fallback in sync for pre-auth/preference-load sessions.
+      setDisplayPreferences((prev) => ({ ...prev, theme: normalizedTheme }));
+    },
+    [cloudEnabled, currentUserId, currentCampaignRowId]
+  );
+
   const hasAnyCampaignAccess = gameData.campaigns.length > 0;
-  // UI-only permission hints: these values only control visibility/affordances.
-  // Server-side authorization for save/delete/sync is enforced by Supabase RLS.
-  const uiCanCreateCampaign = isAdmin || isGm;
-  const signedInDisplayName = currentUserProfile?.display_name?.trim() || "";
-  const signedInEmail = currentUserProfile?.email?.trim() || "";
-  const uiCanEditCurrentCampaign = Boolean(
-    isAdmin ||
-      campaignRolesByCampaignId[campaignId] === "editor"
+
+  // Permission checks using centralized module
+  const uiCanCreateCampaign = Permissions.canCreateCampaign(authState);
+  const uiCanEditCurrentCampaign = Permissions.canEditCampaign(authState, campaignId);
+  const uiCanCreateCharacterInCurrentCampaign = Permissions.canCreateCharacter(
+    authState,
+    campaignId,
+    "pc"
   );
-  const uiCanCreateCharacterInCurrentCampaign = Boolean(
-    isAdmin ||
-      campaignRolesByCampaignId[campaignId] === "player" ||
-      campaignRolesByCampaignId[campaignId] === "editor"
-  );
-  const uiCanManageUsers = isAdmin;
-  const uiCanManageCampaignAccess = Boolean(
-    currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[campaignId] === "editor")
-  );
-  const uiCanManageCharacterAccess = Boolean(
-    selected && currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[selected.campaignId] === "editor")
-  );
-  const uiCanOpenAccessManagement = uiCanManageUsers || (!isGm && uiCanManageCampaignAccess);
+  const uiCanManageUsers = Permissions.canManageUsers(authState);
+  const uiCanManageCampaignAccess = Permissions.canManageCampaignAccess(authState, campaignId);
+  const uiCanManageCharacterAccess = selected
+    ? Permissions.canManageCharacterAccess(authState, {
+        campaignId: selected.campaignId,
+      })
+    : false;
+  const uiCanOpenAccessManagement = uiCanManageUsers || uiCanManageCampaignAccess;
+
   const uiCanEditCharacterById = (characterId: string) => {
-    if (isAdmin) return true;
     const character = characters.find((item) => item.id === characterId);
     if (!character) return false;
 
-    const campaignRole = campaignRolesByCampaignId[character.campaignId];
-    if (campaignRole === "editor") return true;
-
-    const directRole = characterRolesByCharacterId[characterId];
-    return directRole === "editor";
+    // Use centralized permission check with actual creator from CharacterRecord
+    const charAccessRole = characterRolesByCharacterId[characterId] ?? null;
+    return Permissions.canEditCharacter(
+      authState,
+      {
+        campaignId: character.campaignId,
+        createdBy: character.createdBy ?? undefined, // Use actual creator from record
+        id: characterId,
+      },
+      "pc", // Reserved for future use; permissions don't currently differ by type
+      charAccessRole
+    );
   };
-  const uiCanEditSelectedCharacter = Boolean(selected && uiCanEditCharacterById(selected.id));
+
+  const uiCanEditSelectedCharacter = selected ? uiCanEditCharacterById(selected.id) : false;
   const directCharacterAccessCount = Object.keys(characterRolesByCharacterId).length;
   const userById = new Map(manageableUsers.map((user) => [user.id, user] as const));
+  const accessProfileById = useMemo(() => {
+    const map = new Map<string, ProfileRow>();
+    for (const row of campaignAccessRows) {
+      if (row.profile?.id) {
+        map.set(row.profile.id, row.profile as ProfileRow);
+      }
+    }
+    for (const row of characterAccessRows) {
+      if (row.profile?.id) {
+        map.set(row.profile.id, row.profile as ProfileRow);
+      }
+    }
+    if (currentUserProfile?.id) {
+      map.set(currentUserProfile.id, currentUserProfile);
+    }
+    return map;
+  }, [campaignAccessRows, characterAccessRows, currentUserProfile]);
+  
+  // Build candidate list for character access assignment
   const characterUserCandidateIds = uiCanManageCharacterAccess
     ? Array.from(
         new Set(
-          isAdmin
+          Permissions.isAdmin(currentUserProfile)
             ? manageableUsers.map((user) => user.id)
             : [
                 ...campaignAccessRows.map((row) => row.user_id),
@@ -858,10 +1004,17 @@ export default function App() {
       )
     : [];
 
+  const signedInDisplayName = currentUserProfile?.display_name?.trim() || "";
+  const signedInEmail = currentUserProfile?.email?.trim() || "";
+
   function getUserLabel(userId: string) {
-    const profile = userById.get(userId) ?? null;
-    const name = resolveUserName(profile, userId);
-    const email = resolveUserEmail(profile, userId);
+    const profile = userById.get(userId) ?? accessProfileById.get(userId) ?? null;
+    const name = profile ? resolveUserName(profile, userId) : "Unknown user";
+    const email = profile ? resolveUserEmail(profile, userId) : "No email on profile";
+    // Only show raw UUID in dev if profile truly missing, never as normal UI
+    if (!profile && import.meta.env.DEV) {
+      console.warn("[getUserLabel] No profile resolved for userId", userId);
+    }
     return `${name} (${email})`;
   }
 
@@ -953,14 +1106,15 @@ export default function App() {
     };
   }, [campaignCreatedByByCampaignId, isAdmin]);
 
+  // Auto-deselect NPCs when player views them (players shouldn't see NPCs)
   useEffect(() => {
-    if (!restrictToPcOnly) return;
+    if (Permissions.shouldShowNpcControls(authState)) return; // Admin/GM can view NPCs
     if (!selected || selected.campaignId !== campaignId) return;
     if (getCharacterType(selected) !== "npc") return;
 
     const nextVisiblePc = sidebarCharacters[0]?.id ?? "";
     setSelectedId(nextVisiblePc);
-  }, [campaignId, restrictToPcOnly, selected, sidebarCharacters]);
+  }, [campaignId, authState, selected, setSelectedId, sidebarCharacters]);
 
   const reloadAccessManagementData = useCallback(async () => {
     if (!currentUserId) return;
@@ -1007,6 +1161,20 @@ export default function App() {
       }
     }
 
+    const mergedUsersById = new Map<string, ProfileRow>();
+    for (const user of users) {
+      mergedUsersById.set(user.id, user);
+    }
+    for (const row of [...campaignRows, ...characterRows]) {
+      if (row.profile?.id && !mergedUsersById.has(row.profile.id)) {
+        mergedUsersById.set(row.profile.id, row.profile as ProfileRow);
+      }
+    }
+    if (currentUserProfile?.id && !mergedUsersById.has(currentUserProfile.id)) {
+      mergedUsersById.set(currentUserProfile.id, currentUserProfile);
+    }
+    users = Array.from(mergedUsersById.values());
+
     if (import.meta.env.DEV && isGm && !isAdmin) {
       const combinedUserIds = Array.from(
         new Set([
@@ -1043,6 +1211,7 @@ export default function App() {
     uiCanManageCharacterAccess,
     currentCampaignRowId,
     currentUserId,
+    currentUserProfile,
     isAdmin,
     isGm,
     campaignId,
@@ -1830,10 +1999,24 @@ export default function App() {
             </div>
 
             <DisplaySettings
-              theme={displayPreferences.theme}
+              themeValue={currentCampaignRowId ? (campaignThemeOverride ?? "default") : activeTheme}
               textSize={displayPreferences.textSize}
               density={displayPreferences.density}
-              onThemeChange={(theme) => setDisplayPreferences((prev) => ({ ...prev, theme }))}
+              isCampaignThemeScope={Boolean(currentCampaignRowId)}
+              onThemeChange={(theme) => {
+                void (async () => {
+                  try {
+                    await handleThemePreferenceChange(theme);
+                    setCloudStatus("Display preferences saved");
+                  } catch (error) {
+                    const message = error instanceof Error ? error.message : "Failed to save theme preference";
+                    setCloudStatus(`Display preference save failed: ${message}`);
+                    if (import.meta.env.DEV) {
+                      console.error("[display-preferences] failed to save theme preference", error);
+                    }
+                  }
+                })();
+              }}
               onTextSizeChange={(textSize) => setDisplayPreferences((prev) => ({ ...prev, textSize }))}
               onDensityChange={(density) => setDisplayPreferences((prev) => ({ ...prev, density }))}
             />
@@ -1950,7 +2133,7 @@ export default function App() {
             canDeleteCharacter={uiCanEditCharacterById}
             getCampaignName={getCampaignName}
             getClassName={getClassName}
-            restrictToPcOnly={restrictToPcOnly}
+            authState={authState}
           />
 
           {wizardOpen && creationDraft ? (
@@ -2018,6 +2201,7 @@ export default function App() {
                 onQuickstartRerollAttributes={rerollAttributes}
                 onQuickstartRerollSkills={rerollSkills}
                 onQuickstartEditManually={editGeneratedCharacterManually}
+                canChooseCharacterType={Permissions.shouldShowNpcControls(authState)}
               />
             </div>
           ) : !selected || !selectedCampaign ? (

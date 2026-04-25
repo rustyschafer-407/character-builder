@@ -8,6 +8,7 @@ interface CommitCreatedCharacterParams {
   draft: CharacterCreationDraft;
   setCharacters: Dispatch<SetStateAction<CharacterRecord[]>>;
   onPersistUpsert: (character: CharacterRecord) => Promise<void>;
+  currentUserId?: string | null; // User who created the character
 }
 
 interface UpdateCharacterParams {
@@ -20,7 +21,7 @@ export function useCharacterState() {
   const [selectedCharacterId, setSelectedCharacterId] = useState("");
 
   function commitCreatedCharacter(input: CommitCreatedCharacterParams) {
-    const { draft, setCharacters, onPersistUpsert } = input;
+    const { draft, setCharacters, onPersistUpsert, currentUserId } = input;
     const character: CharacterRecord = {
       id: generateId(),
       characterType: draft.characterType ?? "pc",
@@ -56,6 +57,7 @@ export function useCharacterState() {
       levelProgression: draft.levelProgression,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      createdBy: currentUserId ?? undefined, // Track the character creator
     };
 
     setCharacters((previous) => [...previous, character]);

@@ -102,4 +102,6 @@ export interface CharacterRecord {
   levelProgression: CharacterLevelProgressionState;
   createdAt: string;
   updatedAt: string;
+  /** User ID of the character creator. Used for ownership-based perms. */
+  createdBy?: string | null;
 }

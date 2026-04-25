@@ -7,7 +7,14 @@ export type CbTheme =
   | "paper"
   | "slate"
   | "dragonfire"
-  | "feywild";
+  | "feywild"
+  | "fantasy"
+  | "gothic"
+  | "industrial"
+  | "pulp"
+  | "retro"
+  | "minimal"
+  | "cosmic";
 
 export type CbTextSize = "normal" | "large";
 export type CbDensity = "comfortable" | "compact";
@@ -29,6 +36,13 @@ export const THEME_OPTIONS: Array<{ value: CbTheme; label: string }> = [
   { value: "arcane", label: "Arcane" },
   { value: "tavern", label: "Tavern" },
   { value: "neon", label: "Neon" },
+  { value: "cosmic", label: "Cosmic" },
+  { value: "retro", label: "Retro" },
+  { value: "fantasy", label: "Fantasy" },
+  { value: "gothic", label: "Gothic" },
+  { value: "industrial", label: "Industrial" },
+  { value: "pulp", label: "Pulp" },
+  { value: "minimal", label: "Minimal" },
   { value: "terminal", label: "Terminal" },
   { value: "paper", label: "Paper" },
   { value: "slate", label: "Slate" },
@@ -52,8 +66,13 @@ const STORAGE_KEYS = {
   density: "cb.density",
 } as const;
 
-function isTheme(value: string): value is CbTheme {
+export function isTheme(value: string): value is CbTheme {
   return THEME_OPTIONS.some((option) => option.value === value);
+}
+
+export function normalizeThemeId(value: string | null | undefined): CbTheme | null {
+  if (!value) return null;
+  return isTheme(value) ? value : null;
 }
 
 function isTextSize(value: string): value is CbTextSize {
@@ -91,11 +110,18 @@ export function applyDisplayPreferences(preferences: DisplayPreferences) {
   root.dataset.cbDensity = preferences.density;
 }
 
-export function persistDisplayPreferences(preferences: DisplayPreferences) {
+export function persistDisplayPreferences(
+  preferences: DisplayPreferences,
+  options: { persistTheme?: boolean } = {}
+) {
   if (typeof window === "undefined") return;
 
+  const { persistTheme = true } = options;
+
   try {
-    window.localStorage.setItem(STORAGE_KEYS.theme, preferences.theme);
+    if (persistTheme) {
+      window.localStorage.setItem(STORAGE_KEYS.theme, preferences.theme);
+    }
     window.localStorage.setItem(STORAGE_KEYS.textSize, preferences.textSize);
     window.localStorage.setItem(STORAGE_KEYS.density, preferences.density);
   } catch {

@@ -108,6 +108,8 @@ interface Props {
   onQuickstartRerollAttributes: () => void;
   onQuickstartRerollSkills: () => void;
   onQuickstartEditManually: () => void;
+  /** When false, character type is forced to PC and the type selector is hidden. */
+  canChooseCharacterType: boolean;
 }
 
 const ATTRS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
@@ -209,6 +211,7 @@ export default function CharacterCreationWizard({
   onQuickstartRerollAttributes,
   onQuickstartRerollSkills,
   onQuickstartEditManually,
+  canChooseCharacterType,
 }: Props) {
   const [rollEffect, setRollEffect] = useState<RollEffectType | null>(null);
   const [isMinMaxTooltipOpen, setIsMinMaxTooltipOpen] = useState(false);
@@ -230,6 +233,7 @@ export default function CharacterCreationWizard({
   const highStats = attributeScores.filter((score) => score >= 16).length;
   const dumpStats = attributeScores.filter((score) => score <= 8).length;
   const isMinMaxed = highStats >= 2 && dumpStats >= 1;
+  const showMinMaxTooltip = isMinMaxed && isMinMaxTooltipOpen;
 
   useEffect(() => {
     if (!rollEffect) return;
@@ -312,12 +316,6 @@ export default function CharacterCreationWizard({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [onCloseQuickstart, quickstartPanelOpen]);
-
-  useEffect(() => {
-    if (!isMinMaxed) {
-      setIsMinMaxTooltipOpen(false);
-    }
-  }, [isMinMaxed]);
 
   function handleRollAttributesClick() {
     hasUserInteractedRef.current = true;
@@ -439,17 +437,19 @@ export default function CharacterCreationWizard({
             />
           </label>
 
-          <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-            Character Type
-            <select
-              value={draft.characterType ?? "pc"}
-              onChange={(e) => onCharacterTypeChange(e.target.value as CharacterType)}
-              className="form-control" style={selectStyle}
-            >
-              <option value="pc">PC</option>
-              <option value="npc">NPC</option>
-            </select>
-          </label>
+          {canChooseCharacterType ? (
+            <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
+              Character Type
+              <select
+                value={draft.characterType ?? "pc"}
+                onChange={(e) => onCharacterTypeChange(e.target.value as CharacterType)}
+                className="form-control" style={selectStyle}
+              >
+                <option value="pc">PC</option>
+                <option value="npc">NPC</option>
+              </select>
+            </label>
+          ) : null}
 
           <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
             Campaign
@@ -548,9 +548,9 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                background: "rgba(10, 20, 39, 0.78)",
-                border: "1px solid var(--border-soft)",
-                color: "var(--text-primary)",
+                background: "var(--cb-surface-raised)",
+                border: "1px solid var(--cb-border)",
+                color: "var(--cb-text)",
               }}
             >
               <div>
@@ -559,7 +559,7 @@ export default function CharacterCreationWizard({
               <div style={{ marginTop: 4 }}>
                 {selectedRace.description || "No description."}
               </div>
-              <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
+              <div style={{ marginTop: 8, fontSize: 14, color: "var(--cb-text-muted)" }}>
                 Modifiers: {raceModifiersText}
               </div>
             </div>
@@ -605,9 +605,9 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                background: "rgba(10, 20, 39, 0.78)",
-                border: "1px solid var(--border-soft)",
-                color: "var(--text-primary)",
+                background: "var(--cb-surface-raised)",
+                border: "1px solid var(--cb-border)",
+                color: "var(--cb-text)",
               }}
             >
               <div>
@@ -616,10 +616,10 @@ export default function CharacterCreationWizard({
               <div style={{ marginTop: 4 }}>
                 {selectedClass.description || "No description."}
               </div>
-              <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
+              <div style={{ marginTop: 8, fontSize: 14, color: "var(--cb-text-muted)" }}>
                 Hit Die: d{selectedClass.hpRule.hitDie}
               </div>
-              <div style={{ marginTop: 8, fontSize: 14, color: "var(--text-secondary)" }}>
+              <div style={{ marginTop: 8, fontSize: 14, color: "var(--cb-text-muted)" }}>
                 Modifiers: {classModifiersText}
               </div>
             </div>
@@ -634,20 +634,20 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                background: "rgba(10, 20, 39, 0.78)",
-                border: "1px solid var(--border-soft)",
-                color: "var(--text-secondary)",
+                background: "var(--cb-surface-raised)",
+                border: "1px solid var(--cb-border)",
+                color: "var(--cb-text-muted)",
                 fontSize: 14,
               }}
             >
               {selectedClass && (
                 <div>
-                  Class Modifiers: <strong style={{ color: "var(--text-primary)" }}>{classModifiersText}</strong>
+                  Class Modifiers: <strong style={{ color: "var(--cb-text)" }}>{classModifiersText}</strong>
                 </div>
               )}
               {selectedRace && (
                 <div style={{ marginTop: selectedClass ? 6 : 0 }}>
-                  Race Modifiers: <strong style={{ color: "var(--text-primary)" }}>{raceModifiersText}</strong>
+                  Race Modifiers: <strong style={{ color: "var(--cb-text)" }}>{raceModifiersText}</strong>
                 </div>
               )}
             </div>
@@ -683,7 +683,7 @@ export default function CharacterCreationWizard({
                   className="wizard-minmax-badge"
                   aria-label="Optimized build warning"
                   aria-describedby="wizard-minmax-tooltip"
-                  aria-expanded={isMinMaxTooltipOpen}
+                  aria-expanded={showMinMaxTooltip}
                   onClick={() => setIsMinMaxTooltipOpen((open) => !open)}
                   onKeyDown={(event) => {
                     if (event.key === "Escape") {
@@ -696,7 +696,7 @@ export default function CharacterCreationWizard({
                 <span
                   id="wizard-minmax-tooltip"
                   role="tooltip"
-                  className={`wizard-minmax-tooltip ${isMinMaxTooltipOpen ? "is-visible" : ""}`}
+                  className={`wizard-minmax-tooltip ${showMinMaxTooltip ? "is-visible" : ""}`}
                 >
                   Your GM is already planning your downfall.
                 </span>

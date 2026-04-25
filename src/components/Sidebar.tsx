@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getCharacterType } from "../lib/character";
+import * as Permissions from "../lib/permissions";
+import type { AuthState } from "../lib/permissions";
 import type { CharacterRecord } from "../types/character";
 import {
   buttonStyle,
@@ -34,7 +36,7 @@ interface Props {
   canDeleteCharacter: (id: string) => boolean;
   getCampaignName: (campaignId: string) => string;
   getClassName: (classId: string) => string;
-  restrictToPcOnly?: boolean;
+  authState: AuthState;
 }
 
 export default function Sidebar({
@@ -47,10 +49,13 @@ export default function Sidebar({
   canDeleteCharacter,
   getCampaignName,
   getClassName,
-  restrictToPcOnly = false,
+  authState,
 }: Props) {
   const [typeFilter, setTypeFilter] = useState<CharacterListTypeFilter>(() => readCharacterTypeFilter());
   const [hoveredDeleteId, setHoveredDeleteId] = useState<string | null>(null);
+
+  // Determine if NPC controls should be shown
+  const showNpcControls = Permissions.shouldShowNpcControls(authState);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -63,8 +68,9 @@ export default function Sidebar({
 
   const visibleCharacters = characters
     .filter((character) => {
-      if (restrictToPcOnly) {
-        return getCharacterType(character) === "pc";
+      // Hide NPCs from players
+      if (!showNpcControls && getCharacterType(character) === "npc") {
+        return false;
       }
       if (typeFilter === "all") return true;
       return getCharacterType(character) === typeFilter;
@@ -135,7 +141,7 @@ export default function Sidebar({
         </div>
       </div>
 
-      {!restrictToPcOnly ? (
+      {showNpcControls ? (
         <div
           role="group"
           aria-label="Character type filter"
@@ -174,9 +180,9 @@ export default function Sidebar({
                 gap: 12,
                 padding: "12px 14px",
                 borderRadius: 10,
-                border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--border-soft)",
-                background: isSelected ? "rgba(73, 224, 255, 0.08)" : "rgba(11, 22, 42, 0.72)",
-                boxShadow: isSelected ? "inset 0 0 0 1px rgba(73, 224, 255, 0.16)" : "none",
+                border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--cb-border)",
+                background: isSelected ? "var(--cb-accent-soft)" : "var(--cb-surface-raised)",
+                boxShadow: isSelected ? "inset 0 0 0 1px var(--cb-accent-soft-strong)" : "none",
                 transition: "background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
               }}
             >
@@ -225,7 +231,7 @@ export default function Sidebar({
                 </div>
               </button>
 
-              {!restrictToPcOnly ? (
+              {showNpcControls ? (
                 <span
                   style={{
                     fontSize: 10,

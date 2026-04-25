@@ -104,10 +104,29 @@ export function buildCloudHydratedState(input: {
       .map((row) => [row.id, row.character_role] as const)
   ) as Record<string, "viewer" | "editor">
 
-  const accessibleCampaignIds = new Set(gameData.campaigns.map((campaign) => campaign.id))
+  const characterCanEditByCharacterId = Object.fromEntries(
+    input.characterRows.map((row) => [row.id, Boolean(row.can_edit)] as const)
+  ) as Record<string, boolean>
+
+  const accessibleCampaignIds = new Set([
+    ...gameData.campaigns.map((campaign) => campaign.id),
+    // Include campaigns referenced by directly-assigned characters (viewer/editor access without
+    // full campaign membership). Without this, those characters are silently dropped by the filter.
+    ...input.characterRows
+      .filter((row) => row.character_role !== null && row.character_role !== undefined)
+      .map((row) => (row.data as { campaignId?: string } | null)?.campaignId)
+      .filter((id): id is string => Boolean(id)),
+  ])
 
   const characters = input.characterRows
-    .map((row) => row.data)
+    .map((row) => {
+      const char = row.data
+      // Preserve the creator information from the database row
+      return {
+        ...char,
+        createdBy: row.created_by ?? undefined,
+      }
+    })
     .filter((character) => accessibleCampaignIds.has(character.campaignId))
     .map((character) =>
       applySafeCharacterDefaults(
@@ -127,5 +146,6 @@ export function buildCloudHydratedState(input: {
     campaignRolesByCampaignId,
     campaignCreatedByByCampaignId,
     characterRolesByCharacterId,
+    characterCanEditByCharacterId,
   }
 }

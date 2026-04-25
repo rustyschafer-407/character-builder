@@ -42,6 +42,7 @@ export function useCloudSync({
     cloudEnabled ? initialCloudGameData : seedGameData
   );
   const [characters, setCharacters] = useState<CharacterRecord[]>([]);
+  const [characterCanEditByCharacterId, setCharacterCanEditByCharacterId] = useState<Record<string, boolean>>({});
   const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
   const [campaignCreatedByByCampaignId, setCampaignCreatedByByCampaignId] = useState<Record<string, string | null>>({});
   const [cloudStatus, setCloudStatus] = useState(
@@ -62,11 +63,11 @@ export function useCloudSync({
     }
   }
 
-  function warnPotentialDestructiveSync(params: {
+  const warnPotentialDestructiveSync = useCallback((params: {
     entity: string;
     previousCount: number;
     nextCount: number;
-  }) {
+  }) => {
     if (!isDevelopment) return;
 
     const syncingEmptyDataset = params.nextCount === 0;
@@ -75,7 +76,7 @@ export function useCloudSync({
     if (syncingEmptyDataset || significantlyReduced) {
       console.warn("WARNING: Potential destructive sync prevented", params);
     }
-  }
+  }, [isDevelopment]);
 
   useEffect(() => {
     if (!cloudEnabled) {
@@ -90,6 +91,7 @@ export function useCloudSync({
     if (!currentUserId) {
       setCampaignRowIdsByAppId({});
       setCampaignCreatedByByCampaignId({});
+      setCharacterCanEditByCharacterId({});
       setGameData(initialCloudGameData);
       setCharacters([]);
       setCampaignId("");
@@ -136,6 +138,7 @@ export function useCloudSync({
         setCampaignCreatedByByCampaignId(hydrated.campaignCreatedByByCampaignId);
         setCampaignRolesByCampaignId(hydrated.campaignRolesByCampaignId);
         setCharacterRolesByCharacterId(hydrated.characterRolesByCharacterId);
+        setCharacterCanEditByCharacterId(hydrated.characterCanEditByCharacterId);
         setGameData(hydrated.gameData);
         setCharacters(hydrated.characters);
         setCampaignId((current) =>
@@ -222,7 +225,7 @@ export function useCloudSync({
         setCloudStatus("Campaign save failed (see console)");
       }
     },
-    [campaignRowIdsByAppId, cloudEnabled, currentUserId, gameData.campaigns, isDevelopment]
+    [campaignRowIdsByAppId, cloudEnabled, currentUserId, gameData.campaigns, warnPotentialDestructiveSync]
   );
 
   const persistCharacterUpsert = useCallback(
@@ -230,6 +233,13 @@ export function useCloudSync({
       if (!cloudEnabled || !currentUserId) return;
       // Do not apply client-side role checks here; Supabase RLS is the enforcement boundary.
       // Do NOT delete remote data based on local state.
+
+      // Optimistically allow editing immediately after local create/update so
+      // player-owned characters never appear read-only while save is inflight.
+      setCharacterCanEditByCharacterId((previous) => ({
+        ...previous,
+        [character.id]: true,
+      }));
 
       const campaignRowId = campaignRowIdsByAppId[character.campaignId];
       if (!campaignRowId) {
@@ -265,6 +275,11 @@ export function useCloudSync({
 
       try {
         await deleteCharacterRow(characterId);
+        setCharacterCanEditByCharacterId((previous) => {
+          const next = { ...previous };
+          delete next[characterId];
+          return next;
+        });
         setCloudStatus("Authenticated cloud access active");
         setCloudError("");
       } catch (error) {
@@ -282,6 +297,7 @@ export function useCloudSync({
     setGameData,
     characters,
     setCharacters,
+    characterCanEditByCharacterId,
     campaignRowIdsByAppId,
     campaignCreatedByByCampaignId,
     cloudStatus,
