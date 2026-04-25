@@ -3,6 +3,38 @@ import type { CampaignDefinition } from "../types/gameData"
 import type { User } from "@supabase/supabase-js"
 import { getSupabaseClient } from "./supabaseClient"
 
+const PROFILE_SELECT_BASE = "id, email, display_name, is_admin, is_gm, created_at, updated_at"
+const PROFILE_SELECT_WITH_THEME =
+  "id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at"
+
+function isMissingDefaultThemeColumnError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false
+
+  const maybeCode = "code" in error ? String((error as { code?: unknown }).code ?? "") : ""
+  const maybeMessage = "message" in error ? String((error as { message?: unknown }).message ?? "") : ""
+
+  if (maybeCode === "42703" && maybeMessage.toLowerCase().includes("default_theme_id")) {
+    return true
+  }
+
+  return maybeMessage.toLowerCase().includes("default_theme_id")
+}
+
+function coerceProfileRow(row: Record<string, unknown> | null): ProfileRow | null {
+  if (!row) return null
+
+  return {
+    id: String(row.id ?? ""),
+    email: typeof row.email === "string" ? row.email : null,
+    display_name: typeof row.display_name === "string" ? row.display_name : null,
+    default_theme_id: typeof row.default_theme_id === "string" ? row.default_theme_id : null,
+    is_admin: Boolean(row.is_admin),
+    is_gm: Boolean(row.is_gm),
+    created_at: String(row.created_at ?? ""),
+    updated_at: String(row.updated_at ?? ""),
+  }
+}
+
 export type CampaignAccessRole = "player" | "editor"
 export type CharacterAccessRole = "viewer" | "editor"
 
@@ -107,12 +139,24 @@ export async function getCurrentProfile() {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
+    .select(PROFILE_SELECT_WITH_THEME)
     .eq("id", userData.user.id)
     .maybeSingle()
 
-  if (error) throw error
-  return (data as ProfileRow | null) ?? null
+  if (!error) {
+    return coerceProfileRow((data as Record<string, unknown> | null) ?? null)
+  }
+
+  if (!isMissingDefaultThemeColumnError(error)) throw error
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from("profiles")
+    .select(PROFILE_SELECT_BASE)
+    .eq("id", userData.user.id)
+    .maybeSingle()
+
+  if (fallbackError) throw fallbackError
+  return coerceProfileRow((fallbackData as Record<string, unknown> | null) ?? null)
 }
 
 function asNonEmptyString(value: unknown): string | null {
@@ -186,11 +230,24 @@ export async function syncProfileFromAuthUser(): Promise<ProfileRow> {
       .from("profiles")
       .update(updatePayload as never)
       .eq("id", user.id)
-      .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
+      .select(PROFILE_SELECT_WITH_THEME)
       .single()
 
-    if (error) throw error
-    return data as ProfileRow
+    if (!error) {
+      return coerceProfileRow(data as Record<string, unknown>) as ProfileRow
+    }
+
+    if (!isMissingDefaultThemeColumnError(error)) throw error
+
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from("profiles")
+      .update(updatePayload as never)
+      .eq("id", user.id)
+      .select(PROFILE_SELECT_BASE)
+      .single()
+
+    if (fallbackError) throw fallbackError
+    return coerceProfileRow(fallbackData as Record<string, unknown>) as ProfileRow
   }
 
   const { data, error } = await supabase
@@ -203,11 +260,30 @@ export async function syncProfileFromAuthUser(): Promise<ProfileRow> {
       } as never,
       { onConflict: "id" }
     )
-    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
+    .select(PROFILE_SELECT_WITH_THEME)
     .single()
 
-  if (error) throw error
-  return data as ProfileRow
+  if (!error) {
+    return coerceProfileRow(data as Record<string, unknown>) as ProfileRow
+  }
+
+  if (!isMissingDefaultThemeColumnError(error)) throw error
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: user.id,
+        email: authEmail,
+        display_name: nextDisplayName,
+      } as never,
+      { onConflict: "id" }
+    )
+    .select(PROFILE_SELECT_BASE)
+    .single()
+
+  if (fallbackError) throw fallbackError
+  return coerceProfileRow(fallbackData as Record<string, unknown>) as ProfileRow
 }
 
 export async function ensureProfileExists(): Promise<ProfileRow> {
@@ -508,12 +584,24 @@ export async function getProfileByEmail(email: string): Promise<ProfileRow | nul
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
+    .select(PROFILE_SELECT_WITH_THEME)
     .eq("email", email.toLowerCase().trim())
     .maybeSingle()
 
-  if (error) throw error
-  return (data as ProfileRow | null) ?? null
+  if (!error) {
+    return coerceProfileRow((data as Record<string, unknown> | null) ?? null)
+  }
+
+  if (!isMissingDefaultThemeColumnError(error)) throw error
+
+  const { data: fallbackData, error: fallbackError } = await supabase
+    .from("profiles")
+    .select(PROFILE_SELECT_BASE)
+    .eq("email", email.toLowerCase().trim())
+    .maybeSingle()
+
+  if (fallbackError) throw fallbackError
+  return coerceProfileRow((fallbackData as Record<string, unknown> | null) ?? null)
 }
 
 export async function upsertCurrentUserDefaultTheme(themeId: string): Promise<ProfileRow> {
@@ -526,11 +614,19 @@ export async function upsertCurrentUserDefaultTheme(themeId: string): Promise<Pr
     .from("profiles")
     .update({ default_theme_id: themeId } as never)
     .eq("id", userData.user.id)
-    .select("id, email, display_name, default_theme_id, is_admin, is_gm, created_at, updated_at")
+    .select(PROFILE_SELECT_WITH_THEME)
     .single()
 
-  if (error) throw error
-  return data as ProfileRow
+  if (!error) {
+    return coerceProfileRow(data as Record<string, unknown>) as ProfileRow
+  }
+
+  if (!isMissingDefaultThemeColumnError(error)) throw error
+
+  // Environment is missing the theme column; keep app functional and return current profile.
+  const profile = await getCurrentProfile()
+  if (!profile) throw new Error("No profile found for authenticated user")
+  return profile
 }
 
 export async function getUserCampaignPreference(campaignId: string) {
