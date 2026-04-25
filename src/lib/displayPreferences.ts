@@ -1,10 +1,5 @@
 export type CbTheme =
   | "scifi"
-  | "light"
-  | "dark"
-  | "high-contrast-light"
-  | "high-contrast-dark"
-  | "low-glare-dark"
   | "arcane"
   | "tavern"
   | "neon"
@@ -31,11 +26,6 @@ export const DISPLAY_PREFS_DEFAULTS: DisplayPreferences = {
 
 export const THEME_OPTIONS: Array<{ value: CbTheme; label: string }> = [
   { value: "scifi", label: "Sci-Fi" },
-  { value: "light", label: "Light" },
-  { value: "dark", label: "Dark" },
-  { value: "high-contrast-light", label: "High Contrast Light" },
-  { value: "high-contrast-dark", label: "High Contrast Dark" },
-  { value: "low-glare-dark", label: "Low Glare Dark" },
   { value: "arcane", label: "Arcane" },
   { value: "tavern", label: "Tavern" },
   { value: "neon", label: "Neon" },
