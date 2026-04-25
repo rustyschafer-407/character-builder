@@ -10,6 +10,70 @@ interface TargetRect {
   height: number;
 }
 
+type ChalkRectOptions = {
+  width: number;
+  height: number;
+  pad?: number;
+  wobble?: number;
+};
+
+function makeChalkRectPath({
+  width,
+  height,
+  pad = 8,
+  wobble = 4,
+}: ChalkRectOptions): string {
+  const w = Math.max(24, width + pad * 2);
+  const h = Math.max(24, height + pad * 2);
+
+  // Deterministic offsets. Do not use Math.random; the path should not jump on rerender.
+  const o = {
+    tlx: 2,
+    tly: -1,
+    trx: -3,
+    try: 2,
+    brx: 3,
+    bry: 1,
+    blx: -2,
+    bly: -2,
+    topMid: -wobble * 0.35,
+    rightMid: wobble * 0.45,
+    bottomMid: wobble * 0.25,
+    leftMid: -wobble * 0.4,
+  };
+
+  const r = Math.min(22, Math.max(10, Math.min(w, h) * 0.18));
+
+  return [
+    `M ${r + o.tlx} ${2 + o.tly}`,
+    `Q ${w / 2} ${2 + o.topMid}, ${w - r + o.trx} ${3 + o.try}`,
+    `Q ${w - 2 + o.trx} ${3 + o.try}, ${w - 3 + o.trx} ${r}`,
+    `Q ${w + o.rightMid} ${h / 2}, ${w - 4 + o.brx} ${h - r + o.bry}`,
+    `Q ${w - 5 + o.brx} ${h - 4 + o.bry}, ${w - r + o.brx} ${h - 3 + o.bry}`,
+    `Q ${w / 2} ${h + o.bottomMid}, ${r + o.blx} ${h - 4 + o.bly}`,
+    `Q ${3 + o.blx} ${h - 4 + o.bly}, ${3 + o.blx} ${h - r + o.bly}`,
+    `Q ${o.leftMid} ${h / 2}, ${4 + o.tlx} ${r + o.tly}`,
+    `Q ${4 + o.tlx} ${4 + o.tly}, ${r + o.tlx} ${2 + o.tly}`,
+    `Z`,
+  ].join(" ");
+}
+
+function makeChalkArrowPath(startX: number, startY: number, endX: number, endY: number): string {
+  const dx = endX - startX;
+  const dy = endY - startY;
+
+  // Deterministic curve offsets so the arrow looks hand-drawn but does not jump.
+  const bend = Math.max(-35, Math.min(35, dx * 0.18));
+  const lift = Math.max(-24, Math.min(24, dy * 0.22));
+
+  const c1x = startX + dx * 0.35 + bend;
+  const c1y = startY + dy * 0.15 - 10;
+  const c2x = startX + dx * 0.72 - bend * 0.4;
+  const c2y = startY + dy * 0.82 + lift;
+
+  return `M ${startX} ${startY} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${endX} ${endY}`;
+}
+
 /**
  * Finds the guide target element, checks visibility, and optionally scrolls
  * it into view if it is offscreen. Returns the bounding rect, or null if the
@@ -130,12 +194,10 @@ function buildArrowPath(input: {
       break;
   }
 
-  const cx = (sx + ex) / 2 + cdx;
-  const cy = (sy + ey) / 2 + cdy;
-  const d = `M ${sx.toFixed(2)} ${sy.toFixed(2)} Q ${cx.toFixed(2)} ${cy.toFixed(2)} ${ex.toFixed(2)} ${ey.toFixed(2)}`;
+  const d = makeChalkArrowPath(sx, sy, ex + cdx * 0.08, ey + cdy * 0.08);
 
   // Build a tiny hand-drawn arrow head aligned to the end tangent.
-  const angle = Math.atan2(ey - cy, ex - cx);
+  const angle = Math.atan2(ey - sy, ex - sx);
   const headLength = 10;
   const spread = 0.5;
   const hx1 = ex - headLength * Math.cos(angle - spread);
@@ -249,6 +311,15 @@ export default function GuidanceOverlay() {
   const placement = activeStep.placement ?? "bottom";
   const bodyId = `chalk-card-body-${activeStep.id}`;
   const cardHeight = cardRef.current?.offsetHeight ?? 140;
+  const ringPad = 9;
+  const ringWidth = Math.max(24, targetRect.width + ringPad * 2);
+  const ringHeight = Math.max(24, targetRect.height + ringPad * 2);
+  const ringPath = makeChalkRectPath({
+    width: targetRect.width,
+    height: targetRect.height,
+    pad: ringPad,
+    wobble: 4,
+  });
   const arrow = cardPos
     ? buildArrowPath({
         placement,
@@ -266,14 +337,30 @@ export default function GuidanceOverlay() {
         className="chalk-ring"
         style={{
           position: "fixed",
-          top: targetRect.top - 6,
-          left: targetRect.left - 6,
-          width: targetRect.width + 12,
-          height: targetRect.height + 12,
+          top: targetRect.top - ringPad,
+          left: targetRect.left - ringPad,
+          width: ringWidth,
+          height: ringHeight,
           pointerEvents: "none",
-          zIndex: 9990,
+          zIndex: 9998,
         }}
-      />
+      >
+        <svg
+          className="chalk-ring-svg"
+          width={ringWidth}
+          height={ringHeight}
+          viewBox={`0 0 ${ringWidth} ${ringHeight}`}
+          preserveAspectRatio="none"
+        >
+          <path className="chalk-ring-path chalk-ring-path-shadow" d={ringPath} />
+          <path className="chalk-ring-path chalk-ring-path-main" d={ringPath} />
+          <path
+            className="chalk-ring-path chalk-ring-path-secondary"
+            d={ringPath}
+            transform={`translate(1 1) rotate(0.4 ${ringWidth / 2} ${ringHeight / 2})`}
+          />
+        </svg>
+      </div>
 
       {/* Directional arrow between card and target */}
       {cardPos && arrow ? (
@@ -293,6 +380,7 @@ export default function GuidanceOverlay() {
         >
           <path d={arrow.d} className="chalk-arrow-soft" />
           <path d={arrow.d} className="chalk-arrow-main" />
+          <path d={arrow.head} className="chalk-arrow-soft" />
           <path d={arrow.head} className="chalk-arrow-main" />
         </svg>
       ) : null}
