@@ -156,7 +156,7 @@ export default function IdentitySection({
 
         {/* Right: action buttons */}
         <div style={{ display: "grid", gap: 8, minWidth: 160 }}>
-          <button data-guide="export-roll20" onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "8px 14px", minHeight: 38 }}>
+          <button onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "8px 14px", minHeight: 38 }}>
             Copy to Roll20
           </button>
           <button

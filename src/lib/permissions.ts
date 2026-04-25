@@ -36,21 +36,6 @@ export function isPlayer(profile: ProfileRow | null): boolean {
   return profile !== null && !profile.is_admin && !profile.is_gm;
 }
 
-/**
- * Get effective roles for this user, in priority order for hint visibility.
- * Admins have all capabilities; GMs have campaign-based capabilities; Players are restricted.
- */
-export function getEffectiveRoles(auth: AuthState): ("admin" | "gm" | "player")[] {
-  if (!auth.profile) return [];
-  const roles: ("admin" | "gm" | "player")[] = [];
-  if (isAdmin(auth.profile)) roles.push("admin");
-  if (isGm(auth.profile)) roles.push("gm");
-  if (isPlayer(auth.profile) || Object.keys(auth.campaignRolesByCampaignId).length > 0) {
-    roles.push("player");
-  }
-  return roles;
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // User management capabilities (Admin only)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -271,41 +256,6 @@ export function shouldShowCharacterInList(
 ): boolean {
   const charType = (character.characterType ?? "pc") as "pc" | "npc";
   return canDirectlyViewCharacter(auth, character, charType, characterAccessRole);
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// UI hint / guidance queries
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-/**
- * Get the list of roles this user should see hints for.
- * Used by guidance system to determine which hints apply.
- */
-export function getHintRoles(auth: AuthState): ("admin" | "gm" | "player")[] {
-  return getEffectiveRoles(auth);
-}
-
-/**
- * Should show admin/user-management hints?
- */
-export function shouldShowAdminHints(auth: AuthState): boolean {
-  return isAdmin(auth.profile);
-}
-
-/**
- * Should show GM/campaign-management hints?
- */
-export function shouldShowGmHints(auth: AuthState): boolean {
-  return isGm(auth.profile) || isAdmin(auth.profile);
-}
-
-/**
- * Should show player/character-creation hints?
- */
-export function shouldShowPlayerHints(auth: AuthState): boolean {
-  return Object.keys(auth.campaignRolesByCampaignId).length > 0
-    || isGm(auth.profile)
-    || isAdmin(auth.profile);
 }
 
 /**

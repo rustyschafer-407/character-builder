@@ -57,9 +57,6 @@ import CharacterCreationWizard, {
 import AdminScreen from "./components/AdminScreen";
 import AccessManagementPanel from "./components/AccessManagementPanel";
 import SelectedCharacterWorkspace from "./components/SelectedCharacterWorkspace";
-import { GuidanceProvider, useGuidance } from "./components/GuidanceProvider";
-import GuidanceOverlay from "./components/GuidanceOverlay";
-import type { GuidePermission, GuidancePage } from "./lib/guidance";
 import { useCharacterCreation } from "./hooks/useCharacterCreation";
 import { useCampaignState } from "./hooks/useCampaignState";
 import { useCampaignAdminSession } from "./hooks/useCampaignAdminSession";
@@ -189,154 +186,6 @@ function makeDraftFromCampaignClassAndRace(
 
   return draft;
 }
-
-function HelpMenu() {
-  const {
-    startPageTour,
-    showInlineHelpForPage,
-    hideInlineHelpForPage,
-    isInlineHelpVisible,
-    resetHelpCoach,
-    helpDisabled,
-    setHelpDisabled,
-  } = useGuidance();
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="help-menu-shell">
-      <button
-        className="button-control"
-        style={buttonStyle}
-        onClick={() => setOpen((prev) => !prev)}
-        aria-expanded={open}
-      >
-        Help
-      </button>
-      {open ? (
-        <div className="help-menu-pop" role="menu">
-          <button
-            className="help-menu-item"
-            onClick={() => {
-              startPageTour();
-              setOpen(false);
-            }}
-          >
-            Start page tour
-          </button>
-          <button
-            className="help-menu-item"
-            onClick={() => {
-              if (isInlineHelpVisible) {
-                hideInlineHelpForPage();
-              } else {
-                showInlineHelpForPage();
-              }
-              setOpen(false);
-            }}
-          >
-            {isInlineHelpVisible ? "Hide inline help" : "Show help for this page"}
-          </button>
-          <button
-            className="help-menu-item"
-            onClick={() => {
-              resetHelpCoach();
-              setOpen(false);
-            }}
-          >
-            Reset dismissed help
-          </button>
-          <button
-            className="help-menu-item"
-            onClick={() => {
-              setHelpDisabled(!helpDisabled);
-              setOpen(false);
-            }}
-          >
-            {helpDisabled ? "Enable help" : "Disable help"}
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function InlinePageHelp({
-  title,
-  body,
-}: {
-  title: string;
-  body: string;
-}) {
-  const { isInlineHelpVisible, showInlineHelpForPage, hideInlineHelpForPage } = useGuidance();
-
-  return (
-    <div>
-      <button
-        className="inline-help-toggle"
-        onClick={() => {
-          if (isInlineHelpVisible) {
-            hideInlineHelpForPage();
-          } else {
-            showInlineHelpForPage();
-          }
-        }}
-      >
-        {isInlineHelpVisible ? "Hide" : "Learn more"}
-      </button>
-      {isInlineHelpVisible ? (
-        <div className="inline-help-card">
-          <p className="inline-help-title">{title}</p>
-          <p className="inline-help-body">{body}</p>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function EmptyStateHelpCard({
-  onCreateCharacter,
-  onCreateCampaign,
-  fallbackMessage,
-}: {
-  onCreateCharacter: () => void;
-  onCreateCampaign: () => void;
-  fallbackMessage: string;
-}) {
-  const { emptyStateCard, dismissEmptyStateCard } = useGuidance();
-  if (!emptyStateCard) {
-    return <p style={{ margin: 0, ...mutedTextStyle }}>{fallbackMessage}</p>;
-  }
-
-  return (
-    <div className="empty-help-card">
-      <h3 className="empty-help-title">{emptyStateCard.title}</h3>
-      <p className="empty-help-body">{emptyStateCard.body}</p>
-      <div className="empty-help-actions">
-        <button
-          className="button-control"
-          style={primaryButtonStyle}
-          onClick={() => {
-            if (emptyStateCard.id === "main-no-campaigns") {
-              onCreateCampaign();
-            } else {
-              onCreateCharacter();
-            }
-          }}
-        >
-          {emptyStateCard.primaryLabel}
-        </button>
-        <button
-          className="button-control"
-          style={buttonStyle}
-          onClick={() => dismissEmptyStateCard(emptyStateCard.id)}
-        >
-          {emptyStateCard.dismissLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 
 export default function App() {
   const currentPathname = typeof window === "undefined" ? "/" : window.location.pathname;
@@ -795,7 +644,6 @@ export default function App() {
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
 
   const filteredCharacters = characters.filter((character) => character.campaignId === campaignId);
-  const currentCampaignRole = campaignRolesByCampaignId[campaignId] ?? null;
 
   // Filter visible characters based on user permissions
   const sidebarCharacters = filteredCharacters.filter((character) => {
@@ -1951,40 +1799,7 @@ export default function App() {
     );
   }
 
-  const guidePage: GuidancePage = adminOpen
-    ? "admin"
-    : securityOpen
-      ? "access"
-      : displayOpen
-        ? "display"
-        : wizardOpen
-          ? "wizard"
-          : "main";
-
-  const guidePermissions: Partial<Record<GuidePermission, boolean>> = {
-    createCampaign: uiCanCreateCampaign,
-    editCampaign: uiCanEditCurrentCampaign,
-    manageCampaignAccess: uiCanOpenAccessManagement,
-    createCharacter: uiCanCreateCharacterInCurrentCampaign,
-    viewCharacter: sidebarCharacters.length > 0,
-    exportRoll20: Boolean(selected),
-    openDisplay: true,
-  };
-
   return (
-    <GuidanceProvider
-      key={currentUserId ?? "anon"}
-      isAdmin={isAdmin}
-      isGm={isGm}
-      campaignRoles={campaignRolesByCampaignId}
-      selectedCampaignRole={currentCampaignRole}
-      page={guidePage}
-      hasCampaigns={gameData.campaigns.length > 0}
-      hasCharacters={characters.length > 0}
-      hasCharactersInSelectedCampaign={filteredCharacters.length > 0}
-      userId={currentUserId}
-      permissions={guidePermissions}
-    >
     <div style={pageStyle}>
       <div
         className="app-header"
@@ -2022,22 +1837,21 @@ export default function App() {
           ) : (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
               {uiCanCreateCampaign ? (
-                <button data-guide="create-campaign" onClick={openNewCampaignAdminScreen} className="button-control" style={primaryButtonStyle}>
+                <button onClick={openNewCampaignAdminScreen} className="button-control" style={primaryButtonStyle}>
                   New Campaign
                 </button>
               ) : null}
               {uiCanEditCurrentCampaign ? (
-                <button data-guide="campaign-settings" onClick={openAdminScreen} className="button-control" style={buttonStyle}>
+                <button onClick={openAdminScreen} className="button-control" style={buttonStyle}>
                   Edit Campaign
                 </button>
               ) : null}
               {uiCanOpenAccessManagement ? (
-                <button data-guide="invite-users" onClick={openAccessManagement} className="button-control" style={buttonStyle}>
+                <button onClick={openAccessManagement} className="button-control" style={buttonStyle}>
                   Access
                 </button>
               ) : null}
-              <HelpMenu />
-              <button data-guide="display-settings" onClick={() => setDisplayOpen(true)} className="button-control" style={buttonStyle}>
+              <button onClick={() => setDisplayOpen(true)} className="button-control" style={buttonStyle}>
                 Display
               </button>
               <button onClick={() => void handleSignOut()} className="button-control" style={buttonStyle}>
@@ -2133,13 +1947,7 @@ export default function App() {
         </div>
 
         <label style={{ display: "block", fontWeight: 600, color: "var(--cb-muted-label)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-            <span>Switch Campaign</span>
-            <InlinePageHelp
-              title="Campaign context"
-              body="Switching campaign updates the visible character list and editor context. Use this before creating or editing a sheet."
-            />
-          </div>
+          Switch Campaign
           <select className="form-control" value={campaignId} onChange={(e) => handleCampaignChange(e.target.value)} style={inputStyle}>
             {gameData.campaigns.map((campaign) => (
               <option key={campaign.id} value={campaign.id}>
@@ -2286,19 +2094,9 @@ export default function App() {
                 flex: 1,
               }}
             >
-              <EmptyStateHelpCard
-                onCreateCharacter={() => {
-                  if (uiCanCreateCharacterInCurrentCampaign) {
-                    openWizard();
-                  }
-                }}
-                onCreateCampaign={() => {
-                  if (uiCanCreateCampaign) {
-                    openNewCampaignAdminScreen();
-                  }
-                }}
-                fallbackMessage="Select a character from the sidebar, or create a new one to get started."
-              />
+              <p style={{ margin: 0, ...mutedTextStyle }}>
+                Select a character from the sidebar, or create a new one to get started.
+              </p>
             </div>
           ) : (
             <SelectedCharacterWorkspace
@@ -2353,8 +2151,6 @@ export default function App() {
           )}
         </div>
       ) : null}
-      <GuidanceOverlay />
     </div>
-    </GuidanceProvider>
   );
 }
