@@ -155,49 +155,88 @@ export default function Sidebar({
           const canDelete = canDeleteCharacter(c.id);
           const characterType = getCharacterType(c);
           const isNpc = characterType === "npc";
+          const deleteHovered = hoveredDeleteId === c.id;
 
           return (
-            <div key={c.id} style={{ display: "flex", gap: 6 }}>
+            <div
+              key={c.id}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto 40px",
+                alignItems: "center",
+                gap: 12,
+                padding: "12px 14px",
+                borderRadius: 10,
+                border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--border-soft)",
+                background: isSelected ? "rgba(73, 224, 255, 0.08)" : "rgba(11, 22, 42, 0.72)",
+                boxShadow: isSelected ? "inset 0 0 0 1px rgba(73, 224, 255, 0.16)" : "none",
+                transition: "background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+              }}
+            >
               <button
                 onClick={() => onSelect(c.id)}
                 style={{
-                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  minWidth: 0,
                   textAlign: "left",
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--border-soft)",
-                  background: isSelected ? "rgba(16, 30, 58, 0.86)" : "rgba(11, 22, 42, 0.72)",
-                  boxShadow: isSelected ? "inset 0 0 0 1px var(--cb-accent-soft-strong), 0 4px 14px rgba(0, 0, 0, 0.22)" : "none",
+                  padding: 0,
+                  border: "none",
+                  background: "transparent",
+                  boxShadow: "none",
                   color: "var(--text-primary)",
                   cursor: "pointer",
-                  transition: "all 180ms ease",
+                  transition: "opacity 180ms ease, color 180ms ease",
+                  transform: "none",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                  <strong style={{ display: "block", color: "var(--text-primary)" }}>{displayName}</strong>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: "0.06em",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      minWidth: 34,
-                      textAlign: "center",
-                      padding: "2px 6px",
-                      borderRadius: 999,
-                      border: isNpc ? "1px solid rgba(255, 188, 83, 0.34)" : "1px solid rgba(73, 224, 255, 0.3)",
-                      color: isNpc ? "#f1d3a1" : "#a9e8f5",
-                      background: isNpc ? "rgba(239, 170, 87, 0.14)" : "rgba(73, 224, 255, 0.12)",
-                      opacity: 0.88,
-                    }}
-                  >
-                    {characterType.toUpperCase()}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
+                <strong
+                  style={{
+                    display: "block",
+                    color: "var(--text-primary)",
+                    fontSize: 14,
+                    lineHeight: 1.25,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {displayName}
+                </strong>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--text-secondary)",
+                    lineHeight: 1.25,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
                   {getCampaignName(c.campaignId)} • {getClassName(c.classId)}
                 </div>
               </button>
+
+              <span
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.06em",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  minWidth: 44,
+                  textAlign: "center",
+                  padding: "3px 8px",
+                  borderRadius: 999,
+                  border: isNpc ? "1px solid rgba(255, 188, 83, 0.34)" : "1px solid rgba(73, 224, 255, 0.28)",
+                  color: isNpc ? "#e8c78c" : "#98ddec",
+                  background: isNpc ? "rgba(239, 170, 87, 0.12)" : "rgba(73, 224, 255, 0.1)",
+                  opacity: 0.82,
+                  justifySelf: "center",
+                }}
+              >
+                {characterType.toUpperCase()}
+              </span>
 
               <button
                 onClick={() => onDelete(c.id)}
@@ -205,12 +244,19 @@ export default function Sidebar({
                 onMouseLeave={() => setHoveredDeleteId(null)}
                 style={{
                   ...dangerButtonStyle,
-                  border: hoveredDeleteId === c.id ? "1px solid var(--cb-button-danger-border)" : "1px solid rgba(255, 122, 157, 0.24)",
-                  background: hoveredDeleteId === c.id ? "var(--cb-button-danger-bg)" : "rgba(255, 122, 157, 0.08)",
-                  color: hoveredDeleteId === c.id ? "var(--cb-button-danger-text)" : "rgba(255, 214, 226, 0.68)",
-                  opacity: canDelete ? (hoveredDeleteId === c.id ? 1 : 0.56) : 0.4,
+                  width: 36,
+                  minWidth: 36,
+                  height: 36,
+                  minHeight: 36,
+                  padding: 0,
+                  justifySelf: "center",
+                  alignSelf: "center",
+                  border: deleteHovered ? "1px solid var(--cb-button-danger-border)" : "1px solid rgba(255, 122, 157, 0.2)",
+                  background: deleteHovered ? "var(--cb-button-danger-bg)" : "rgba(255, 122, 157, 0.06)",
+                  color: deleteHovered ? "var(--cb-button-danger-text)" : "rgba(255, 214, 226, 0.64)",
+                  opacity: canDelete ? (deleteHovered ? 1 : 0.5) : 0.35,
                   cursor: canDelete ? "pointer" : "not-allowed",
-                  boxShadow: hoveredDeleteId === c.id ? "0 6px 14px rgba(0, 0, 0, 0.2)" : "none",
+                  boxShadow: deleteHovered ? "0 6px 14px rgba(0, 0, 0, 0.2)" : "none",
                   transition: "all 180ms ease",
                 }}
                 disabled={!canDelete}
