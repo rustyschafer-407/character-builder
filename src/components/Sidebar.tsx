@@ -105,6 +105,7 @@ export default function Sidebar({
 
       <div style={{ display: "flex", gap: 6 }}>
         <button
+          data-guide="create-character"
           onClick={onCreate}
           disabled={!canCreate}
           style={{
@@ -153,7 +154,7 @@ export default function Sidebar({
         </div>
       ) : null}
 
-      <div style={{ marginTop: 18, display: "grid", gap: 6 }}>
+      <div data-guide="campaign-characters" style={{ marginTop: 18, display: "grid", gap: 6 }}>
         {visibleCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
 
         {visibleCharacters.map((c) => {
@@ -181,6 +182,7 @@ export default function Sidebar({
               }}
             >
               <button
+                data-guide={c.id === visibleCharacters[0]?.id ? "character-viewer" : undefined}
                 onClick={() => onSelect(c.id)}
                 style={{
                   display: "flex",

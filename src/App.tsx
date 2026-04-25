@@ -55,6 +55,8 @@ import CharacterCreationWizard, {
 import AdminScreen from "./components/AdminScreen";
 import AccessManagementPanel from "./components/AccessManagementPanel";
 import SelectedCharacterWorkspace from "./components/SelectedCharacterWorkspace";
+import { GuidanceProvider, useGuidance } from "./components/GuidanceProvider";
+import GuidanceOverlay from "./components/GuidanceOverlay";
 import { useCharacterCreation } from "./hooks/useCharacterCreation";
 import { useCampaignState } from "./hooks/useCampaignState";
 import { useCampaignAdminSession } from "./hooks/useCampaignAdminSession";
@@ -183,6 +185,45 @@ function makeDraftFromCampaignClassAndRace(
   };
 
   return draft;
+}
+
+/** Watches app panel state and notifies the guidance system when layout changes. */
+function GuidanceLayoutSync({
+  adminOpen,
+  securityOpen,
+  displayOpen,
+  selectedCampaignId,
+  selectedCharacterId,
+}: {
+  adminOpen: boolean;
+  securityOpen: boolean;
+  displayOpen: boolean;
+  selectedCampaignId: string;
+  selectedCharacterId: string;
+}) {
+  const { notifyLayoutChanged } = useGuidance();
+  useEffect(() => {
+    notifyLayoutChanged();
+  }, [adminOpen, securityOpen, displayOpen, selectedCampaignId, selectedCharacterId, notifyLayoutChanged]);
+  return null;
+}
+
+function ResetGuidanceRow() {
+  const { resetGuidance } = useGuidance();
+  return (
+    <div style={{ borderTop: "1px solid var(--cb-border)", paddingTop: 12, marginTop: 4 }}>
+      <button
+        className="button-control"
+        onClick={() => { resetGuidance(); }}
+        style={{ fontSize: 12, padding: "6px 12px", opacity: 0.75 }}
+      >
+        Replay Hints
+      </button>
+      <span style={{ marginLeft: 10, fontSize: 11, color: "var(--cb-text-muted)" }}>
+        Reset all dismissed guidance hints
+      </span>
+    </div>
+  );
 }
 
 
@@ -1734,6 +1775,14 @@ export default function App() {
   }
 
   return (
+    <GuidanceProvider
+      isAdmin={isAdmin}
+      isGm={isGm}
+      campaignRoles={campaignRolesByCampaignId}
+      hasCharacters={characters.length > 0}
+      isReady={authReady}
+      userId={currentUserId}
+    >
     <div style={pageStyle}>
       <div
         className="app-header"
@@ -1771,21 +1820,21 @@ export default function App() {
           ) : (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
               {uiCanCreateCampaign ? (
-                <button onClick={openNewCampaignAdminScreen} className="button-control" style={primaryButtonStyle}>
+                <button data-guide="create-campaign" onClick={openNewCampaignAdminScreen} className="button-control" style={primaryButtonStyle}>
                   New Campaign
                 </button>
               ) : null}
               {uiCanEditCurrentCampaign ? (
-                <button onClick={openAdminScreen} className="button-control" style={buttonStyle}>
+                <button data-guide="campaign-settings" onClick={openAdminScreen} className="button-control" style={buttonStyle}>
                   Edit Campaign
                 </button>
               ) : null}
               {uiCanOpenAccessManagement ? (
-                <button onClick={openAccessManagement} className="button-control" style={buttonStyle}>
+                <button data-guide="invite-users" onClick={openAccessManagement} className="button-control" style={buttonStyle}>
                   Access
                 </button>
               ) : null}
-              <button onClick={() => setDisplayOpen(true)} className="button-control" style={buttonStyle}>
+              <button data-guide="display-settings" onClick={() => setDisplayOpen(true)} className="button-control" style={buttonStyle}>
                 Display
               </button>
               <button onClick={() => void handleSignOut()} className="button-control" style={buttonStyle}>
@@ -1837,6 +1886,7 @@ export default function App() {
               onTextSizeChange={(textSize) => setDisplayPreferences((prev) => ({ ...prev, textSize }))}
               onDensityChange={(density) => setDisplayPreferences((prev) => ({ ...prev, density }))}
             />
+            <ResetGuidanceRow />
           </div>
         </div>
       ) : null}
@@ -2084,6 +2134,15 @@ export default function App() {
           )}
         </div>
       ) : null}
+      <GuidanceLayoutSync
+        adminOpen={adminOpen}
+        securityOpen={securityOpen}
+        displayOpen={displayOpen}
+        selectedCampaignId={campaignId}
+        selectedCharacterId={selectedId}
+      />
+      <GuidanceOverlay />
     </div>
+    </GuidanceProvider>
   );
 }
