@@ -217,7 +217,6 @@ export default function GuidanceOverlay() {
     dismissCurrent,
     dismissPermanently,
     advance,
-    startWalkthrough,
     finishWalkthrough,
   } =
     useGuidance();
@@ -461,24 +460,15 @@ export default function GuidanceOverlay() {
                   : dismissCurrent
               }
             >
-              {mode === "walkthrough" ? (hasNextStep ? "Next tip" : "Finish") : "Got it"}
+              {mode === "walkthrough" ? (hasNextStep ? "Next" : "Done") : "Got it"}
             </button>
             <button
               className="guidance-btn guidance-btn-muted"
               aria-label={`Don't show "${activeStep.title}" again`}
               onClick={dismissPermanently}
             >
-              Hide this tip
+              Don't show again
             </button>
-            {mode === "contextual" && hasNextStep ? (
-              <button
-                className="guidance-btn guidance-btn-ghost"
-                aria-label="Start a full walkthrough"
-                onClick={startWalkthrough}
-              >
-                Walk me through
-              </button>
-            ) : null}
           </div>
         </div>
       )}

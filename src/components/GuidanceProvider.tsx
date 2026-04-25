@@ -331,7 +331,14 @@ export function GuidanceProvider({
   }, [activeStep, markStepShown]);
 
   const notifyLayoutChanged = useCallback(() => {
-    setTick((t) => t + 1);
+    // Only reposition the active hint; do not pick a new hint just because layout changed.
+    // New hints are triggered by ctx/effectiveDismissed/suppressGuidance/contextKey changes.
+    setActiveStep((current) => {
+      if (!current) return current; // No active hint — nothing to reposition.
+      // Return same reference to avoid re-render, but schedule a tick to recompute position.
+      setTick((t) => t + 1);
+      return current;
+    });
   }, []);
 
   // Compute whether there is a next step after dismissing the current one

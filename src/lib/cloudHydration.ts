@@ -108,7 +108,15 @@ export function buildCloudHydratedState(input: {
     input.characterRows.map((row) => [row.id, Boolean(row.can_edit)] as const)
   ) as Record<string, boolean>
 
-  const accessibleCampaignIds = new Set(gameData.campaigns.map((campaign) => campaign.id))
+  const accessibleCampaignIds = new Set([
+    ...gameData.campaigns.map((campaign) => campaign.id),
+    // Include campaigns referenced by directly-assigned characters (viewer/editor access without
+    // full campaign membership). Without this, those characters are silently dropped by the filter.
+    ...input.characterRows
+      .filter((row) => row.character_role !== null && row.character_role !== undefined)
+      .map((row) => (row.data as { campaignId?: string } | null)?.campaignId)
+      .filter((id): id is string => Boolean(id)),
+  ])
 
   const characters = input.characterRows
     .map((row) => {

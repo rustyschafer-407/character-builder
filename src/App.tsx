@@ -650,8 +650,11 @@ export default function App() {
     makeBaseAttributes,
     applyClassAttributeModifiers,
     onFinishDraft: (draft) => {
+      const finalDraft = Permissions.shouldShowNpcControls(authState)
+        ? draft
+        : { ...draft, characterType: "pc" as const };
       commitCreatedCharacter({
-        draft,
+        draft: finalDraft,
         setCharacters,
         onPersistUpsert: persistCharacterUpsert,
         currentUserId, // Pass user ID so creator can be tracked
@@ -929,8 +932,12 @@ export default function App() {
 
   function getUserLabel(userId: string) {
     const profile = userById.get(userId) ?? null;
-    const name = resolveUserName(profile, userId);
-    const email = resolveUserEmail(profile, userId);
+    const name = profile ? resolveUserName(profile, userId) : "Unknown user";
+    const email = profile ? resolveUserEmail(profile, userId) : "No email on profile";
+    // Only show raw UUID in dev if profile truly missing, never as normal UI
+    if (!profile && import.meta.env.DEV) {
+      console.warn("[getUserLabel] No profile resolved for userId", userId);
+    }
     return `${name} (${email})`;
   }
 
@@ -2103,6 +2110,7 @@ export default function App() {
                 onQuickstartRerollAttributes={rerollAttributes}
                 onQuickstartRerollSkills={rerollSkills}
                 onQuickstartEditManually={editGeneratedCharacterManually}
+                canChooseCharacterType={Permissions.shouldShowNpcControls(authState)}
               />
             </div>
           ) : !selected || !selectedCampaign ? (
