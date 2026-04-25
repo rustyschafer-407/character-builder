@@ -246,7 +246,7 @@ export default function CharacterAccessPanel({
           }}
         >
           <div
-            style={{ ...panelStyle, width: "min(640px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
+            style={{ ...panelStyle, width: "min(640px, 96vw)", maxHeight: "calc(100vh - 64px)", overflowY: "auto", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
