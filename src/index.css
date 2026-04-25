@@ -733,13 +733,20 @@ select {
 
 .button-control,
 button {
-  min-height: 40px;
+  min-height: var(--cb-control-height);
+  border-radius: 10px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    opacity 180ms ease;
 }
 
 .tap-row {
   min-height: 40px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
 }
 
@@ -762,8 +769,8 @@ button {
 }
 
 button:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--cb-card-shadow-soft);
+  transform: translateY(-0.5px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
 }
 
 /* Phone-only layout layer (≤ 479px) — tablet and desktop are unchanged */

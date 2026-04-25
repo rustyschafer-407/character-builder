@@ -10,7 +10,7 @@ export const pageStyle: React.CSSProperties = {
 export const panelStyle: React.CSSProperties = {
   background: "linear-gradient(165deg, var(--cb-surface-raised), var(--cb-surface))",
   border: "1px solid var(--cb-border)",
-  borderRadius: 14,
+  borderRadius: 12,
   padding: 16,
   boxShadow: "var(--cb-card-shadow)",
   backdropFilter: "blur(6px)",
@@ -54,7 +54,7 @@ export const buttonStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   gap: 8,
-  transition: "transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
+  transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease, opacity 180ms ease",
   boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
 };
 
@@ -63,7 +63,7 @@ export const primaryButtonStyle: React.CSSProperties = {
   background: "linear-gradient(135deg, var(--cb-accent), var(--cb-accent-hover))",
   border: "1px solid var(--cb-accent)",
   color: "var(--cb-accent-contrast)",
-  boxShadow: "0 8px 24px var(--cb-accent-soft-strong)",
+  boxShadow: "0 6px 14px var(--cb-accent-soft)",
 };
 
 export const dangerButtonStyle: React.CSSProperties = {
@@ -102,7 +102,7 @@ export const cardStyle: React.CSSProperties = {
 
 export const statCardStyle: React.CSSProperties = {
   border: "1px solid var(--cb-border)",
-  borderRadius: 12,
+  borderRadius: 10,
   padding: 12,
   background: "var(--cb-surface-raised)",
 };

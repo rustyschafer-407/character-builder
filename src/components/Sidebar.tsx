@@ -48,6 +48,7 @@ export default function Sidebar({
   getClassName,
 }: Props) {
   const [typeFilter, setTypeFilter] = useState<CharacterListTypeFilter>(() => readCharacterTypeFilter());
+  const [hoveredDeleteId, setHoveredDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -73,13 +74,18 @@ export default function Sidebar({
     ...buttonStyle,
     flex: 1,
     justifyContent: "center" as const,
-    padding: "6px 10px",
+    padding: "5px 10px",
     fontSize: 12,
     fontWeight: 700,
-    minHeight: 32,
-    borderColor: typeFilter === segment ? "var(--accent-primary)" : "var(--cb-border)",
+    minHeight: 30,
+    borderColor: typeFilter === segment ? "var(--accent-primary)" : "rgba(255,255,255,0.1)",
     color: typeFilter === segment ? "var(--text-primary)" : "var(--text-secondary)",
-    background: typeFilter === segment ? "var(--cb-accent-soft)" : "var(--cb-button-bg)",
+    background:
+      typeFilter === segment
+        ? "linear-gradient(140deg, var(--cb-accent-soft), var(--cb-accent-soft-strong))"
+        : "rgba(8, 16, 31, 0.66)",
+    boxShadow: typeFilter === segment ? "0 0 0 1px var(--cb-accent-soft-strong), 0 6px 14px rgba(0, 0, 0, 0.2)" : "none",
+    transition: "all 180ms ease",
   });
 
   return (
@@ -104,7 +110,7 @@ export default function Sidebar({
             fontSize: 15,
             fontWeight: 800,
             letterSpacing: "0.01em",
-            boxShadow: "0 8px 18px var(--cb-accent-soft-strong)",
+            boxShadow: "0 6px 14px var(--cb-accent-soft)",
             opacity: canCreate ? 1 : 0.55,
             cursor: canCreate ? "pointer" : "not-allowed",
           }}
@@ -140,7 +146,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      <div style={{ marginTop: 24, display: "grid", gap: 8 }}>
+      <div style={{ marginTop: 18, display: "grid", gap: 6 }}>
         {visibleCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
 
         {visibleCharacters.map((c) => {
@@ -157,12 +163,14 @@ export default function Sidebar({
                 style={{
                   flex: 1,
                   textAlign: "left",
-                  padding: 10,
-                  borderRadius: 8,
-                  border: isSelected ? "1px solid var(--accent-primary)" : "1px solid var(--border-soft)",
-                  background: isSelected ? "var(--cb-accent-soft)" : "rgba(11, 22, 42, 0.75)",
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--border-soft)",
+                  background: isSelected ? "rgba(16, 30, 58, 0.86)" : "rgba(11, 22, 42, 0.72)",
+                  boxShadow: isSelected ? "inset 0 0 0 1px var(--cb-accent-soft-strong), 0 4px 14px rgba(0, 0, 0, 0.22)" : "none",
                   color: "var(--text-primary)",
                   cursor: "pointer",
+                  transition: "all 180ms ease",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
@@ -173,11 +181,14 @@ export default function Sidebar({
                       letterSpacing: "0.06em",
                       fontWeight: 700,
                       textTransform: "uppercase",
+                      minWidth: 34,
+                      textAlign: "center",
                       padding: "2px 6px",
                       borderRadius: 999,
-                      border: "1px solid var(--cb-border)",
-                      color: isNpc ? "var(--cb-warning-text)" : "var(--cb-success-text)",
-                      background: isNpc ? "var(--cb-warning-soft)" : "var(--cb-success-soft)",
+                      border: isNpc ? "1px solid rgba(255, 188, 83, 0.34)" : "1px solid rgba(73, 224, 255, 0.3)",
+                      color: isNpc ? "#f1d3a1" : "#a9e8f5",
+                      background: isNpc ? "rgba(239, 170, 87, 0.14)" : "rgba(73, 224, 255, 0.12)",
+                      opacity: 0.88,
                     }}
                   >
                     {characterType.toUpperCase()}
@@ -190,10 +201,17 @@ export default function Sidebar({
 
               <button
                 onClick={() => onDelete(c.id)}
+                onMouseEnter={() => setHoveredDeleteId(c.id)}
+                onMouseLeave={() => setHoveredDeleteId(null)}
                 style={{
                   ...dangerButtonStyle,
-                  opacity: canDelete ? 1 : 0.45,
+                  border: hoveredDeleteId === c.id ? "1px solid var(--cb-button-danger-border)" : "1px solid rgba(255, 122, 157, 0.24)",
+                  background: hoveredDeleteId === c.id ? "var(--cb-button-danger-bg)" : "rgba(255, 122, 157, 0.08)",
+                  color: hoveredDeleteId === c.id ? "var(--cb-button-danger-text)" : "rgba(255, 214, 226, 0.68)",
+                  opacity: canDelete ? (hoveredDeleteId === c.id ? 1 : 0.56) : 0.4,
                   cursor: canDelete ? "pointer" : "not-allowed",
+                  boxShadow: hoveredDeleteId === c.id ? "0 6px 14px rgba(0, 0, 0, 0.2)" : "none",
+                  transition: "all 180ms ease",
                 }}
                 disabled={!canDelete}
                 title={canDelete ? "Delete character" : "You do not have permission to delete this character"}

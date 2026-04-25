@@ -40,12 +40,13 @@ function CollapsibleSection({
   children,
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <section
       style={{
         border: "1px solid var(--cb-border)",
-        borderRadius: 12,
+        borderRadius: 10,
         background: "var(--cb-surface-raised)",
         overflow: "hidden",
       }}
@@ -65,31 +66,35 @@ function CollapsibleSection({
           border: "none",
           borderBottom: isExpanded ? "1px solid var(--cb-border)" : "none",
           borderRadius: 0,
-          background: "transparent",
+          background: isHovered ? "rgba(255, 255, 255, 0.035)" : "rgba(255, 255, 255, 0.01)",
           color: "var(--cb-text)",
-          padding: "12px 14px",
-          minHeight: 48,
+          padding: "10px 12px",
+          minHeight: 44,
           textAlign: "left",
           cursor: "pointer",
+          transition: "background-color 180ms ease, box-shadow 180ms ease",
         }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
         <span style={{ display: "grid", gap: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 700 }}>{title}</span>
+          <span style={{ fontSize: 14, fontWeight: 750, color: "var(--cb-text)" }}>{title}</span>
           {summary ? (
-            <span style={{ fontSize: 12, color: "var(--cb-text-muted)" }}>{summary}</span>
+            <span style={{ fontSize: 12, color: "var(--cb-text-muted)", opacity: 0.78 }}>{summary}</span>
           ) : null}
         </span>
         <span
           aria-hidden="true"
           style={{
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: 700,
             color: "var(--cb-text-muted)",
-            minWidth: 10,
+            opacity: 0.78,
+            minWidth: 12,
             textAlign: "center",
           }}
         >
-          {isExpanded ? "v" : ">"}
+          {isExpanded ? "▾" : "▸"}
         </span>
       </button>
 

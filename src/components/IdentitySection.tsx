@@ -61,16 +61,16 @@ export default function IdentitySection({
 
   return (
     <section style={panelStyle}>
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
         {/* Left: name + details */}
-        <div style={{ flex: 1, display: "grid", gap: 12 }}>
+        <div style={{ flex: 1, display: "grid", gap: 10 }}>
           {!editingName ? (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
               <div
                 style={{
-                  fontSize: 34,
+                  fontSize: 32,
                   fontWeight: 800,
-                  lineHeight: 1.05,
+                  lineHeight: 1.02,
                   color: "var(--text-primary)",
                 }}
               >
@@ -121,31 +121,29 @@ export default function IdentitySection({
             </div>
           )}
 
-          <div style={{ color: "var(--cb-muted-label)" }}>
-            <strong>Campaign:</strong> {campaignName}
+          <div style={{ display: "grid", gap: 4, marginTop: 2 }}>
+            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
+              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>Campaign:</strong> {campaignName}
+            </div>
+            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
+              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>Race:</strong> {raceName}
+            </div>
+            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
+              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>{classLabel}:</strong> {className}
+            </div>
+            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
+              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>{levelLabel}:</strong> {character.level}
+            </div>
+            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
+              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
+            </div>
           </div>
 
-          <div style={{ color: "var(--cb-muted-label)" }}>
-            <strong>Race:</strong> {raceName}
-          </div>
-
-          <div style={{ color: "var(--cb-muted-label)" }}>
-            <strong>{classLabel}:</strong> {className}
-          </div>
-
-          <div style={{ color: "var(--cb-muted-label)" }}>
-            <strong>{levelLabel}:</strong> {character.level}
-          </div>
-
-          <div style={{ color: "var(--cb-muted-label)" }}>
-            <strong>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
-          </div>
-
-          <label style={labelTextStyle}>
-            Character Type
+          <label style={{ ...labelTextStyle, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ minWidth: 102 }}>Character Type</span>
             <select
               className="form-control"
-              style={inputStyle}
+              style={{ ...inputStyle, marginTop: 0, width: 120, minWidth: 120 }}
               value={character.characterType ?? "pc"}
               onChange={(event) => onCharacterTypeChange(event.target.value as "pc" | "npc")}
               disabled={readOnly}
@@ -158,10 +156,15 @@ export default function IdentitySection({
 
         {/* Right: action buttons */}
         <div style={{ display: "grid", gap: 8, minWidth: 160 }}>
-          <button onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
+          <button onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "8px 14px", minHeight: 38 }}>
             Copy to Roll20
           </button>
-          <button onClick={onOpenLevelUpWizard} className="button-control" style={{ ...buttonStyle, padding: "8px 14px" }} disabled={readOnly}>
+          <button
+            onClick={onOpenLevelUpWizard}
+            className="button-control"
+            style={{ ...buttonStyle, padding: "8px 14px", minHeight: 38, background: "transparent", border: "1px solid var(--cb-border)" }}
+            disabled={readOnly}
+          >
             Level Up
           </button>
         </div>

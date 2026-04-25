@@ -371,13 +371,17 @@ export default function CharacterCreationWizard({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 16,
+          marginBottom: 14,
           gap: 12,
           flexWrap: "wrap",
         }}
       >
         <h2 style={sectionTitleStyle}>Character Wizard: {currentStepTitle}</h2>
-        <button onClick={onCancel} className="button-control" style={buttonStyle}>
+        <button
+          onClick={onCancel}
+          className="button-control"
+          style={{ ...buttonStyle, background: "transparent", border: "1px solid rgba(255,255,255,0.14)", opacity: 0.7 }}
+        >
           Cancel
         </button>
       </div>
@@ -388,7 +392,7 @@ export default function CharacterCreationWizard({
           display: "flex",
           alignItems: "center",
           gap: 0,
-          marginBottom: 16,
+          marginBottom: 14,
         }}
       >
         {stepTitles.map((title, index) => {
@@ -406,23 +410,24 @@ export default function CharacterCreationWizard({
                 borderRadius: 2,
                 margin: "0 2px",
                 background: isCurrent
-                  ? "var(--accent-primary)"
+                  ? "linear-gradient(90deg, var(--cb-accent), var(--cb-accent-hover))"
                   : isDone
-                  ? "rgba(138, 247, 207, 0.55)"
+                  ? "rgba(138, 247, 207, 0.46)"
                   : "rgba(255,255,255,0.08)",
-                transition: "background 0.2s",
+                boxShadow: isCurrent ? "0 0 10px var(--cb-accent-soft-strong)" : "none",
+                transition: "background 180ms ease, box-shadow 180ms ease",
               }}
             />
           );
         })}
       </div>
-      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 12, opacity: 0.45, fontWeight: 400 }}>
+      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 10, opacity: 0.58, fontWeight: 500 }}>
         Step {step + 1} of {stepTitles.length} — {stepTitles[step]}
       </div>
 
       <div className={attributesCrackClassName}>
       {step === 0 && (
-        <div style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "grid", gap: 10 }}>
           {/* ── Primary: manual inputs ── */}
           <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
             Character Name
@@ -479,8 +484,8 @@ export default function CharacterCreationWizard({
               padding: "4px 2px",
               cursor: "pointer",
               color: "var(--text-secondary)",
-              fontSize: 13,
-              opacity: 0.65,
+              fontSize: 12,
+              opacity: 0.52,
               transition: "opacity 0.15s, color 0.15s",
               textAlign: "left",
               width: "fit-content",
@@ -623,7 +628,7 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 3 && (
-        <div style={{ display: "grid", gap: 16 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {(selectedClass || selectedRace) && (
             <div
               style={{
@@ -1074,19 +1079,19 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 8 && (
-        <div style={{ display: "grid", gap: 16 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {quickstartActive && (
             <div
               style={{
-                padding: 12,
+                padding: 10,
                 borderRadius: 8,
-                border: "1px solid var(--accent-primary)",
-                background: "rgba(73, 224, 255, 0.12)",
+                border: "1px solid rgba(73, 224, 255, 0.28)",
+                background: "rgba(73, 224, 255, 0.08)",
                 color: "var(--text-primary)",
               }}
             >
-              <strong>Quickstart Review</strong>
-              <div style={{ marginTop: 4, color: "var(--text-secondary)", fontSize: 13 }}>
+              <strong style={{ fontSize: 13 }}>Quickstart Review</strong>
+              <div style={{ marginTop: 3, color: "var(--text-secondary)", fontSize: 12, opacity: 0.9 }}>
                 Check this generated character before keeping it, reroll sections, or switch to manual editing.
               </div>
             </div>
@@ -1165,7 +1170,7 @@ export default function CharacterCreationWizard({
         style={{
           display: "flex",
           justifyContent: "space-between",
-          marginTop: 24,
+          marginTop: 18,
         }}
       >
         <button
@@ -1173,9 +1178,10 @@ export default function CharacterCreationWizard({
           disabled={step === 0}
           style={{
             ...buttonStyle,
-            opacity: step === 0 ? 0.3 : 0.6,
+            opacity: step === 0 ? 0.3 : 0.62,
             background: "transparent",
-            border: "1px solid rgba(255,255,255,0.15)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "none",
           }}
         >
           Back
@@ -1186,10 +1192,11 @@ export default function CharacterCreationWizard({
             onClick={onNext}
             style={{
               ...buttonStyle,
-              background: "var(--cb-accent-soft-strong)",
-              border: "1px solid rgba(73,224,255,0.55)",
-              color: "var(--cb-text)",
-              fontWeight: 700,
+              background: "linear-gradient(140deg, var(--cb-accent), var(--cb-accent-hover))",
+              border: "1px solid var(--cb-accent)",
+              color: "var(--cb-accent-contrast)",
+              fontWeight: 750,
+              boxShadow: "0 6px 14px var(--cb-accent-soft)",
             }}
           >
             Next
