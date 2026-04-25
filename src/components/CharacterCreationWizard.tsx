@@ -207,6 +207,7 @@ export default function CharacterCreationWizard({
   onQuickstartEditManually,
 }: Props) {
   const [rollEffect, setRollEffect] = useState<RollEffectType | null>(null);
+  const [isMinMaxTooltipOpen, setIsMinMaxTooltipOpen] = useState(false);
   const glowSoundRef = useRef<HTMLAudioElement | null>(null);
   const crackSoundRef = useRef<HTMLAudioElement | null>(null);
   const hasUserInteractedRef = useRef(false);
@@ -221,6 +222,10 @@ export default function CharacterCreationWizard({
   const selectedSaveProfCount = ATTRS.filter((attr) => draft.saveProf[attr]).length;
   const hasRaceOptions = racesForCampaign.length > 0;
   const hasClassOptions = classesForCampaign.length > 0;
+  const attributeScores = Object.values(draft.attributes).map(Number);
+  const highStats = attributeScores.filter((score) => score >= 16).length;
+  const dumpStats = attributeScores.filter((score) => score <= 8).length;
+  const isMinMaxed = highStats >= 2 && dumpStats >= 1;
 
   useEffect(() => {
     if (!rollEffect) return;
@@ -303,6 +308,12 @@ export default function CharacterCreationWizard({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [onCloseQuickstart, quickstartPanelOpen]);
+
+  useEffect(() => {
+    if (!isMinMaxed) {
+      setIsMinMaxTooltipOpen(false);
+    }
+  }, [isMinMaxed]);
 
   function handleRollAttributesClick() {
     hasUserInteractedRef.current = true;
@@ -620,22 +631,57 @@ export default function CharacterCreationWizard({
               )}
             </div>
           )}
-          <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
-            Generation Method
-            <select
-              value={method}
-              onChange={(e) =>
-                onAttributeGenerationChange(
-                  e.target.value as "pointBuy" | "randomRoll" | "manual"
-                )
-              }
-              className="form-control" style={selectStyle}
-            >
-              <option value="manual">Manual</option>
-              <option value="pointBuy">Point Buy</option>
-              <option value="randomRoll">Random Roll</option>
-            </select>
-          </label>
+          <div className="wizard-attribute-controls">
+            <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
+              Generation Method
+              <select
+                value={method}
+                onChange={(e) =>
+                  onAttributeGenerationChange(
+                    e.target.value as "pointBuy" | "randomRoll" | "manual"
+                  )
+                }
+                className="form-control" style={selectStyle}
+              >
+                <option value="manual">Manual</option>
+                <option value="pointBuy">Point Buy</option>
+                <option value="randomRoll">Random Roll</option>
+              </select>
+            </label>
+            {isMinMaxed && (
+              <div
+                className="wizard-minmax-warning"
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setIsMinMaxTooltipOpen(false);
+                  }
+                }}
+              >
+                <button
+                  type="button"
+                  className="wizard-minmax-badge"
+                  aria-label="Optimized build warning"
+                  aria-describedby="wizard-minmax-tooltip"
+                  aria-expanded={isMinMaxTooltipOpen}
+                  onClick={() => setIsMinMaxTooltipOpen((open) => !open)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setIsMinMaxTooltipOpen(false);
+                    }
+                  }}
+                >
+                  ⚠️ Optimized Build
+                </button>
+                <span
+                  id="wizard-minmax-tooltip"
+                  role="tooltip"
+                  className={`wizard-minmax-tooltip ${isMinMaxTooltipOpen ? "is-visible" : ""}`}
+                >
+                  Your GM is already planning your downfall.
+                </span>
+              </div>
+            )}
+          </div>
 
           {method === "pointBuy" && (
             <div
