@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type {
   CharacterAttack,
   CharacterAttributeGeneration,
@@ -32,6 +33,7 @@ import {
 import { getAttributeModifier } from "../lib/character";
 import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
 import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, selectStyle, statCardStyle } from "./uiStyles";
+import "./CharacterCreationWizard.css";
 
 export interface CharacterCreationDraft {
   identity: CharacterIdentity;
@@ -76,7 +78,7 @@ interface Props {
   onAttributeGenerationChange: (method: "pointBuy" | "randomRoll" | "manual") => void;
   onAttributeChange: (key: AttributeKey, value: number) => void;
   onSaveProfToggle: (attribute: AttributeKey, nextSelected: boolean) => void;
-  onRollAttributes: () => void;
+  onRollAttributes: () => number[];
   onSkillToggle: (skillId: string, nextSelected: boolean) => void;
   onPowerToggle: (powerId: string, nextSelected: boolean) => void;
   onItemToggle: (itemId: string, nextSelected: boolean) => void;
@@ -166,6 +168,7 @@ export default function CharacterCreationWizard({
   onCancel,
   onFinish,
 }: Props) {
+  const [rollEffect, setRollEffect] = useState<"glow" | "crack" | null>(null);
   const method = draft.attributeGeneration?.method ?? selectedCampaign?.attributeRules.generationMethods[0] ?? "pointBuy";
   const stepTitles = getStepTitles(labels);
   const classModifiersText = formatClassAttributeModifiers(selectedClass);
@@ -173,8 +176,30 @@ export default function CharacterCreationWizard({
   const attributeBonusTotals = getAttributeBonusTotals(selectedClass, selectedRace);
   const selectedSaveProfCount = ATTRS.filter((attr) => draft.saveProf[attr]).length;
 
+  useEffect(() => {
+    if (!rollEffect) return;
+
+    const durationMs = rollEffect === "glow" ? 1500 : 1000;
+    const timer = window.setTimeout(() => setRollEffect(null), durationMs);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [rollEffect]);
+
+  function handleRollAttributesClick() {
+    const rolls = onRollAttributes();
+    const hasHighRoll = rolls.some((r) => r === 18);
+    const hasLowRoll = rolls.some((r) => r <= 7);
+
+    setRollEffect(hasHighRoll ? "glow" : hasLowRoll ? "crack" : null);
+  }
+
   return (
-    <section style={panelStyle}>
+    <section
+      className={`character-creation-wizard wizard-container ${rollEffect ? `effect-${rollEffect}` : ""}`}
+      style={panelStyle}
+    >
       <div
         style={{
           display: "flex",
@@ -425,7 +450,7 @@ export default function CharacterCreationWizard({
 
           {method === "randomRoll" && (
             <div>
-              <button onClick={onRollAttributes} style={buttonStyle}>
+              <button onClick={handleRollAttributesClick} style={buttonStyle}>
                 Roll Stats
               </button>
             </div>
@@ -855,6 +880,14 @@ export default function CharacterCreationWizard({
           </button>
         )}
       </div>
+
+      {rollEffect && (
+        <div className="wizard-roll-feedback" aria-live="polite">
+          {rollEffect === "glow"
+            ? "Exceptional potential detected."
+            : "Structural integrity... questionable."}
+        </div>
+      )}
     </section>
   );
 }

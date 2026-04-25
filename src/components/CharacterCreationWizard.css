@@ -1,0 +1,150 @@
+.character-creation-wizard.wizard-container {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.character-creation-wizard.wizard-container::after {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+}
+
+.character-creation-wizard .wizard-roll-feedback {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 3;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 18, 34, 0.66);
+  color: #f8fbff;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  backdrop-filter: blur(3px);
+  animation: wizardFeedbackFade 1.4s ease-out forwards;
+  text-align: center;
+  max-width: calc(100% - 24px);
+}
+
+.character-creation-wizard.wizard-container.effect-glow::after {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 215, 0, 0.35), rgba(255, 201, 80, 0.2) 36%, rgba(255, 188, 40, 0) 70%),
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 62%);
+  filter: blur(4px);
+  animation: wizardGlowPulse 1.5s ease-out forwards;
+}
+
+.character-creation-wizard.wizard-container.effect-crack {
+  animation: wizardCrackShake 120ms linear 2;
+}
+
+.character-creation-wizard.wizard-container.effect-crack::after {
+  background:
+    linear-gradient(72deg, transparent 0 41%, rgba(220, 236, 255, 0.28) 41.5%, transparent 42%),
+    linear-gradient(286deg, transparent 0 58%, rgba(220, 236, 255, 0.24) 58.5%, transparent 59%),
+    linear-gradient(318deg, transparent 0 25%, rgba(220, 236, 255, 0.2) 25.5%, transparent 26%),
+    linear-gradient(18deg, transparent 0 74%, rgba(220, 236, 255, 0.2) 74.5%, transparent 75%),
+    radial-gradient(circle at 58% 36%, rgba(200, 220, 255, 0.18), rgba(200, 220, 255, 0) 56%),
+    radial-gradient(circle at 44% 62%, rgba(200, 220, 255, 0.14), rgba(200, 220, 255, 0) 58%);
+  filter: contrast(120%);
+  animation: wizardCrackFade 1s ease-out forwards;
+}
+
+@keyframes wizardGlowPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  28% {
+    opacity: 0.94;
+    transform: scale(1.02);
+  }
+
+  58% {
+    opacity: 0.72;
+    transform: scale(1.01);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes wizardCrackShake {
+  0% {
+    transform: translate(0, 0);
+  }
+
+  20% {
+    transform: translate(-1px, 1px);
+  }
+
+  40% {
+    transform: translate(1px, -1px);
+  }
+
+  60% {
+    transform: translate(-1px, -1px);
+  }
+
+  80% {
+    transform: translate(1px, 1px);
+  }
+
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes wizardCrackFade {
+  0% {
+    opacity: 0;
+  }
+
+  18% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes wizardFeedbackFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 5px);
+  }
+
+  14% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  82% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .character-creation-wizard.wizard-container.effect-glow::after,
+  .character-creation-wizard.wizard-container.effect-crack,
+  .character-creation-wizard.wizard-container.effect-crack::after,
+  .character-creation-wizard .wizard-roll-feedback {
+    animation: none !important;
+  }
+}

@@ -597,7 +597,7 @@ export function useCharacterCreation({
   }
 
   function handleWizardRollAttributes() {
-    if (!creationDraft) return;
+    if (!creationDraft) return [];
     const values = Array.from({ length: 6 }).map(() => {
       const dice = [1, 2, 3, 4].map(() => Math.floor(Math.random() * 6) + 1);
       dice.sort((a, b) => b - a);
@@ -621,6 +621,8 @@ export function useCharacterCreation({
         rolls: values,
       },
     });
+
+    return values;
   }
 
   function toggleWizardSaveProf(attribute: AttributeKey, nextSelected: boolean) {
