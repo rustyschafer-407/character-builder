@@ -1280,22 +1280,6 @@ export default function App() {
                 <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
               ) : null}
 
-              <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "#b9cdf0", fontSize: 13 }}>
-                <input
-                  type="checkbox"
-                  checked={authRememberMe}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setAuthRememberMe(checked);
-                    setRememberMePreference(checked);
-                    if (!checked) {
-                      clearRememberedEmail();
-                    }
-                  }}
-                />
-                Remember me on this device
-              </label>
-
               <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
                 <button
                   onClick={() => void handleEmailCodeRequest()}
