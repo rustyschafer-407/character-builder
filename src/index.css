@@ -80,6 +80,9 @@
   --cb-wizard-glow-strong-a: rgba(255, 222, 120, 0.5);
   --cb-wizard-glow-strong-b: rgba(255, 204, 80, 0.3);
   --cb-wizard-glow-strong-highlight: rgba(255, 255, 255, 0.22);
+  --cb-display-icon-bg: var(--cb-accent-soft);
+  --cb-display-icon-border: var(--cb-border);
+  --cb-display-icon-fg: var(--cb-text);
   --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-heading: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -442,6 +445,9 @@ html[data-cb-theme="paper"] {
   --cb-wizard-glow-strong-a: rgba(125, 86, 0, 0.42);
   --cb-wizard-glow-strong-b: rgba(125, 86, 0, 0.24);
   --cb-wizard-glow-strong-highlight: rgba(255, 255, 255, 0.22);
+  --cb-display-icon-bg: rgba(31, 78, 168, 0.16);
+  --cb-display-icon-border: rgba(17, 17, 17, 0.26);
+  --cb-display-icon-fg: #0f1d34;
 }
 
 /* Slate: professional gray-blue neutrals with restrained accent strength. */
@@ -964,6 +970,9 @@ html[data-cb-theme="minimal"] {
   --cb-wizard-glow-strong-a: rgba(45, 127, 198, 0.32);
   --cb-wizard-glow-strong-b: rgba(45, 127, 198, 0.2);
   --cb-wizard-glow-strong-highlight: rgba(255, 255, 255, 0.24);
+  --cb-display-icon-bg: rgba(45, 127, 198, 0.16);
+  --cb-display-icon-border: rgba(31, 42, 52, 0.22);
+  --cb-display-icon-fg: #1b344b;
 }
 
 /* Cosmic: deep-space indigo with starfield-like violet and gold accents. */
