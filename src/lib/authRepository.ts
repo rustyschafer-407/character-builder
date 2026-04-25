@@ -1,4 +1,5 @@
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
+import { ensureProfileExists } from "./cloudRepository"
 import { getSupabaseClient } from "./supabaseClient"
 
 export type AuthListener = (event: AuthChangeEvent, session: Session | null) => void
@@ -14,6 +15,19 @@ export async function signInWithGoogle() {
         access_type: "offline",
         prompt: "consent",
       },
+    },
+  })
+  if (error) throw error
+  return data
+}
+
+export async function signInWithMicrosoft() {
+  const supabase = getSupabaseClient()
+  const redirectTo = typeof window === "undefined" ? undefined : window.location.origin
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "azure",
+    options: {
+      redirectTo,
     },
   })
   if (error) throw error
@@ -55,10 +69,7 @@ export async function getCurrentSession() {
 }
 
 export async function syncProfileFromAuth() {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase.rpc("sync_profile_from_auth")
-  if (error) throw error
-  return data
+  return ensureProfileExists()
 }
 
 export function onAuthStateChange(listener: AuthListener) {

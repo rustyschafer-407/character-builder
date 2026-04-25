@@ -1,5 +1,6 @@
 import type { CharacterRecord } from "../types/character"
 import type { CampaignDefinition } from "../types/gameData"
+import type { User } from "@supabase/supabase-js"
 import { getSupabaseClient } from "./supabaseClient"
 
 export type CampaignAccessRole = "player" | "editor"
@@ -85,31 +86,103 @@ export async function getCurrentProfile() {
   return (data as ProfileRow | null) ?? null
 }
 
-export async function ensureProfileExists(): Promise<ProfileRow> {
+function asNonEmptyString(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+function getEmailPrefix(email: string | null): string | null {
+  if (!email) return null
+  const atIndex = email.indexOf("@")
+  if (atIndex <= 0) return null
+  const prefix = email.slice(0, atIndex).trim()
+  return prefix.length > 0 ? prefix : null
+}
+
+function deriveProfileDisplayName(user: User, existingDisplayName: string | null): string {
+  // Keep the existing display name if already set.
+  const existing = asNonEmptyString(existingDisplayName)
+  if (existing) return existing
+
+  const fullName = asNonEmptyString(user.user_metadata?.full_name)
+  if (fullName) return fullName
+
+  const name = asNonEmptyString(user.user_metadata?.name)
+  if (name) return name
+
+  const email = asNonEmptyString(user.email) ?? null
+  const emailPrefix = getEmailPrefix(email)
+  if (emailPrefix) return emailPrefix
+
+  if (email) return email
+
+  // Last-resort fallback to avoid blank identity labels.
+  return user.id
+}
+
+export async function syncProfileFromAuthUser(): Promise<ProfileRow> {
   const supabase = getSupabaseClient()
   const { data: userData, error: userError } = await supabase.auth.getUser()
   if (userError) throw userError
-  if (!userData.user) throw new Error("No authenticated user")
+  const user = userData.user
+  if (!user) throw new Error("No authenticated user")
 
-  const profile = await getCurrentProfile()
+  const existingProfile = await getCurrentProfile()
+  const authEmail = asNonEmptyString(user.email) ?? null
+  const nextDisplayName = deriveProfileDisplayName(user, existingProfile?.display_name ?? null)
 
-  if (profile) {
-    return profile
+  if (existingProfile) {
+    const needsEmailUpdate = authEmail !== null && existingProfile.email !== authEmail
+    const existingDisplayName = asNonEmptyString(existingProfile.display_name)
+    const needsDisplayNameUpdate = !existingDisplayName && existingProfile.display_name !== nextDisplayName
+
+    if (!needsEmailUpdate && !needsDisplayNameUpdate) {
+      return existingProfile
+    }
+
+    const updatePayload: {
+      email?: string | null
+      display_name?: string
+    } = {}
+
+    if (needsEmailUpdate) {
+      updatePayload.email = authEmail
+    }
+    if (needsDisplayNameUpdate) {
+      updatePayload.display_name = nextDisplayName
+    }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(updatePayload as never)
+      .eq("id", user.id)
+      .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+      .single()
+
+    if (error) throw error
+    return data as ProfileRow
   }
 
-  // Fallback: profile trigger should have created this, but if it hasn't,
-  // try once more after a brief delay to allow database to catch up
-  await new Promise((resolve) => setTimeout(resolve, 100))
-  const retryProfile = await getCurrentProfile()
-  
-  if (retryProfile) {
-    return retryProfile
-  }
+  const { data, error } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        id: user.id,
+        email: authEmail,
+        display_name: nextDisplayName,
+      } as never,
+      { onConflict: "id" }
+    )
+    .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+    .single()
 
-  // If still missing, something went wrong
-  throw new Error(
-    "Profile could not be created. Contact support if this persists."
-  )
+  if (error) throw error
+  return data as ProfileRow
+}
+
+export async function ensureProfileExists(): Promise<ProfileRow> {
+  return syncProfileFromAuthUser()
 }
 
 export async function listCampaignAccessRowsForCurrentUser() {

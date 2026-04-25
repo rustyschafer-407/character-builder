@@ -49,7 +49,7 @@ import {
   onAuthStateChange,
   requestEmailSignIn,
   signInWithGoogle,
-  syncProfileFromAuth,
+  signInWithMicrosoft,
   signOut,
 } from "./lib/authRepository";
 import { getRememberMePreference, hasSupabaseEnv, setRememberMePreference } from "./lib/supabaseClient";
@@ -286,6 +286,7 @@ export default function App() {
         setCurrentUserId(user?.id ?? null);
 
         if (user) {
+          await ensureProfileExists();
           const context = await getAccessContext();
           if (isCancelled) return;
           setCurrentUserProfile(context.profile);
@@ -321,10 +322,7 @@ export default function App() {
       }
 
       try {
-        // Sync profile from auth metadata (updates display_name without overwriting admin/gm)
-        await syncProfileFromAuth();
-        
-        // Ensure profile exists and load access context
+        // Ensure profile exists and safely sync email/display_name from auth metadata.
         await ensureProfileExists();
         const context = await getAccessContext();
         setCurrentUserProfile(context.profile);
@@ -549,6 +547,32 @@ export default function App() {
       const message =
         rawMessage.includes("Unsupported provider") || rawMessage.includes("provider is not enabled")
           ? "Google sign-in is not enabled for this Supabase project yet. Enable Google under Supabase Auth > Providers, then retry."
+          : rawMessage;
+      setAuthError(message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleMicrosoftSignIn() {
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      setRememberMePreference(authRememberMe);
+      if (authRememberMe) {
+        writeRememberedEmail(authEmail.trim());
+      } else {
+        clearRememberedEmail();
+      }
+      await signInWithMicrosoft();
+      // OAuth will redirect, but ensure profile exists when we return
+      setAuthMessage("Redirecting to Microsoft sign-in...");
+    } catch (error) {
+      const rawMessage = error instanceof Error ? error.message : "Microsoft sign-in failed";
+      const message =
+        rawMessage.includes("Unsupported provider") || rawMessage.includes("provider is not enabled")
+          ? "Microsoft sign-in is not enabled for this Supabase project yet. Enable Azure under Supabase Auth > Providers, then retry."
           : rawMessage;
       setAuthError(message);
     } finally {
@@ -861,6 +885,8 @@ export default function App() {
   const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
   const hasAnyCampaignAccess = Object.keys(campaignRolesByCampaignId).length > 0;
   const canCreateCampaign = isAdmin || isGm;
+  const signedInDisplayName = currentUserProfile?.display_name?.trim() || "";
+  const signedInEmail = currentUserProfile?.email?.trim() || "";
   const canEditCurrentCampaign = Boolean(
     isAdmin ||
       isGm ||
@@ -1292,7 +1318,7 @@ export default function App() {
                   onClick={() => setUseEmailFallback(false)}
                   style={buttonStyle}
                 >
-                  Back to Google Sign In
+                  Back to Social Sign In
                 </button>
               </div>
             </>
@@ -1300,7 +1326,7 @@ export default function App() {
             <>
               <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Character Builder</h2>
               <p style={{ ...mutedTextStyle }}>
-                Sign in with Google to get started.
+                Sign in with Google or Microsoft to get started.
               </p>
 
               {authError ? (
@@ -1320,6 +1346,26 @@ export default function App() {
                   {authLoading ? "Signing in..." : "Continue with Google"}
                 </button>
                 <button
+                  onClick={() => void handleMicrosoftSignIn()}
+                  style={buttonStyle}
+                  disabled={authLoading}
+                >
+                  {authLoading ? "Signing in..." : "Continue with Microsoft"}
+                </button>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#9fb6d9",
+                    fontSize: 13,
+                    textTransform: "lowercase",
+                    margin: "2px 0",
+                  }}
+                >
+                  or
+                </div>
+                <button
                   onClick={() => setUseEmailFallback(true)}
                   style={buttonStyle}
                 >
@@ -1334,22 +1380,24 @@ export default function App() {
   }
 
   // Show friendly no-access state for signed-in players with no campaign access
-  if (currentUserId && !isAdmin && !isGm && !hasAnyCampaignAccess) {
+  if (currentUserId && currentUserProfile && !isAdmin && !isGm && !hasAnyCampaignAccess) {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
           <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Welcome!</h2>
-          <p style={{ ...mutedTextStyle }}>
-            You're signed in, but you don't have access to any campaigns yet.
+          <p style={{ ...mutedTextStyle, marginBottom: 12 }}>
+            You're signed in, but you don't have access to any campaigns yet. Ask your GM to add you.
           </p>
-          {currentUserProfile?.display_name && (
-            <p style={{ ...mutedTextStyle, marginBottom: 16 }}>
-              <strong>{currentUserProfile.display_name}</strong> ({currentUserProfile.email || "No email"})
+          {signedInDisplayName ? (
+            <p style={{ ...mutedTextStyle, marginBottom: signedInEmail ? 6 : 16 }}>
+              <strong>{signedInDisplayName}</strong>
             </p>
-          )}
-          <p style={{ color: "#9ee7c2", fontWeight: 600, marginBottom: 24 }}>
-            Ask your GM to add you to a campaign.
-          </p>
+          ) : null}
+          {signedInEmail ? (
+            <p style={{ ...mutedTextStyle, marginBottom: 16 }}>
+              {signedInEmail}
+            </p>
+          ) : null}
           <button
             onClick={() => void handleSignOut()}
             style={buttonStyle}
