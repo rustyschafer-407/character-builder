@@ -201,6 +201,26 @@ export function GuidanceProvider({
     [debugEnabled]
   );
 
+  const markStepShown = useCallback(
+    (stepId: string) => {
+      const now = Date.now();
+      setSeenThisSession((prev) => {
+        if (prev.has(stepId)) return prev;
+        return new Set([...prev, stepId]);
+      });
+      setLastShownByStep((prev) => {
+        const next = { ...prev, [stepId]: now };
+        try {
+          localStorage.setItem(shownKey, JSON.stringify(next));
+        } catch {
+          // ignore storage errors
+        }
+        return next;
+      });
+    },
+    [shownKey]
+  );
+
   // Re-evaluate active step whenever context, dismissed set, tick, or readiness changes.
   // Delayed slightly so newly rendered target elements are present in the DOM.
   useEffect(() => {
@@ -247,25 +267,6 @@ export function GuidanceProvider({
     logDebug,
   ]);
 
-  // Mark current step as shown to prevent noisy repeats in contextual mode.
-  useEffect(() => {
-    if (!activeStep) return;
-    const now = Date.now();
-    setSeenThisSession((prev) => {
-      if (prev.has(activeStep.id)) return prev;
-      return new Set([...prev, activeStep.id]);
-    });
-    setLastShownByStep((prev) => {
-      const next = { ...prev, [activeStep.id]: now };
-      try {
-        localStorage.setItem(shownKey, JSON.stringify(next));
-      } catch {
-        // ignore storage errors
-      }
-      return next;
-    });
-  }, [activeStep, shownKey]);
-
   // Re-evaluate on window resize so targets that appear/disappear are caught
   useEffect(() => {
     const bump = () => setTick((t) => t + 1);
@@ -275,25 +276,28 @@ export function GuidanceProvider({
 
   const dismissCurrent = useCallback(() => {
     if (!activeStep) return;
+    markStepShown(activeStep.id);
     // Add to session dismissed — effectiveDismissed will recompute and trigger re-evaluation
     setSessionDismissed((prev) => new Set([...prev, activeStep.id]));
     setActiveStep(null);
-  }, [activeStep]);
+  }, [activeStep, markStepShown]);
 
   const dismissPermanently = useCallback(() => {
     if (!activeStep) return;
+    markStepShown(activeStep.id);
     const next = new Set(dismissed);
     next.add(activeStep.id);
     writeDismissedSteps(next, userId);
     setDismissed(next);
     setActiveStep(null);
-  }, [activeStep, dismissed, userId]);
+  }, [activeStep, dismissed, markStepShown, userId]);
 
   const advance = useCallback(() => {
     if (!activeStep) return;
+    markStepShown(activeStep.id);
     setSessionDismissed((prev) => new Set([...prev, activeStep.id]));
     setActiveStep(null);
-  }, [activeStep]);
+  }, [activeStep, markStepShown]);
 
   const resetGuidance = useCallback(() => {
     resetAllDismissedSteps(userId);
@@ -317,11 +321,14 @@ export function GuidanceProvider({
   }, []);
 
   const finishWalkthrough = useCallback(() => {
+    if (activeStep) {
+      markStepShown(activeStep.id);
+    }
     setMode("contextual");
     setSessionDismissed(new Set());
     setActiveStep(null);
     setTick((t) => t + 1);
-  }, []);
+  }, [activeStep, markStepShown]);
 
   const notifyLayoutChanged = useCallback(() => {
     setTick((t) => t + 1);

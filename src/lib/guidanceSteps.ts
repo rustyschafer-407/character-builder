@@ -1,25 +1,23 @@
 import type { GuideStep } from "./guidance";
 
 /**
- * All guide steps, ordered by priority (higher = shown sooner).
- * To add a new step: append a new entry here. No other file needs changing.
+ * All guide steps, organized by role.
+ * The guidance provider uses centralized permissions to determine which steps apply.
  *
- * HOW TARGET MATCHING WORKS
- * ─────────────────────────
- * Each step's `target` value must match a `data-guide="..."` attribute on a
- * real DOM element.  Example: target "create-character" matches any element
- * with data-guide="create-character" in the rendered tree.
+ * Role-aware hints:
+ * - Admin hints: user management, global setup
+ * - GM hints: campaign creation/setup, character management for their campaigns
+ * - Player hints: character creation in accessible campaigns, character access/editing
  *
- * A step is only eligible if:
- *   • The element exists in the DOM
- *   • It is visible (no display:none / visibility:hidden / opacity:0 / zero-size)
- *   • It is not disabled
+ * The guidance system will:
+ * 1. Check if user has the required role
+ * 2. Check if the target element is visible and not disabled
+ * 3. Check if the user actually has permission to perform the hinted action
+ * 4. Respect cooldowns and anti-annoyance rules
  *
- * If the element is present but offscreen (scrolled out of view), the overlay
- * will scroll it into view before positioning the hint card.
- *
- * Safe to add a data-guide attribute to an element that doesn't yet have a
- * matching step — the attribute is ignored until a step references it.
+ * Target matching:
+ * Each target value must match a data-guide="..." attribute on a DOM element.
+ * Examples: "create-campaign", "create-character", "export-roll20", etc.
  */
 export const ALL_GUIDE_STEPS: GuideStep[] = [
   // ── Player steps ───────────────────────────────────────────────────────────

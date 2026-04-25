@@ -234,6 +234,13 @@ export function useCloudSync({
       // Do not apply client-side role checks here; Supabase RLS is the enforcement boundary.
       // Do NOT delete remote data based on local state.
 
+      // Optimistically allow editing immediately after local create/update so
+      // player-owned characters never appear read-only while save is inflight.
+      setCharacterCanEditByCharacterId((previous) => ({
+        ...previous,
+        [character.id]: true,
+      }));
+
       const campaignRowId = campaignRowIdsByAppId[character.campaignId];
       if (!campaignRowId) {
         setCloudStatus("Character save blocked: campaign not yet persisted");
@@ -247,12 +254,6 @@ export function useCloudSync({
             character,
           })
         );
-        // Backend RLS already determines editability; for new creator-owned
-        // characters, ensure UI permissions reflect edit access immediately.
-        setCharacterCanEditByCharacterId((previous) => ({
-          ...previous,
-          [character.id]: true,
-        }));
         setCloudStatus("Authenticated cloud access active");
         setCloudError("");
       } catch (error) {
