@@ -186,6 +186,7 @@ export default function App() {
     return new URLSearchParams(window.location.search).get("token")?.trim() ?? "";
   }, []);
   const inviteRouteActive = currentPathname === "/invite";
+  const inviteSignInFlow = inviteRouteActive || returnToFromQuery.startsWith("/invite");
   const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
   const [displayOpen, setDisplayOpen] = useState(false);
   const cloudEnabled = hasSupabaseEnv();
@@ -1194,9 +1195,9 @@ export default function App() {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
-          {inviteRouteActive ? (
+          {inviteSignInFlow ? (
             <div style={{ marginBottom: 12, color: "var(--cb-text-muted)", fontSize: 13, fontWeight: 600 }}>
-              Sign in to accept your campaign invite.
+              Sign in to accept your campaign invite. You will be redirected to the invite automatically after sign-in.
             </div>
           ) : null}
           {useEmailFallback ? (
