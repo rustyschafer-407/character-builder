@@ -57,7 +57,7 @@ export default function Sidebar({
             fontSize: 15,
             fontWeight: 800,
             letterSpacing: "0.01em",
-            boxShadow: "0 8px 18px rgba(73, 224, 255, 0.2)",
+            boxShadow: "0 8px 18px var(--cb-accent-soft-strong)",
             opacity: canCreate ? 1 : 0.55,
             cursor: canCreate ? "pointer" : "not-allowed",
           }}
@@ -95,7 +95,7 @@ export default function Sidebar({
                   padding: 10,
                   borderRadius: 8,
                   border: isSelected ? "1px solid var(--accent-primary)" : "1px solid var(--border-soft)",
-                  background: isSelected ? "rgba(73, 224, 255, 0.16)" : "rgba(11, 22, 42, 0.75)",
+                  background: isSelected ? "var(--cb-accent-soft)" : "rgba(11, 22, 42, 0.75)",
                   color: "var(--text-primary)",
                   cursor: "pointer",
                 }}

@@ -117,8 +117,8 @@ export default function LevelUpWizard({
               padding: 12,
               borderRadius: 8,
               background: "rgba(255, 122, 157, 0.18)",
-              border: "1px solid rgba(255, 122, 157, 0.45)",
-              color: "#ffd6e2",
+              border: "1px solid var(--cb-danger-soft-border)",
+              color: "var(--cb-danger-text)",
             }}
           >
             {missingProgressionMessage}
@@ -129,7 +129,7 @@ export default function LevelUpWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                background: "rgba(73, 224, 255, 0.18)",
+                background: "var(--cb-accent-soft-strong)",
                 border: "1px solid var(--accent-primary)",
                 color: "var(--text-primary)",
               }}
@@ -149,8 +149,8 @@ export default function LevelUpWizard({
                   padding: 12,
                   borderRadius: 8,
                   background: "rgba(255, 122, 157, 0.18)",
-                  border: "1px solid rgba(255, 122, 157, 0.45)",
-                  color: "#ffd6e2",
+                  border: "1px solid var(--cb-danger-soft-border)",
+                  color: "var(--cb-danger-text)",
                 }}
               >
                 This level requires {newSkillChoices} new {labels.skills.toLowerCase()} choices, but only {availableSkillChoices.length} are available.
@@ -163,8 +163,8 @@ export default function LevelUpWizard({
                   padding: 12,
                   borderRadius: 8,
                   background: "rgba(255, 122, 157, 0.18)",
-                  border: "1px solid rgba(255, 122, 157, 0.45)",
-                  color: "#ffd6e2",
+                  border: "1px solid var(--cb-danger-soft-border)",
+                  color: "var(--cb-danger-text)",
                 }}
               >
                 This level requires {newPowerChoices} new {labels.powers.toLowerCase()} choices, but only {availablePowerChoices.length} are available.
@@ -197,8 +197,8 @@ export default function LevelUpWizard({
                         borderRadius: 8,
                         border: "1px solid var(--border-soft)",
                         background: selected
-                          ? "rgba(73, 224, 255, 0.18)"
-                          : "rgba(9, 20, 38, 0.82)",
+                          ? "var(--cb-accent-soft-strong)"
+                          : "var(--cb-selection-row-bg)",
                         color: "var(--text-primary)",
                         display: "flex",
                         justifyContent: "space-between",
@@ -259,8 +259,8 @@ export default function LevelUpWizard({
                         borderRadius: 8,
                         border: "1px solid var(--border-soft)",
                         background: selected
-                          ? "rgba(73, 224, 255, 0.18)"
-                          : "rgba(9, 20, 38, 0.82)",
+                          ? "var(--cb-accent-soft-strong)"
+                          : "var(--cb-selection-row-bg)",
                         color: "var(--text-primary)",
                         display: "flex",
                         justifyContent: "space-between",

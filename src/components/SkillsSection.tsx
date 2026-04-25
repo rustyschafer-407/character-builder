@@ -52,7 +52,7 @@ export default function SkillsSection({
                 <strong>{s.name}</strong> ({skillAttribute})
               </div>
 
-              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
+              <label style={{ color: "var(--cb-muted-label)", fontSize: 14 }}>
                 Prof
                 <input
                   type="checkbox"
@@ -67,7 +67,7 @@ export default function SkillsSection({
                 {base}
               </div>
 
-              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
+              <label style={{ color: "var(--cb-muted-label)", fontSize: 14 }}>
                 Bonus
                 <input
                   type="number"

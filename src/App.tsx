@@ -46,6 +46,7 @@ import type {
 } from "./types/gameData";
 
 import Sidebar from "./components/Sidebar";
+import DisplaySettings from "./components/DisplaySettings";
 import CharacterCreationWizard, {
   type CharacterCreationDraft,
 } from "./components/CharacterCreationWizard";
@@ -61,6 +62,12 @@ import { useCloudSync } from "./hooks/useCloudSync";
 import { useLevelUpWorkflow } from "./hooks/useLevelUpWorkflow";
 import { useSelectedCharacterWorkspaceCallbacks } from "./hooks/useSelectedCharacterWorkspaceCallbacks";
 import { buttonStyle, inputStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
+import {
+  applyDisplayPreferences,
+  readDisplayPreferences,
+  persistDisplayPreferences,
+  type DisplayPreferences,
+} from "./lib/displayPreferences";
 
 const rememberedEmailStorageKey = "character-builder.rememberedEmail";
 
@@ -159,6 +166,7 @@ function makeDraftFromCampaignClassAndRace(
 }
 
 export default function App() {
+  const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
   const [authRememberMe, setAuthRememberMe] = useState(() => getRememberMePreference());
@@ -200,6 +208,11 @@ export default function App() {
   const [campaignAccessRows, setCampaignAccessRows] = useState<CampaignAccessRow[]>([]);
   const [characterAccessRows, setCharacterAccessRows] = useState<CharacterAccessRow[]>([]);
   const [accessManagementError, setAccessManagementError] = useState("");
+
+  useEffect(() => {
+    applyDisplayPreferences(displayPreferences);
+    persistDisplayPreferences(displayPreferences);
+  }, [displayPreferences]);
 
   const {
     gameData,
@@ -942,7 +955,7 @@ export default function App() {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 760 }}>
-          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Supabase Configuration Required</h2>
+          <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Supabase Configuration Required</h2>
           <p style={{ marginBottom: 0, ...mutedTextStyle }}>
             This app is configured for Supabase-only persistence. Set <strong>VITE_SUPABASE_URL</strong> and <strong>VITE_SUPABASE_ANON_KEY</strong> to continue.
           </p>
@@ -955,7 +968,7 @@ export default function App() {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 760 }}>
-          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Loading Session</h2>
+          <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Loading Session</h2>
           <p style={{ marginBottom: 0, ...mutedTextStyle }}>Checking Supabase authentication session...</p>
         </div>
       </div>
@@ -968,12 +981,12 @@ export default function App() {
         <div style={{ ...panelStyle, maxWidth: 520 }}>
           {useEmailFallback ? (
             <>
-              <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Email Sign In</h2>
+              <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Email Sign In</h2>
               <p style={{ ...mutedTextStyle }}>
                 Enter your email and password to sign in.
               </p>
 
-              <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
+              <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "var(--cb-muted-label)" }}>
                 Email
                 <input
                   type="email"
@@ -984,11 +997,12 @@ export default function App() {
                     setAuthMessage("");
                   }}
                   autoComplete="email"
+                  className="form-control"
                   style={inputStyle}
                 />
               </label>
 
-              <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "#b9cdf0" }}>
+              <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "var(--cb-muted-label)" }}>
                 Password
                 <input
                   type="password"
@@ -999,11 +1013,12 @@ export default function App() {
                     setAuthMessage("");
                   }}
                   autoComplete="current-password"
+                  className="form-control"
                   style={inputStyle}
                 />
               </label>
 
-              <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "#b9cdf0", fontSize: 13 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "var(--cb-muted-label)", fontSize: 13 }}>
                 <input
                   type="checkbox"
                   checked={authRememberMe}
@@ -1020,16 +1035,17 @@ export default function App() {
               </label>
 
               {authError ? (
-                <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
+                <div style={{ marginBottom: 12, color: "var(--cb-danger-text)", fontWeight: 600 }}>{authError}</div>
               ) : null}
 
               {authMessage ? (
-                <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
+                <div style={{ marginBottom: 12, color: "var(--cb-success-text)", fontWeight: 600 }}>{authMessage}</div>
               ) : null}
 
               <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
                 <button
                   onClick={() => void handleEmailCodeRequest()}
+                  className="button-control"
                   style={primaryButtonStyle}
                   disabled={authLoading || !authEmail.trim() || authPassword.length === 0}
                 >
@@ -1037,6 +1053,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setUseEmailFallback(false)}
+                  className="button-control"
                   style={buttonStyle}
                 >
                   Back to Google Sign In
@@ -1045,22 +1062,23 @@ export default function App() {
             </>
           ) : (
             <>
-              <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Character Builder</h2>
+              <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Character Builder</h2>
               <p style={{ ...mutedTextStyle }}>
                 Sign in with Google to get started.
               </p>
 
               {authError ? (
-                <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
+                <div style={{ marginBottom: 12, color: "var(--cb-danger-text)", fontWeight: 600 }}>{authError}</div>
               ) : null}
 
               {authMessage ? (
-                <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
+                <div style={{ marginBottom: 12, color: "var(--cb-success-text)", fontWeight: 600 }}>{authMessage}</div>
               ) : null}
 
               <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
                 <button
                   onClick={() => void handleGoogleSignIn()}
+                  className="button-control"
                   style={primaryButtonStyle}
                   disabled={authLoading}
                 >
@@ -1068,6 +1086,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={() => setUseEmailFallback(true)}
+                  className="button-control"
                   style={buttonStyle}
                 >
                   Sign In with Email Instead
@@ -1085,7 +1104,7 @@ export default function App() {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
-          <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Welcome!</h2>
+          <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Welcome!</h2>
           <p style={{ ...mutedTextStyle, marginBottom: 12 }}>
             You're signed in, but you don't have access to any campaigns yet. Ask your GM to add you.
           </p>
@@ -1101,6 +1120,7 @@ export default function App() {
           ) : null}
           <button
             onClick={() => void handleSignOut()}
+            className="button-control"
             style={buttonStyle}
           >
             Sign Out
@@ -1126,46 +1146,57 @@ export default function App() {
             fontSize: 56,
             lineHeight: 1.05,
             margin: 0,
-            color: "var(--text-primary)",
+            color: "var(--cb-text)",
           }}
         >
           Character Builder
         </h1>
 
-        {adminOpen ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={cancelAdmin} style={buttonStyle}>
-              Close
-            </button>
-          </div>
-        ) : securityOpen ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={cancelAccessManagement} style={buttonStyle}>
-              Close
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: "flex", gap: 8 }}>
-            {uiCanCreateCampaign ? (
-              <button onClick={openNewCampaignAdminScreen} style={primaryButtonStyle}>
-                New Campaign
+        <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
+          <DisplaySettings
+            theme={displayPreferences.theme}
+            textSize={displayPreferences.textSize}
+            density={displayPreferences.density}
+            onThemeChange={(theme) => setDisplayPreferences((prev) => ({ ...prev, theme }))}
+            onTextSizeChange={(textSize) => setDisplayPreferences((prev) => ({ ...prev, textSize }))}
+            onDensityChange={(density) => setDisplayPreferences((prev) => ({ ...prev, density }))}
+          />
+
+          {adminOpen ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={cancelAdmin} className="button-control" style={buttonStyle}>
+                Close
               </button>
-            ) : null}
-            {uiCanEditCurrentCampaign ? (
-              <button onClick={openAdminScreen} style={buttonStyle}>
-                Edit Campaign
+            </div>
+          ) : securityOpen ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={cancelAccessManagement} className="button-control" style={buttonStyle}>
+                Close
               </button>
-            ) : null}
-            {(uiCanManageUsers || uiCanManageCampaignAccess || uiCanManageCharacterAccess) ? (
-              <button onClick={openAccessManagement} style={buttonStyle}>
-                Access
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              {uiCanCreateCampaign ? (
+                <button onClick={openNewCampaignAdminScreen} className="button-control" style={primaryButtonStyle}>
+                  New Campaign
+                </button>
+              ) : null}
+              {uiCanEditCurrentCampaign ? (
+                <button onClick={openAdminScreen} className="button-control" style={buttonStyle}>
+                  Edit Campaign
+                </button>
+              ) : null}
+              {(uiCanManageUsers || uiCanManageCampaignAccess || uiCanManageCharacterAccess) ? (
+                <button onClick={openAccessManagement} className="button-control" style={buttonStyle}>
+                  Access
+                </button>
+              ) : null}
+              <button onClick={() => void handleSignOut()} className="button-control" style={buttonStyle}>
+                Sign Out
               </button>
-            ) : null}
-            <button onClick={() => void handleSignOut()} style={buttonStyle}>
-              Sign Out
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
 
       {!securityOpen ? (
@@ -1174,8 +1205,8 @@ export default function App() {
           marginBottom: 20,
           padding: "12px 14px",
           borderRadius: 10,
-          border: "1px solid rgba(73, 224, 255, 0.45)",
-          background: "linear-gradient(135deg, rgba(73, 224, 255, 0.14), rgba(11, 22, 42, 0.72))",
+          border: "1px solid var(--cb-border-strong)",
+          background: "linear-gradient(135deg, var(--cb-accent-soft), var(--cb-surface))",
           display: "grid",
           gridTemplateColumns: "1fr 320px",
           gap: 12,
@@ -1187,7 +1218,7 @@ export default function App() {
           <div
             style={{
               fontSize: 12,
-              color: "var(--text-secondary)",
+              color: "var(--cb-text-muted)",
               letterSpacing: "0.04em",
               fontWeight: 700,
             }}
@@ -1200,23 +1231,23 @@ export default function App() {
               fontSize: 34,
               lineHeight: 1.08,
               fontWeight: 800,
-              color: "var(--text-primary)",
+              color: "var(--cb-text)",
             }}
           >
             {currentCampaignContextLabel}
           </div>
         </div>
 
-        <label style={{ display: "block", fontWeight: 600, color: "#b9cdf0" }}>
+        <label style={{ display: "block", fontWeight: 600, color: "var(--cb-muted-label)" }}>
           Switch Campaign
-          <select value={campaignId} onChange={(e) => handleCampaignChange(e.target.value)} style={inputStyle}>
+          <select className="form-control" value={campaignId} onChange={(e) => handleCampaignChange(e.target.value)} style={inputStyle}>
             {gameData.campaigns.map((campaign) => (
               <option key={campaign.id} value={campaign.id}>
                 {campaign.name}
               </option>
             ))}
           </select>
-          <div style={{ marginTop: 6, fontSize: 12, color: "var(--text-secondary)", fontWeight: 500 }}>
+          <div style={{ marginTop: 6, fontSize: 12, color: "var(--cb-text-muted)", fontWeight: 500 }}>
             {cloudStatus}
             {directCharacterAccessCount > 0 ? ` • ${directCharacterAccessCount} direct character assignments` : ""}
           </div>

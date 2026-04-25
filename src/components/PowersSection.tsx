@@ -58,7 +58,7 @@ export default function PowersSection({
                     </div>
                   </div>
 
-                  <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
+                  <label style={{ color: "var(--cb-muted-label)", fontSize: 14, whiteSpace: "nowrap" }}>
                     Select
                     <input
                       type="checkbox"

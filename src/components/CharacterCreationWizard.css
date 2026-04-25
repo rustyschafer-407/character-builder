@@ -27,9 +27,9 @@
   z-index: 3;
   padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(8, 18, 34, 0.66);
-  color: #f8fbff;
+  border: 1px solid var(--cb-wizard-feedback-border);
+  background: var(--cb-wizard-feedback-bg);
+  color: var(--cb-wizard-feedback-text);
   font-size: 12px;
   letter-spacing: 0.01em;
   backdrop-filter: blur(3px);
@@ -40,16 +40,16 @@
 
 .character-creation-wizard.wizard-container.effect-glow::after {
   background:
-    radial-gradient(circle at 50% 45%, rgba(255, 215, 0, 0.35), rgba(255, 201, 80, 0.2) 36%, rgba(255, 188, 40, 0) 70%),
-    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0) 62%);
+    radial-gradient(circle at 50% 45%, var(--cb-wizard-glow-a), var(--cb-wizard-glow-b) 36%, var(--cb-wizard-glow-c) 70%),
+    radial-gradient(circle at 50% 45%, var(--cb-wizard-glow-highlight), transparent 62%);
   filter: blur(4px);
   animation: wizardGlowPulse 1.5s ease-out forwards;
 }
 
 .character-creation-wizard.wizard-container.effect-glow-strong::after {
   background:
-    radial-gradient(circle at 50% 45%, rgba(255, 222, 120, 0.5), rgba(255, 204, 80, 0.3) 34%, rgba(255, 188, 40, 0) 70%),
-    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 60%);
+    radial-gradient(circle at 50% 45%, var(--cb-wizard-glow-strong-a), var(--cb-wizard-glow-strong-b) 34%, var(--cb-wizard-glow-c) 70%),
+    radial-gradient(circle at 50% 45%, var(--cb-wizard-glow-strong-highlight), transparent 60%);
   filter: blur(4px) saturate(110%);
   animation: wizardGlowPulseStrong 1.5s ease-out forwards;
 }

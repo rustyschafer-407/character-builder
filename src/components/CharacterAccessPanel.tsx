@@ -127,19 +127,19 @@ export default function CharacterAccessPanel({
 
       {/* ── Error / success banners ── */}
       {errorMessage ? (
-        <div style={{ border: "1px solid rgba(255,122,157,0.45)", background: "rgba(255,122,157,0.14)", borderRadius: 10, padding: "12px 12px 12px", color: "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
+        <div style={{ border: "1px solid var(--cb-danger-soft-border)", background: "var(--cb-danger-soft)", borderRadius: 10, padding: "12px 12px 12px", color: "var(--cb-danger-text)", fontWeight: 600, fontSize: 13 }}>
           {errorMessage}
         </div>
       ) : null}
       {accessResult ? (
-        <div style={{ border: accessResult.type === "success" ? "1px solid rgba(90,236,178,0.45)" : "1px solid rgba(255,122,157,0.45)", background: accessResult.type === "success" ? "rgba(90,236,178,0.14)" : "rgba(255,122,157,0.14)", borderRadius: 10, padding: "12px 12px 12px", color: accessResult.type === "success" ? "#ccffe7" : "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
+        <div style={{ border: accessResult.type === "success" ? "1px solid var(--cb-success-soft-border)" : "1px solid var(--cb-danger-soft-border)", background: accessResult.type === "success" ? "var(--cb-success-soft)" : "var(--cb-danger-soft)", borderRadius: 10, padding: "12px 12px 12px", color: accessResult.type === "success" ? "var(--cb-success-text)" : "var(--cb-danger-text)", fontWeight: 600, fontSize: 13 }}>
           {accessResult.message}
         </div>
       ) : null}
 
       {/* ── Unified access list ── */}
       <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, padding: "8px 12px", background: "rgba(16,30,58,0.55)", color: "#b9cdf0", fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, padding: "8px 12px", background: "rgba(16,30,58,0.55)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
           <div>User</div>
           <div>Email</div>
           <div>Permission</div>
@@ -159,7 +159,7 @@ export default function CharacterAccessPanel({
             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(73,224,255,0.18)", border: "1.5px solid rgba(73,224,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#9ef5ff", flexShrink: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--cb-accent-soft-strong)", border: "1.5px solid rgba(73,224,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#9ef5ff", flexShrink: 0 }}>
                 {initials(row.displayName)}
               </div>
               <span style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.displayName}</span>
@@ -169,7 +169,7 @@ export default function CharacterAccessPanel({
               value={row.role}
               disabled={busy}
               className="form-control"
-              style={{ background: "rgba(16,30,58,0.8)", border: "1px solid rgba(73,224,255,0.35)", borderRadius: 7, color: "#e9fdff", fontSize: 13, cursor: "pointer" }}
+              style={{ background: "rgba(16,30,58,0.8)", border: "1px solid rgba(73,224,255,0.35)", borderRadius: 7, color: "var(--cb-text)", fontSize: 13, cursor: "pointer" }}
               onChange={(e) => {
                 const newRole = e.target.value as CharacterAccessRole;
                 void runAction(async () => {
@@ -234,7 +234,7 @@ export default function CharacterAccessPanel({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(7, 12, 24, 0.65)",
+            background: "var(--cb-modal-overlay)",
             display: "grid",
             placeItems: "center",
             padding: 16,
@@ -256,7 +256,7 @@ export default function CharacterAccessPanel({
               </button>
             </div>
 
-            <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+            <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
               User
               <select
                 value={newAccessUserId}
@@ -273,7 +273,7 @@ export default function CharacterAccessPanel({
               </select>
             </label>
 
-            <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+            <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
               Access
               <select
                 value={newAccessRole}
@@ -313,7 +313,7 @@ export default function CharacterAccessPanel({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(7, 12, 24, 0.65)",
+            background: "var(--cb-modal-overlay)",
             display: "grid",
             placeItems: "center",
             padding: 16,

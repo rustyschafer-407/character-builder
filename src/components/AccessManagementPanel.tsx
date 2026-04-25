@@ -322,11 +322,11 @@ export default function AccessManagementPanel({
       {errorMessage ? (
         <div
           style={{
-            border: "1px solid rgba(255, 122, 157, 0.45)",
-            background: "rgba(255, 122, 157, 0.14)",
+            border: "1px solid var(--cb-danger-soft-border)",
+            background: "var(--cb-danger-soft)",
             borderRadius: 10,
             padding: "12px 12px 12px",
-            color: "#ffd6e2",
+            color: "var(--cb-danger-text)",
             fontWeight: 600,
             fontSize: 13,
           }}
@@ -341,11 +341,11 @@ export default function AccessManagementPanel({
             position: "fixed",
             right: 20,
             bottom: 20,
-            border: "1px solid rgba(90, 236, 178, 0.45)",
-            background: "rgba(90, 236, 178, 0.14)",
+            border: "1px solid var(--cb-success-soft-border)",
+            background: "var(--cb-success-soft)",
             borderRadius: 10,
             padding: "12px 12px 12px",
-            color: "#ccffe7",
+            color: "var(--cb-success-text)",
             fontWeight: 700,
             fontSize: 13,
             zIndex: 85,
@@ -393,11 +393,11 @@ export default function AccessManagementPanel({
           {peopleResult ? (
             <div
               style={{
-                border: peopleResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
-                background: peopleResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
+                border: peopleResult.type === "success" ? "1px solid var(--cb-success-soft-border)" : "1px solid var(--cb-danger-soft-border)",
+                background: peopleResult.type === "success" ? "var(--cb-success-soft)" : "var(--cb-danger-soft)",
                 borderRadius: 10,
                 padding: "12px 12px 12px",
-                color: peopleResult.type === "success" ? "#ccffe7" : "#ffd6e2",
+                color: peopleResult.type === "success" ? "var(--cb-success-text)" : "var(--cb-danger-text)",
                 fontWeight: 600,
                 fontSize: 13,
               }}
@@ -407,7 +407,7 @@ export default function AccessManagementPanel({
           ) : null}
 
           <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Name</div>
               <div>Email</div>
               <div>Roles</div>
@@ -447,8 +447,8 @@ export default function AccessManagementPanel({
                           style={{
                             padding: "4px 10px",
                             borderRadius: 999,
-                            border: badge === "Admin" ? "1px solid rgba(255, 188, 83, 0.65)" : badge === "GM" ? "1px solid rgba(138, 247, 207, 0.6)" : "1px solid #3a4e7f",
-                            background: badge === "Admin" ? "rgba(255, 188, 83, 0.2)" : badge === "GM" ? "rgba(138, 247, 207, 0.16)" : "rgba(11, 22, 42, 0.72)",
+                            border: badge === "Admin" ? "1px solid rgba(255, 188, 83, 0.65)" : badge === "GM" ? "1px solid rgba(138, 247, 207, 0.6)" : "1px solid var(--cb-input-border)",
+                            background: badge === "Admin" ? "rgba(255, 188, 83, 0.2)" : badge === "GM" ? "rgba(138, 247, 207, 0.16)" : "var(--cb-surface)",
                             color: badge === "Admin" ? "#ffeacc" : badge === "GM" ? "#d7ffef" : "#d7e8ff",
                             fontSize: 12,
                             fontWeight: 700,
@@ -490,7 +490,7 @@ export default function AccessManagementPanel({
                 </button>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                   Display Name
                   <input
                     type="text"
@@ -500,7 +500,7 @@ export default function AccessManagementPanel({
                     disabled={busy}
                   />
                 </label>
-                <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                   Email
                   <input
                     type="email"
@@ -511,7 +511,7 @@ export default function AccessManagementPanel({
                   />
                 </label>
               </div>
-              <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+              <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                 Temporary Password
                 <input
                   type="password"
@@ -522,12 +522,12 @@ export default function AccessManagementPanel({
                 />
               </label>
               {createPlayerPasswordTooShort ? (
-                <div style={{ color: "#ffd6e2", fontSize: 13, fontWeight: 600 }}>
+                <div style={{ color: "var(--cb-danger-text)", fontSize: 13, fontWeight: 600 }}>
                   Temporary password must be at least 8 characters.
                 </div>
               ) : null}
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--cb-muted-label)", fontWeight: 600 }}>
                   <input
                     type="checkbox"
                     checked={createPlayerIsGm}
@@ -536,7 +536,7 @@ export default function AccessManagementPanel({
                   />
                   Can create campaigns
                 </label>
-                <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--cb-muted-label)", fontWeight: 600 }}>
                   <input
                     type="checkbox"
                     checked={createPlayerIsAdmin}
@@ -549,11 +549,11 @@ export default function AccessManagementPanel({
               {createPlayerResult ? (
                 <div
                   style={{
-                    border: createPlayerResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
-                    background: createPlayerResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
+                    border: createPlayerResult.type === "success" ? "1px solid var(--cb-success-soft-border)" : "1px solid var(--cb-danger-soft-border)",
+                    background: createPlayerResult.type === "success" ? "var(--cb-success-soft)" : "var(--cb-danger-soft)",
                     borderRadius: 10,
                     padding: "12px 12px 12px",
-                    color: createPlayerResult.type === "success" ? "#ccffe7" : "#ffd6e2",
+                    color: createPlayerResult.type === "success" ? "var(--cb-success-text)" : "var(--cb-danger-text)",
                     fontWeight: 600,
                     fontSize: 13,
                   }}
@@ -610,7 +610,7 @@ export default function AccessManagementPanel({
               style={{
                 position: "fixed",
                 inset: 0,
-                background: "rgba(7, 12, 24, 0.65)",
+                background: "var(--cb-modal-overlay)",
                 display: "grid",
                 placeItems: "center",
                 padding: 16,
@@ -632,7 +632,7 @@ export default function AccessManagementPanel({
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     Display Name
                     <input
                       type="text"
@@ -642,7 +642,7 @@ export default function AccessManagementPanel({
                       disabled
                     />
                   </label>
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     Email
                     <input
                       type="email"
@@ -655,7 +655,7 @@ export default function AccessManagementPanel({
                 </div>
 
                 <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-                  <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                  <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--cb-muted-label)", fontWeight: 600 }}>
                     <input
                       type="checkbox"
                       checked={editUserIsAdmin}
@@ -664,7 +664,7 @@ export default function AccessManagementPanel({
                     />
                     Admin
                   </label>
-                  <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                  <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--cb-muted-label)", fontWeight: 600 }}>
                     <input
                       type="checkbox"
                       checked={editUserIsGm}
@@ -725,7 +725,7 @@ export default function AccessManagementPanel({
               style={{
                 position: "fixed",
                 inset: 0,
-                background: "rgba(7, 12, 24, 0.65)",
+                background: "var(--cb-modal-overlay)",
                 display: "grid",
                 placeItems: "center",
                 padding: 16,
@@ -756,7 +756,7 @@ export default function AccessManagementPanel({
                 </div>
 
                 <div style={{ display: "grid", gap: 12 }}>
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     New Password
                     <input
                       key={`set-password-new-${setPasswordVisible ? "visible" : "hidden"}`}
@@ -770,7 +770,7 @@ export default function AccessManagementPanel({
                       disabled={busy}
                     />
                   </label>
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     Confirm Password
                     <input
                       key={`set-password-confirm-${setPasswordVisible ? "visible" : "hidden"}`}
@@ -784,7 +784,7 @@ export default function AccessManagementPanel({
                       disabled={busy}
                     />
                   </label>
-                  <label className="tap-row" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                  <label className="tap-row" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--cb-muted-label)", fontWeight: 600 }}>
                     <input
                       type="checkbox"
                       checked={setPasswordVisible}
@@ -798,11 +798,11 @@ export default function AccessManagementPanel({
                 {setPasswordResult ? (
                   <div
                     style={{
-                      border: "1px solid rgba(255, 122, 157, 0.45)",
-                      background: "rgba(255, 122, 157, 0.14)",
+                      border: "1px solid var(--cb-danger-soft-border)",
+                      background: "var(--cb-danger-soft)",
                       borderRadius: 10,
                       padding: "12px 12px 12px",
-                      color: "#ffd6e2",
+                      color: "var(--cb-danger-text)",
                       fontWeight: 600,
                       fontSize: 13,
                     }}
@@ -858,11 +858,11 @@ export default function AccessManagementPanel({
           {campaignMemberResult ? (
             <div
               style={{
-                border: campaignMemberResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
-                background: campaignMemberResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
+                border: campaignMemberResult.type === "success" ? "1px solid var(--cb-success-soft-border)" : "1px solid var(--cb-danger-soft-border)",
+                background: campaignMemberResult.type === "success" ? "var(--cb-success-soft)" : "var(--cb-danger-soft)",
                 borderRadius: 10,
                 padding: "12px 12px 12px",
-                color: campaignMemberResult.type === "success" ? "#ccffe7" : "#ffd6e2",
+                color: campaignMemberResult.type === "success" ? "var(--cb-success-text)" : "var(--cb-danger-text)",
                 fontWeight: 600,
                 fontSize: 13,
               }}
@@ -876,7 +876,7 @@ export default function AccessManagementPanel({
               style={{
                 position: "fixed",
                 inset: 0,
-                background: "rgba(7, 12, 24, 0.65)",
+                background: "var(--cb-modal-overlay)",
                 display: "grid",
                 placeItems: "center",
                 padding: 16,
@@ -907,7 +907,7 @@ export default function AccessManagementPanel({
                   </button>
                 </div>
 
-                <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                   User email
                   <input
                     type="text"
@@ -940,7 +940,7 @@ export default function AccessManagementPanel({
                 </datalist>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
-                  <label style={{ fontWeight: 600, color: "#b9cdf0", maxWidth: 280 }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)", maxWidth: 280 }}>
                     Member Type
                     <select
                       value={campaignAssignRole}
@@ -1012,7 +1012,7 @@ export default function AccessManagementPanel({
           ) : null}
 
           <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Display Name</div>
               <div>Email</div>
               <div>Role</div>
@@ -1087,7 +1087,7 @@ export default function AccessManagementPanel({
               style={{
                 position: "fixed",
                 inset: 0,
-                background: "rgba(7, 12, 24, 0.65)",
+                background: "var(--cb-modal-overlay)",
                 display: "grid",
                 placeItems: "center",
                 padding: 16,
@@ -1107,7 +1107,7 @@ export default function AccessManagementPanel({
                   <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => setCampaignRoleModalUserId("")}>Close</button>
                 </div>
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{getUserLabel(campaignRoleModalUserId)}</div>
-                <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                   Member Type
                   <select
                     value={campaignRoleModalValue}
@@ -1154,7 +1154,7 @@ export default function AccessManagementPanel({
               style={{
                 position: "fixed",
                 inset: 0,
-                background: "rgba(7, 12, 24, 0.65)",
+                background: "var(--cb-modal-overlay)",
                 display: "grid",
                 placeItems: "center",
                 padding: 16,
@@ -1213,7 +1213,7 @@ export default function AccessManagementPanel({
           <div style={{ ...panelStyle, padding: 12, display: "grid", gap: 12 }}>
             <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>Add Character Access</div>
             <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 12, alignItems: "end" }}>
-              <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+              <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                 User
                 <select
                   value={characterAssignUserId}
@@ -1229,7 +1229,7 @@ export default function AccessManagementPanel({
                   ))}
                 </select>
               </label>
-              <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+              <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                 Permission
                 <select
                   value={characterAssignRole}
@@ -1262,7 +1262,7 @@ export default function AccessManagementPanel({
           </div>
 
           <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>User</div>
               <div>Permission</div>
               <div>Actions</div>

@@ -4,31 +4,31 @@ export const pageStyle: React.CSSProperties = {
     'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   maxWidth: 1180,
   margin: "0 auto",
-  color: "var(--text-primary)",
+  color: "var(--cb-text)",
 };
 
 export const panelStyle: React.CSSProperties = {
-  background: "linear-gradient(165deg, var(--surface-1), var(--surface-0))",
-  border: "1px solid var(--border-soft)",
+  background: "linear-gradient(165deg, var(--cb-surface-raised), var(--cb-surface))",
+  border: "1px solid var(--cb-border)",
   borderRadius: 14,
   padding: 16,
-  boxShadow: "var(--shadow-elev)",
+  boxShadow: "var(--cb-card-shadow)",
   backdropFilter: "blur(6px)",
   animation: "rise-in 260ms ease-out both",
 };
 
 export const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "0 12px",
-  height: 40,
-  minHeight: 40,
+  padding: "0 var(--cb-control-padding-x)",
+  height: "var(--cb-control-height)",
+  minHeight: "var(--cb-control-height)",
   lineHeight: "1.2",
   marginTop: 4,
   boxSizing: "border-box",
   borderRadius: 10,
-  border: "1px solid #3a4e7f",
-  background: "rgba(8, 16, 31, 0.82)",
-  color: "var(--text-primary)",
+  border: "1px solid var(--cb-input-border)",
+  background: "var(--cb-input-bg)",
+  color: "var(--cb-text)",
   fontSize: 14,
   outline: "none",
 };
@@ -40,12 +40,12 @@ export const selectStyle: React.CSSProperties = {
 };
 
 export const buttonStyle: React.CSSProperties = {
-  minHeight: 40,
-  padding: "0 12px",
+  minHeight: "var(--cb-control-height)",
+  padding: "0 var(--cb-control-padding-x)",
   borderRadius: 10,
-  border: "1px solid var(--border-bright)",
-  background: "rgba(16, 30, 58, 0.92)",
-  color: "var(--text-primary)",
+  border: "1px solid var(--cb-border-strong)",
+  background: "var(--cb-button-bg)",
+  color: "var(--cb-text)",
   cursor: "pointer",
   fontSize: 14,
   fontWeight: 600,
@@ -60,23 +60,23 @@ export const buttonStyle: React.CSSProperties = {
 
 export const primaryButtonStyle: React.CSSProperties = {
   ...buttonStyle,
-  background: "linear-gradient(135deg, var(--accent-primary), var(--accent-primary-strong))",
-  border: "1px solid #33d6ff",
-  color: "#001321",
-  boxShadow: "0 8px 24px rgba(73, 224, 255, 0.28)",
+  background: "linear-gradient(135deg, var(--cb-accent), var(--cb-accent-hover))",
+  border: "1px solid var(--cb-accent)",
+  color: "var(--cb-accent-contrast)",
+  boxShadow: "0 8px 24px var(--cb-accent-soft-strong)",
 };
 
 export const dangerButtonStyle: React.CSSProperties = {
   ...buttonStyle,
-  background: "rgba(255, 122, 157, 0.18)",
-  border: "1px solid rgba(255, 122, 157, 0.45)",
-  color: "#ffd6e2",
+  background: "var(--cb-button-danger-bg)",
+  border: "1px solid var(--cb-button-danger-border)",
+  color: "var(--cb-button-danger-text)",
   padding: "0 12px",
 };
 
 export const sectionTitleStyle: React.CSSProperties = {
   marginTop: 0,
-  color: "var(--text-primary)",
+  color: "var(--cb-text)",
   fontFamily:
     'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   fontWeight: 700,
@@ -84,25 +84,25 @@ export const sectionTitleStyle: React.CSSProperties = {
 };
 
 export const mutedTextStyle: React.CSSProperties = {
-  color: "var(--text-secondary)",
+  color: "var(--cb-text-muted)",
 };
 
 export const labelTextStyle: React.CSSProperties = {
   display: "block",
   fontWeight: 600,
-  color: "#b9cdf0",
+  color: "var(--cb-muted-label)",
 };
 
 export const cardStyle: React.CSSProperties = {
-  border: "1px solid #324977",
+  border: "1px solid var(--cb-border)",
   borderRadius: 10,
   padding: 12,
-  background: "rgba(11, 22, 42, 0.72)",
+  background: "var(--cb-surface)",
 };
 
 export const statCardStyle: React.CSSProperties = {
-  border: "1px solid #2c426c",
+  border: "1px solid var(--cb-border)",
   borderRadius: 12,
   padding: 12,
-  background: "rgba(14, 28, 50, 0.74)",
+  background: "var(--cb-surface-raised)",
 };

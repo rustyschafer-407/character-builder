@@ -60,7 +60,7 @@ export default function InventorySection({
                 </div>
               </div>
 
-              <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
+              <label style={{ color: "var(--cb-muted-label)", fontSize: 14, whiteSpace: "nowrap" }}>
                 Select
                 <input
                   type="checkbox"
@@ -70,7 +70,7 @@ export default function InventorySection({
                 />
               </label>
 
-              <label style={{ color: "#b9cdf0", fontSize: 14, whiteSpace: "nowrap" }}>
+              <label style={{ color: "var(--cb-muted-label)", fontSize: 14, whiteSpace: "nowrap" }}>
                 Qty
                 <input
                   type="number"
@@ -111,7 +111,7 @@ export default function InventorySection({
                 </div>
               </div>
 
-              <label style={{ color: "#b9cdf0", fontSize: 14 }}>
+              <label style={{ color: "var(--cb-muted-label)", fontSize: 14 }}>
                 Qty
                 <input
                   type="number"

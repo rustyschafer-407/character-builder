@@ -485,16 +485,16 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                border: "1px solid rgba(255, 188, 83, 0.55)",
-                background: "rgba(255, 188, 83, 0.12)",
-                color: "#ffe8b2",
+                border: "1px solid var(--cb-warning-soft-border)",
+                background: "var(--cb-warning-soft)",
+                color: "var(--cb-warning-text)",
                 fontSize: 14,
               }}
             >
               This campaign has no species/race list. Quickstart will omit species and continue.
             </div>
           )}
-          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+          <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
             Race
             <select
               value={draft.raceId}
@@ -542,16 +542,16 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                border: "1px solid rgba(255, 188, 83, 0.55)",
-                background: "rgba(255, 188, 83, 0.12)",
-                color: "#ffe8b2",
+                border: "1px solid var(--cb-warning-soft-border)",
+                background: "var(--cb-warning-soft)",
+                color: "var(--cb-warning-text)",
                 fontSize: 14,
               }}
             >
               This campaign has no class list. Quickstart can still create a basic adventurer concept.
             </div>
           )}
-          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+          <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
             {labels.className}
             <select
               value={draft.classId}
@@ -620,7 +620,7 @@ export default function CharacterCreationWizard({
               )}
             </div>
           )}
-          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+          <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
             Generation Method
             <select
               value={method}
@@ -642,7 +642,7 @@ export default function CharacterCreationWizard({
               style={{
                 padding: 12,
                 borderRadius: 8,
-                background: "rgba(73, 224, 255, 0.18)",
+                background: "var(--cb-accent-soft-strong)",
                 color: "var(--text-primary)",
                 fontSize: 14,
                 border: "1px solid var(--accent-primary)",
@@ -718,7 +718,7 @@ export default function CharacterCreationWizard({
                       </span>
                     )}
                   </span>
-                  <label style={{ display: "flex", flexDirection: "column", fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ display: "flex", flexDirection: "column", fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     <input
                       type="number"
                       value={draft.attributes[attr]}
@@ -743,7 +743,7 @@ export default function CharacterCreationWizard({
             style={{
               padding: 12,
               borderRadius: 8,
-              background: "rgba(73, 224, 255, 0.18)",
+              background: "var(--cb-accent-soft-strong)",
               color: "var(--text-primary)",
               fontSize: 14,
               border: "1px solid var(--accent-primary)",
@@ -766,7 +766,7 @@ export default function CharacterCreationWizard({
                   padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
-                  background: checked ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  background: checked ? "var(--cb-accent-soft-strong)" : "var(--cb-selection-row-bg)",
                   color: "var(--text-primary)",
                   display: "flex",
                   justifyContent: "space-between",
@@ -799,7 +799,7 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 12,
                   borderRadius: 8,
-                  background: "rgba(73, 224, 255, 0.18)",
+                  background: "var(--cb-accent-soft-strong)",
                   color: "var(--text-primary)",
                   fontSize: 14,
                   border: "1px solid var(--accent-primary)",
@@ -836,7 +836,7 @@ export default function CharacterCreationWizard({
                   padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
-                  background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  background: isSelected ? "var(--cb-accent-soft-strong)" : "var(--cb-selection-row-bg)",
                   color: "var(--text-primary)",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
@@ -875,7 +875,7 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 12,
                   borderRadius: 8,
-                  background: "rgba(73, 224, 255, 0.18)",
+                  background: "var(--cb-accent-soft-strong)",
                   color: "var(--text-primary)",
                   fontSize: 14,
                   border: "1px solid var(--accent-primary)",
@@ -911,7 +911,7 @@ export default function CharacterCreationWizard({
                   padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
-                  background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  background: isSelected ? "var(--cb-accent-soft-strong)" : "var(--cb-selection-row-bg)",
                   color: "var(--text-primary)",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
@@ -948,7 +948,7 @@ export default function CharacterCreationWizard({
                 style={{
                   padding: 12,
                   borderRadius: 8,
-                  background: "rgba(73, 224, 255, 0.18)",
+                  background: "var(--cb-accent-soft-strong)",
                   color: "var(--text-primary)",
                   fontSize: 14,
                   border: "1px solid var(--accent-primary)",
@@ -984,7 +984,7 @@ export default function CharacterCreationWizard({
                   padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
-                  background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
+                  background: isSelected ? "var(--cb-accent-soft-strong)" : "var(--cb-selection-row-bg)",
                   color: "var(--text-primary)",
                   opacity: canBeChosen ? 1 : 0.7,
                   display: "flex",
@@ -1029,52 +1029,52 @@ export default function CharacterCreationWizard({
               </div>
             </div>
           )}
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Name:</strong> {draft.identity.name}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Campaign:</strong> {selectedCampaign?.name}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Race:</strong> {selectedRace?.name}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{labels.className}:</strong> {selectedClass?.name || "Adventurer (no class data)"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Background:</strong> {draft.identity.background || "None"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Ancestry:</strong> {draft.identity.ancestry || "None"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{labels.attributes}:</strong>{" "}
             {ATTRS.map((attr) => `${attr} ${draft.attributes[attr]}`).join(", ")}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Saves:</strong>{" "}
             {ATTRS.filter((attr) => draft.saveProf[attr]).join(", ") || "None"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{labels.skills}:</strong>{" "}
             {draft.skills
               .filter((skill) => skill.proficient)
               .map((skill) => skills.find((s) => s.id === skill.skillId)?.name ?? skill.skillId)
               .join(", ") || "None"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{labels.powers}:</strong>{" "}
             {draft.powers.map((power) => power.name).join(", ") || "None"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{labels.inventory}:</strong>{" "}
             {draft.inventory.map((item) => `${item.name} x${item.quantity}`).join(", ") || "None"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{labels.attacks}:</strong>{" "}
             {[...draft.attacks].sort((a, b) => a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })).map((attack) => `${attack.name} (${attack.damage})`).join(", ") || "None"}
           </div>
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{labels.hp}:</strong> {draft.hp.current} / {draft.hp.max}
           </div>
           {selectedClass && (
@@ -1121,9 +1121,9 @@ export default function CharacterCreationWizard({
             onClick={onNext}
             style={{
               ...buttonStyle,
-              background: "rgba(73,224,255,0.18)",
+              background: "var(--cb-accent-soft-strong)",
               border: "1px solid rgba(73,224,255,0.55)",
-              color: "#e9fdff",
+              color: "var(--cb-text)",
               fontWeight: 700,
             }}
           >
@@ -1180,7 +1180,7 @@ export default function CharacterCreationWizard({
                 style={{
                   ...buttonStyle,
                   border: quickstartMode === "surprise" ? "1px solid var(--accent-primary)" : buttonStyle.border,
-                  background: quickstartMode === "surprise" ? "rgba(73, 224, 255, 0.16)" : buttonStyle.background,
+                  background: quickstartMode === "surprise" ? "var(--cb-accent-soft)" : buttonStyle.background,
                 }}
               >
                 Surprise Me
@@ -1190,7 +1190,7 @@ export default function CharacterCreationWizard({
                 style={{
                   ...buttonStyle,
                   border: quickstartMode === "guided" ? "1px solid var(--accent-primary)" : buttonStyle.border,
-                  background: quickstartMode === "guided" ? "rgba(73, 224, 255, 0.16)" : buttonStyle.background,
+                  background: quickstartMode === "guided" ? "var(--cb-accent-soft)" : buttonStyle.background,
                 }}
               >
                 Guided Random
@@ -1200,7 +1200,7 @@ export default function CharacterCreationWizard({
                 style={{
                   ...buttonStyle,
                   border: quickstartMode === "concepts" ? "1px solid var(--accent-primary)" : buttonStyle.border,
-                  background: quickstartMode === "concepts" ? "rgba(73, 224, 255, 0.16)" : buttonStyle.background,
+                  background: quickstartMode === "concepts" ? "var(--cb-accent-soft)" : buttonStyle.background,
                 }}
               >
                 Roll 3 Concepts
@@ -1213,7 +1213,7 @@ export default function CharacterCreationWizard({
                   Lock key choices and randomize the rest.
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     Race / Species
                     <select
                       value={quickstartLocks.raceId ?? ""}
@@ -1238,7 +1238,7 @@ export default function CharacterCreationWizard({
                     )}
                   </label>
 
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     {labels.className}
                     <select
                       value={quickstartLocks.classId ?? ""}
@@ -1263,7 +1263,7 @@ export default function CharacterCreationWizard({
                     )}
                   </label>
 
-                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     Background / Archetype
                     <input
                       value={quickstartLocks.background ?? ""}
@@ -1300,16 +1300,16 @@ export default function CharacterCreationWizard({
                       border: "1px solid var(--border-soft)",
                       borderRadius: 10,
                       padding: 12,
-                      background: "rgba(9, 20, 38, 0.82)",
+                      background: "var(--cb-selection-row-bg)",
                       display: "grid",
                       gap: 8,
                       cursor: "pointer",
                     }}
                   >
                     <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>{concept.name}</div>
-                    <div style={{ color: "#b9cdf0", fontSize: 13 }}><strong>Race:</strong> {concept.raceName || "None"}</div>
-                    <div style={{ color: "#b9cdf0", fontSize: 13 }}><strong>{labels.className}:</strong> {concept.className}</div>
-                    <div style={{ color: "#b9cdf0", fontSize: 13 }}><strong>Background:</strong> {concept.background}</div>
+                    <div style={{ color: "var(--cb-muted-label)", fontSize: 13 }}><strong>Race:</strong> {concept.raceName || "None"}</div>
+                    <div style={{ color: "var(--cb-muted-label)", fontSize: 13 }}><strong>{labels.className}:</strong> {concept.className}</div>
+                    <div style={{ color: "var(--cb-muted-label)", fontSize: 13 }}><strong>Background:</strong> {concept.background}</div>
                     <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{concept.summary}</div>
                     <button
                       onClick={(event) => {
@@ -1331,7 +1331,7 @@ export default function CharacterCreationWizard({
                   padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
-                  background: "rgba(9, 20, 38, 0.82)",
+                  background: "var(--cb-selection-row-bg)",
                   color: "var(--text-secondary)",
                   fontSize: 14,
                 }}
@@ -1348,9 +1348,9 @@ export default function CharacterCreationWizard({
                     style={{
                       padding: "8px 10px",
                       borderRadius: 8,
-                      border: "1px solid rgba(255, 188, 83, 0.55)",
-                      background: "rgba(255, 188, 83, 0.12)",
-                      color: "#ffe8b2",
+                      border: "1px solid var(--cb-warning-soft-border)",
+                      background: "var(--cb-warning-soft)",
+                      color: "var(--cb-warning-text)",
                       fontSize: 13,
                     }}
                   >

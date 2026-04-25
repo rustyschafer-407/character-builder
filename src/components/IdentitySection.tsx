@@ -119,23 +119,23 @@ export default function IdentitySection({
             </div>
           )}
 
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Campaign:</strong> {campaignName}
           </div>
 
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Race:</strong> {raceName}
           </div>
 
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{classLabel}:</strong> {className}
           </div>
 
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{levelLabel}:</strong> {character.level}
           </div>
 
-          <div style={{ color: "#b9cdf0" }}>
+          <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
           </div>
         </div>

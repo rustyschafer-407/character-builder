@@ -207,7 +207,7 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
                     padding: 12,
                     borderRadius: 8,
                     border: isSelected ? "1px solid var(--accent-primary)" : "1px solid var(--border-soft)",
-                    background: isSelected ? "rgba(73, 224, 255, 0.16)" : "rgba(11, 22, 42, 0.75)",
+                    background: isSelected ? "var(--cb-accent-soft)" : "rgba(11, 22, 42, 0.75)",
                     color: "var(--text-primary)",
                     cursor: "pointer",
                   }}
@@ -746,25 +746,25 @@ export default function AdminScreen({
         </div>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto", flexShrink: 0, paddingBottom: 4 }}>
-        <button onClick={() => setTab("campaign")} className="button-control" style={{ ...buttonStyle, background: tab === "campaign" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("campaign")} className="button-control" style={{ ...buttonStyle, background: tab === "campaign" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Campaign
         </button>
-        <button onClick={() => setTab("skills")} className="button-control" style={{ ...buttonStyle, background: tab === "skills" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("skills")} className="button-control" style={{ ...buttonStyle, background: tab === "skills" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Skills
         </button>
-        <button onClick={() => setTab("powers")} className="button-control" style={{ ...buttonStyle, background: tab === "powers" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("powers")} className="button-control" style={{ ...buttonStyle, background: tab === "powers" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Powers
         </button>
-        <button onClick={() => setTab("items")} className="button-control" style={{ ...buttonStyle, background: tab === "items" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("items")} className="button-control" style={{ ...buttonStyle, background: tab === "items" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Items
         </button>
-        <button onClick={() => setTab("attacks")} className="button-control" style={{ ...buttonStyle, background: tab === "attacks" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("attacks")} className="button-control" style={{ ...buttonStyle, background: tab === "attacks" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Attacks
         </button>
-        <button onClick={() => setTab("classes")} className="button-control" style={{ ...buttonStyle, background: tab === "classes" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("classes")} className="button-control" style={{ ...buttonStyle, background: tab === "classes" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Classes
         </button>
-        <button onClick={() => setTab("races")} className="button-control" style={{ ...buttonStyle, background: tab === "races" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("races")} className="button-control" style={{ ...buttonStyle, background: tab === "races" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Races
         </button>
         </div>
@@ -1740,10 +1740,10 @@ export default function AdminScreen({
                               ? "1px solid var(--accent-primary)"
                               : "1px solid var(--border-soft)",
                             background: attackEnabled
-                              ? "rgba(73, 224, 255, 0.2)"
-                              : "rgba(9, 20, 38, 0.82)",
+                              ? "var(--cb-accent-soft-strong)"
+                              : "var(--cb-selection-row-bg)",
                             color: attackEnabled
-                              ? "#e9fdff"
+                              ? "var(--cb-text)"
                               : "var(--text-secondary)",
                             fontWeight: 700,
                           }}
@@ -1832,10 +1832,10 @@ export default function AdminScreen({
                               ? "1px solid var(--accent-primary)"
                               : "1px solid var(--border-soft)",
                             background: attackEnabled
-                              ? "rgba(73, 224, 255, 0.2)"
-                              : "rgba(9, 20, 38, 0.82)",
+                              ? "var(--cb-accent-soft-strong)"
+                              : "var(--cb-selection-row-bg)",
                             color: attackEnabled
-                              ? "#e9fdff"
+                              ? "var(--cb-text)"
                               : "var(--text-secondary)",
                             fontWeight: 700,
                           }}
