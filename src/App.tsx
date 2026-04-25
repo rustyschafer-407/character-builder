@@ -815,7 +815,7 @@ export default function App() {
   const uiCanManageCharacterAccess = Boolean(
     selected && currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[selected.campaignId] === "editor")
   );
-  const uiCanOpenAccessManagement = uiCanManageUsers || uiCanManageCampaignAccess;
+  const uiCanOpenAccessManagement = uiCanManageUsers || (!isGm && uiCanManageCampaignAccess);
   const uiCanEditCharacterById = (characterId: string) => {
     if (isAdmin) return true;
     const character = characters.find((item) => item.id === characterId);
