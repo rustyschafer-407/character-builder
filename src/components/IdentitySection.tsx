@@ -59,11 +59,32 @@ export default function IdentitySection({
     }
   }
 
+  const pillStyle: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "6px 12px",
+    borderRadius: 20,
+    background: "rgba(138, 180, 248, 0.12)",
+    border: "1px solid rgba(138, 180, 248, 0.24)",
+    color: "var(--text-primary)",
+    fontSize: 14,
+    fontWeight: 600,
+    whiteSpace: "nowrap",
+  };
+
+  const pillLabelStyle: React.CSSProperties = {
+    color: "var(--cb-text-muted)",
+    fontSize: 12,
+    fontWeight: 600,
+    opacity: 0.85,
+  };
+
   return (
     <section style={panelStyle}>
-      <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-        {/* Left: name + details */}
-        <div style={{ flex: 1, display: "grid", gap: 10 }}>
+      <div style={{ display: "flex", gap: 14, alignItems: "flex-start", flexDirection: "column" }}>
+        {/* Name + edit */}
+        <div style={{ width: "100%" }}>
           {!editingName ? (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
               <div
@@ -120,53 +141,63 @@ export default function IdentitySection({
               </div>
             </div>
           )}
-
-          <div style={{ display: "grid", gap: 4, marginTop: 2 }}>
-            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
-              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>Campaign:</strong> {campaignName}
-            </div>
-            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
-              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>Race:</strong> {raceName}
-            </div>
-            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
-              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>{classLabel}:</strong> {className}
-            </div>
-            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
-              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>{levelLabel}:</strong> {character.level}
-            </div>
-            <div style={{ color: "var(--cb-text-muted)", fontSize: 13, lineHeight: 1.35 }}>
-              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
-            </div>
-          </div>
-
-          <label style={{ ...labelTextStyle, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ minWidth: 102 }}>Character Type</span>
-            <select
-              className="form-control"
-              style={{ ...inputStyle, marginTop: 0, width: 120, minWidth: 120 }}
-              value={character.characterType ?? "pc"}
-              onChange={(event) => onCharacterTypeChange(event.target.value as "pc" | "npc")}
-              disabled={readOnly}
-            >
-              <option value="pc">PC</option>
-              <option value="npc">NPC</option>
-            </select>
-          </label>
         </div>
 
-        {/* Right: action buttons */}
-        <div style={{ display: "grid", gap: 8, minWidth: 160 }}>
-          <button onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "8px 14px", minHeight: 38 }}>
-            Copy to Roll20
-          </button>
-          <button
-            onClick={onOpenLevelUpWizard}
-            className="button-control"
-            style={{ ...buttonStyle, padding: "8px 14px", minHeight: 38, background: "transparent", border: "1px solid var(--cb-border)" }}
-            disabled={readOnly}
-          >
-            Level Up
-          </button>
+        {/* Details in pill badges */}
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={pillStyle}>
+            <span style={pillLabelStyle}>RACE</span>
+            <span>{raceName}</span>
+          </div>
+          <div style={pillStyle}>
+            <span style={pillLabelStyle}>{classLabel}</span>
+            <span>{className}</span>
+          </div>
+          <div style={pillStyle}>
+            <span style={pillLabelStyle}>{levelLabel}</span>
+            <span>{character.level}</span>
+          </div>
+          <div style={pillStyle}>
+            <span style={pillLabelStyle}>{hpLabel}</span>
+            <span>{character.hp.current}/{character.hp.max}</span>
+          </div>
+        </div>
+
+        {/* Campaign info + controls row */}
+        <div style={{ display: "flex", gap: 14, alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ color: "var(--cb-text-muted)", fontSize: 13 }}>
+              <strong style={{ color: "var(--cb-muted-label)", fontWeight: 600 }}>Campaign:</strong> {campaignName}
+            </span>
+            <label style={{ ...labelTextStyle, display: "flex", alignItems: "center", gap: 8, marginLeft: 12 }}>
+              <span style={{ minWidth: 100 }}>Character Type</span>
+              <select
+                className="form-control"
+                style={{ ...inputStyle, marginTop: 0, width: 110, minWidth: 110 }}
+                value={character.characterType ?? "pc"}
+                onChange={(event) => onCharacterTypeChange(event.target.value as "pc" | "npc")}
+                disabled={readOnly}
+              >
+                <option value="pc">PC</option>
+                <option value="npc">NPC</option>
+              </select>
+            </label>
+          </div>
+
+          {/* Right: action buttons */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "8px 14px", minHeight: 38 }}>
+              Copy to Roll20
+            </button>
+            <button
+              onClick={onOpenLevelUpWizard}
+              className="button-control"
+              style={{ ...buttonStyle, padding: "8px 14px", minHeight: 38, background: "transparent", border: "1px solid var(--cb-border)" }}
+              disabled={readOnly}
+            >
+              Level Up
+            </button>
+          </div>
         </div>
       </div>
     </section>
