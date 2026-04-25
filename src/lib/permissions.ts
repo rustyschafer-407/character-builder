@@ -13,7 +13,6 @@
  */
 
 import type { ProfileRow, CampaignAccessRole, CharacterAccessRole } from "./cloudRepository";
-import type { CharacterRecord } from "../types/character";
 
 export interface AuthState {
   profile: ProfileRow | null;
@@ -191,7 +190,7 @@ export function canViewCharacter(
 export function canEditCharacter(
   auth: AuthState,
   character: { campaignId: string; createdBy?: string | null; id: string },
-  characterType: "pc" | "npc",
+  _characterType: "pc" | "npc", // Reserved for future use, not currently differentiated
   characterAccess: CharacterAccessRole | null // null = no explicit access
 ): boolean {
   if (!auth.profile) return false;

@@ -319,7 +319,6 @@ export default function App() {
     setGameData,
     characters,
     setCharacters,
-    characterCanEditByCharacterId,
     campaignRowIdsByAppId,
     campaignCreatedByByCampaignId,
     cloudStatus,
@@ -886,7 +885,6 @@ export default function App() {
       })
     : false;
   const uiCanOpenAccessManagement = uiCanManageUsers || uiCanManageCampaignAccess;
-  const uiShowNpcControls = Permissions.shouldShowNpcControls(authState);
 
   const uiCanEditCharacterById = (characterId: string) => {
     const character = characters.find((item) => item.id === characterId);
