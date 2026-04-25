@@ -1,10 +1,10 @@
 # CB Permissions Implementation Plan
 
 ## Objective
-Ship enforceable RBAC for Character Builder using Supabase OAuth (Google + Microsoft), email/password fallback, RLS, and minimal UX changes.
+Ship enforceable RBAC for Character Builder using Supabase email/password auth, RLS, and minimal UX changes.
 
 ## Canonical Model (v1)
-- Auth: Supabase OAuth with Google and Microsoft (primary) plus email/password fallback for players and admin bootstrap.
+- Auth: Supabase Google OAuth (primary) with email/password fallback for players and admin bootstrap.
 - Global roles on `profiles`: `is_admin`, `is_gm`.
 - Campaign roles: `player`, `editor` in `campaign_user_access`.
 - Character roles: `viewer`, `editor` in `character_user_access`.
@@ -12,7 +12,6 @@ Ship enforceable RBAC for Character Builder using Supabase OAuth (Google + Micro
 - Campaign players can create characters, but only access characters they own or are explicitly assigned.
 - Bootstrap admin account created via email/password (server-side script), not via OAuth.
 - On first OAuth login, automatically create `profiles` row with OAuth-provided email and display name.
-- Campaign/character permission logic remains unchanged by adding Microsoft login.
 
 ## Current State Gap (from existing code)
 - `supabase/migrations/0001_initial_shared_access.sql` uses open policies (`using (true)`) for campaigns/characters.
@@ -94,17 +93,15 @@ Update auth/client wiring:
    - Enable normal auth session behavior (`persistSession: true`, `autoRefreshToken: true`).
    - Set `detectSessionInUrl: true` to handle OAuth callback redirects.
 2. Add auth flows (OAuth, email sign-in, sign-out):
-   - **Google OAuth (primary option):** `supabase.auth.signInWithOAuth({ provider: 'google' })`.
-   - **Microsoft OAuth (primary option):** `supabase.auth.signInWithOAuth({ provider: 'azure' })`.
-   - Login UI should expose both actions: **Continue with Google** and **Continue with Microsoft**.
+   - **Google OAuth (primary):** `supabase.auth.signInWithOAuth({ provider: 'google' })` → redirects to Google, then back to callback URL.
    - **Email/password fallback:** `supabase.auth.signInWithPassword({ email, password })` → for players without Google, and admin bootstrap.
    - Avoid custom password strength UX; rely on Supabase requirements.
 3. **Auto-profile creation:** After successful sign-in (OAuth or email/password), check if `profiles` row exists for the user. If not, create one:
-   - For OAuth: populate `display_name` from provider metadata when available (for example Google `full_name`, Microsoft display name claim).
+   - For OAuth: populate `display_name` from `full_name` claim.
    - For email/password: populate `display_name` from email prefix or leave null for user to edit later.
 4. Require authenticated session before loading protected app data.
 5. Load current `profiles` row after login and keep in app state.
- 6. Handle OAuth errors explicitly (for example: "Google sign-in failed" or "Microsoft sign-in failed", then suggest email sign-in fallback).
+6. Handle OAuth errors explicitly (e.g., "Google sign-in failed, try email sign-in instead").
 7. Display "No campaign access" friendly state for new users with no campaign membership.
 
 ### Phase 5: Repository/query refactor

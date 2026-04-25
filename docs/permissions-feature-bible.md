@@ -16,15 +16,13 @@ This design is intentionally small and implementation-friendly for Supabase + Ve
 
 Authentication Assumption
 
-Use Supabase OAuth (Google + Microsoft via Azure provider) as the primary authentication method for player login, with email/password as a fallback and admin bootstrap mechanism.
+Use Supabase OAuth (Google) as the primary authentication method for player login, with email/password as a fallback and admin bootstrap mechanism.
 
 Requirements for player login:
 
-* Primary options via Supabase OAuth providers:
-    * Continue with Google
-    * Continue with Microsoft
+* Primary: Google OAuth via Supabase provider (no rate limits, simple UX, leverages existing Google accounts).
 * Fallback: Email/password authentication for players who don't have Google or prefer email.
-* On first login, automatically create a `profiles` row with the user's email and display name from OAuth metadata (for example, Google `full_name`, Microsoft display name claim).
+* On first login, automatically create a `profiles` row with the user's email and display name from OAuth metadata (for Google: `full_name` claim).
 * The app should rely on real authenticated sessions so Row Level Security remains trustworthy.
 
 Bootstrap admin requirement:
@@ -38,13 +36,10 @@ Bootstrap admin requirement:
 
 Notes:
 
-* OAuth setup requires enabling both providers in Supabase Auth → Providers:
-    * Google OAuth with Google Cloud OAuth 2.0 credentials
-    * Azure (Microsoft) OAuth with Microsoft Entra app credentials
+* Google OAuth requires Supabase provider setup: enable Google OAuth in Supabase Auth → Providers and configure Google Cloud OAuth 2.0 credentials.
 * Email/password auth is only exposed to admin bootstrap (server-side script) and as a fallback login option for regular players.
 * Do not implement any fake authentication based only on selecting a user id or display name.
 * Passwordless auth (magic links) is not used; rely on OAuth and email/password instead.
-* Campaign and character permission logic does not change when adding Microsoft login.
 
 ⸻
 

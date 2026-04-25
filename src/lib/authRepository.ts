@@ -21,19 +21,6 @@ export async function signInWithGoogle() {
   return data
 }
 
-export async function signInWithMicrosoft() {
-  const supabase = getSupabaseClient()
-  const redirectTo = typeof window === "undefined" ? undefined : window.location.origin
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "azure",
-    options: {
-      redirectTo,
-    },
-  })
-  if (error) throw error
-  return data
-}
-
 export async function requestEmailSignIn(email: string, password: string) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase.auth.signInWithPassword({

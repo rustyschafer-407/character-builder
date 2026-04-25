@@ -49,7 +49,6 @@ import {
   onAuthStateChange,
   requestEmailSignIn,
   signInWithGoogle,
-  signInWithMicrosoft,
   signOut,
 } from "./lib/authRepository";
 import { getRememberMePreference, hasSupabaseEnv, setRememberMePreference } from "./lib/supabaseClient";
@@ -547,32 +546,6 @@ export default function App() {
       const message =
         rawMessage.includes("Unsupported provider") || rawMessage.includes("provider is not enabled")
           ? "Google sign-in is not enabled for this Supabase project yet. Enable Google under Supabase Auth > Providers, then retry."
-          : rawMessage;
-      setAuthError(message);
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  async function handleMicrosoftSignIn() {
-    setAuthLoading(true);
-    setAuthError("");
-    setAuthMessage("");
-    try {
-      setRememberMePreference(authRememberMe);
-      if (authRememberMe) {
-        writeRememberedEmail(authEmail.trim());
-      } else {
-        clearRememberedEmail();
-      }
-      await signInWithMicrosoft();
-      // OAuth will redirect, but ensure profile exists when we return
-      setAuthMessage("Redirecting to Microsoft sign-in...");
-    } catch (error) {
-      const rawMessage = error instanceof Error ? error.message : "Microsoft sign-in failed";
-      const message =
-        rawMessage.includes("Unsupported provider") || rawMessage.includes("provider is not enabled")
-          ? "Microsoft sign-in is not enabled for this Supabase project yet. Enable Azure under Supabase Auth > Providers, then retry."
           : rawMessage;
       setAuthError(message);
     } finally {
@@ -1318,7 +1291,7 @@ export default function App() {
                   onClick={() => setUseEmailFallback(false)}
                   style={buttonStyle}
                 >
-                  Back to Social Sign In
+                  Back to Google Sign In
                 </button>
               </div>
             </>
@@ -1326,7 +1299,7 @@ export default function App() {
             <>
               <h2 style={{ marginTop: 0, color: "var(--text-primary)" }}>Character Builder</h2>
               <p style={{ ...mutedTextStyle }}>
-                Sign in with Google or Microsoft to get started.
+                Sign in with Google to get started.
               </p>
 
               {authError ? (
@@ -1345,26 +1318,6 @@ export default function App() {
                 >
                   {authLoading ? "Signing in..." : "Continue with Google"}
                 </button>
-                <button
-                  onClick={() => void handleMicrosoftSignIn()}
-                  style={buttonStyle}
-                  disabled={authLoading}
-                >
-                  {authLoading ? "Signing in..." : "Continue with Microsoft"}
-                </button>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#9fb6d9",
-                    fontSize: 13,
-                    textTransform: "lowercase",
-                    margin: "2px 0",
-                  }}
-                >
-                  or
-                </div>
                 <button
                   onClick={() => setUseEmailFallback(true)}
                   style={buttonStyle}
