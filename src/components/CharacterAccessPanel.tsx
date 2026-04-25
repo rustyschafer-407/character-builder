@@ -23,7 +23,6 @@ interface CharacterAccessPanelProps {
 }
 
 export default function CharacterAccessPanel({
-  characterName,
   users,
   campaignAccessRows,
   characterAccessRows,
@@ -40,8 +39,6 @@ export default function CharacterAccessPanel({
   const [newAccessUserId, setNewAccessUserId] = useState("");
   const [newAccessRole, setNewAccessRole] = useState<CharacterAccessRole>("editor");
   const [accessResult, setAccessResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const [changeModalUserId, setChangeModalUserId] = useState("");
-  const [changeModalRole, setChangeModalRole] = useState<CharacterAccessRole>("editor");
   const [removeModalUserId, setRemoveModalUserId] = useState("");
 
   const usersById = useMemo(() => new Map(users.map((user) => [user.id, user] as const)), [users]);
@@ -100,119 +97,135 @@ export default function CharacterAccessPanel({
     return role === "editor" ? "Can edit" : "Can view";
   }
 
+  function initials(name: string) {
+    return name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join("");
+  }
+
   return (
     <section style={{ ...panelStyle, display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Character Access</h3>
+      {/* ── Header ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+        <div>
+          <h3 style={{ margin: "0 0 3px", color: "var(--text-primary)", fontSize: 17 }}>Access &amp; Permissions</h3>
+          <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>Manage who can view or edit this character.</div>
+        </div>
         <button
-          style={buttonStyle}
+          style={primaryButtonStyle}
           disabled={busy}
           onClick={() => {
             setShowAddModal(true);
             setAccessResult(null);
           }}
         >
-          Add Player Access
+          + Add Player
         </button>
       </div>
 
-      <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>Choose who can view or edit {characterName}.</div>
-
+      {/* ── Error / success banners ── */}
       {errorMessage ? (
-        <div
-          style={{
-            border: "1px solid rgba(255, 122, 157, 0.45)",
-            background: "rgba(255, 122, 157, 0.14)",
-            borderRadius: 10,
-            padding: "10px 12px",
-            color: "#ffd6e2",
-            fontWeight: 600,
-            fontSize: 13,
-          }}
-        >
+        <div style={{ border: "1px solid rgba(255,122,157,0.45)", background: "rgba(255,122,157,0.14)", borderRadius: 10, padding: "10px 12px", color: "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
           {errorMessage}
         </div>
       ) : null}
-
       {accessResult ? (
-        <div
-          style={{
-            border: accessResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
-            background: accessResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
-            borderRadius: 10,
-            padding: "10px 12px",
-            color: accessResult.type === "success" ? "#ccffe7" : "#ffd6e2",
-            fontWeight: 600,
-            fontSize: 13,
-          }}
-        >
+        <div style={{ border: accessResult.type === "success" ? "1px solid rgba(90,236,178,0.45)" : "1px solid rgba(255,122,157,0.45)", background: accessResult.type === "success" ? "rgba(90,236,178,0.14)" : "rgba(255,122,157,0.14)", borderRadius: 10, padding: "10px 12px", color: accessResult.type === "success" ? "#ccffe7" : "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
           {accessResult.message}
         </div>
       ) : null}
 
+      {/* ── Unified access list ── */}
       <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
-          <div>Display Name</div>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, padding: "9px 14px", background: "rgba(16,30,58,0.55)", color: "#b9cdf0", fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+          <div>User</div>
           <div>Email</div>
-          <div>Access</div>
-          <div>Actions</div>
+          <div>Permission</div>
+          <div>Source</div>
+          <div style={{ minWidth: 42 }}></div>
         </div>
 
-        <div style={{ display: "grid", gap: 0 }}>
-          {explicitRows.length === 0 ? (
-            <div style={{ padding: 12, color: "var(--text-secondary)" }}>No explicit character access rows.</div>
-          ) : (
-            explicitRows.map((row) => {
-              return (
-                <div key={`${row.character_id}-${row.user_id}`} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, alignItems: "center", padding: "10px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
-                  <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>{row.displayName}</div>
-                  <div style={{ color: "var(--text-secondary)" }}>{row.email}</div>
-                  <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{characterAccessLabel(row.role)}</div>
-                  <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                    <button
-                      style={buttonStyle}
-                      disabled={busy}
-                      onClick={() => {
-                        setChangeModalUserId(row.user_id);
-                        setChangeModalRole(row.role);
-                      }}
-                    >
-                      Change
-                    </button>
-                    <button
-                      style={buttonStyle}
-                      disabled={busy}
-                      onClick={() => {
-                        setRemoveModalUserId(row.user_id);
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
+        {explicitRows.length === 0 && inheritedRows.length === 0 && (
+          <div style={{ padding: "14px", color: "var(--text-secondary)", fontSize: 13 }}>No one has access yet.</div>
+        )}
 
-      {inheritedRows.length > 0 ? (
-        <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
-            Inherited Access
-          </div>
-          <div style={{ display: "grid", gap: 0 }}>
-            {inheritedRows.map((row) => (
-              <div key={`${row.campaign_id}-${row.user_id}`} style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, alignItems: "center", padding: "10px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
-                <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>{row.displayName}</div>
-                <div style={{ color: "var(--text-secondary)" }}>{row.email}</div>
-                <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>GM (inherited from campaign)</div>
-                <div style={{ color: "var(--text-secondary)", fontSize: 12, textAlign: "right" }}>Inherited</div>
+        {explicitRows.map((row) => (
+          <div
+            key={`direct-${row.user_id}`}
+            style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "10px 14px", borderTop: "1px solid rgba(58,78,127,0.35)", transition: "background 0.12s" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(73,224,255,0.04)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(73,224,255,0.18)", border: "1.5px solid rgba(73,224,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#9ef5ff", flexShrink: 0 }}>
+                {initials(row.displayName)}
               </div>
-            ))}
+              <span style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.displayName}</span>
+            </div>
+            <div style={{ color: "var(--text-secondary)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.email}</div>
+            <select
+              value={row.role}
+              disabled={busy}
+              style={{ background: "rgba(16,30,58,0.8)", border: "1px solid rgba(73,224,255,0.35)", borderRadius: 7, padding: "4px 8px", color: "#e9fdff", fontSize: 13, cursor: "pointer" }}
+              onChange={(e) => {
+                const newRole = e.target.value as CharacterAccessRole;
+                void runAction(async () => {
+                  await onUpdateCharacterAccess({ userId: row.user_id, role: newRole });
+                  setAccessResult({ type: "success", message: `Access changed to ${characterAccessLabel(newRole)}.` });
+                });
+              }}
+            >
+              <option value="editor">Can edit</option>
+              <option value="viewer">Can view</option>
+            </select>
+            <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Direct</div>
+            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              <button
+                title="Remove access"
+                style={{ ...buttonStyle, padding: "5px 8px", color: "#ff8fa8", borderColor: "rgba(255,122,157,0.35)", background: "rgba(255,122,157,0.08)", fontSize: 13 }}
+                disabled={busy}
+                onClick={() => setRemoveModalUserId(row.user_id)}
+              >
+                ✕
+              </button>
+            </div>
           </div>
-        </div>
-      ) : null}
+        ))}
+
+        {inheritedRows.map((row) => (
+          <div
+            key={`inherited-${row.user_id}`}
+            style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "10px 14px", borderTop: "1px solid rgba(58,78,127,0.35)", opacity: 0.82, transition: "background 0.12s" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.02)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(138,130,255,0.15)", border: "1.5px solid rgba(138,130,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#c4bfff", flexShrink: 0 }}>
+                {initials(row.displayName)}
+              </div>
+              <span style={{ color: "var(--text-primary)", fontWeight: 600, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.displayName}</span>
+            </div>
+            <div style={{ color: "var(--text-secondary)", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.email}</div>
+            <div>
+              <span style={{ background: "rgba(138,130,255,0.14)", border: "1px solid rgba(138,130,255,0.4)", borderRadius: 6, padding: "3px 8px", fontSize: 12, color: "#c4bfff", fontWeight: 600, whiteSpace: "nowrap" }}>
+                Game Master
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span
+                title="This user has access through their campaign role and cannot be removed here."
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 6, padding: "3px 8px", fontSize: 11, color: "var(--text-secondary)", fontWeight: 500, cursor: "default", whiteSpace: "nowrap" }}
+              >
+                Inherited · Campaign
+              </span>
+              <span title="Managed at campaign level — cannot be edited here." style={{ fontSize: 13, color: "var(--text-secondary)", cursor: "help", opacity: 0.6 }}>ⓘ</span>
+            </div>
+            <div style={{ minWidth: 38 }} />
+          </div>
+        ))}
+      </div>
 
       {showAddModal ? (
         <div
@@ -287,62 +300,6 @@ export default function CharacterAccessPanel({
                 }}
               >
                 Add Access
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {changeModalUserId ? (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(7, 12, 24, 0.65)",
-            display: "grid",
-            placeItems: "center",
-            padding: 16,
-            zIndex: 70,
-          }}
-          onClick={() => {
-            if (busy) return;
-            setChangeModalUserId("");
-          }}
-        >
-          <div
-            style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <strong>Change Character Access</strong>
-              <button style={buttonStyle} disabled={busy} onClick={() => setChangeModalUserId("")}>Close</button>
-            </div>
-            <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{getUserLabel(changeModalUserId)}</div>
-            <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
-              Access
-              <select
-                value={changeModalRole}
-                onChange={(e) => setChangeModalRole(e.target.value as CharacterAccessRole)}
-                style={inputStyle}
-                disabled={busy}
-              >
-                <option value="editor">Can edit</option>
-                <option value="viewer">Can view</option>
-              </select>
-            </label>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button
-                style={primaryButtonStyle}
-                disabled={busy}
-                onClick={() => {
-                  void runAction(async () => {
-                    await onUpdateCharacterAccess({ userId: changeModalUserId, role: changeModalRole });
-                    setAccessResult({ type: "success", message: `Access changed to ${characterAccessLabel(changeModalRole)}.` });
-                    setChangeModalUserId("");
-                  });
-                }}
-              >
-                Save
               </button>
             </div>
           </div>
