@@ -441,7 +441,7 @@ export async function listLoginPickerProfileSummariesByIds(userIds: string[]) {
 
   const supabase = getSupabaseClient()
   const { data: accessRows, error: accessError } = await supabase.rpc(
-    "list_access_profile_summaries",
+    "list_access_profile_summaries_text",
     { p_user_ids: uniqueIds } as never
   )
   if (!accessError) {
