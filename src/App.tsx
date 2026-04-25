@@ -52,7 +52,7 @@ import {
   syncProfileFromAuth,
   signOut,
 } from "./lib/authRepository";
-import { hasSupabaseEnv } from "./lib/supabaseClient";
+import { getRememberMePreference, hasSupabaseEnv, setRememberMePreference } from "./lib/supabaseClient";
 import { resolveUserEmail, resolveUserName } from "./lib/userDisplay";
 import type { CharacterRecord } from "./types/character";
 import type {
@@ -74,6 +74,35 @@ import { useCharacterEditor } from "./hooks/useCharacterEditor";
 import { useLevelUpWorkflow } from "./hooks/useLevelUpWorkflow";
 import { useSelectedCharacterWorkspaceCallbacks } from "./hooks/useSelectedCharacterWorkspaceCallbacks";
 import { buttonStyle, inputStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
+
+const rememberedEmailStorageKey = "character-builder.rememberedEmail";
+
+function readRememberedEmail() {
+  if (typeof window === "undefined") return "";
+  try {
+    return window.localStorage.getItem(rememberedEmailStorageKey) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeRememberedEmail(email: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(rememberedEmailStorageKey, email);
+  } catch {
+    // Ignore storage write errors; auth still works without remembered email.
+  }
+}
+
+function clearRememberedEmail() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(rememberedEmailStorageKey);
+  } catch {
+    // Ignore storage removal errors.
+  }
+}
 
 function applyClassAttributeModifiers(
   attributes: Record<AttributeKey, number>,
@@ -211,7 +240,8 @@ function normalizeCloudCampaignRow(row: {
 export default function App() {
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
-  const [authEmail, setAuthEmail] = useState("");
+  const [authRememberMe, setAuthRememberMe] = useState(() => getRememberMePreference());
+  const [authEmail, setAuthEmail] = useState(() => (getRememberMePreference() ? readRememberedEmail() : ""));
   const [authPassword, setAuthPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
@@ -485,6 +515,12 @@ export default function App() {
     setAuthError("");
     setAuthMessage("");
     try {
+      setRememberMePreference(authRememberMe);
+      if (authRememberMe) {
+        writeRememberedEmail(authEmail.trim());
+      } else {
+        clearRememberedEmail();
+      }
       await requestEmailSignIn(authEmail.trim(), authPassword);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
@@ -499,6 +535,12 @@ export default function App() {
     setAuthError("");
     setAuthMessage("");
     try {
+      setRememberMePreference(authRememberMe);
+      if (authRememberMe) {
+        writeRememberedEmail(authEmail.trim());
+      } else {
+        clearRememberedEmail();
+      }
       await signInWithGoogle();
       // OAuth will redirect, but ensure profile exists when we return
       setAuthMessage("Redirecting to Google sign-in...");
@@ -1214,6 +1256,22 @@ export default function App() {
                 />
               </label>
 
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "#b9cdf0", fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={authRememberMe}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setAuthRememberMe(checked);
+                    setRememberMePreference(checked);
+                    if (!checked) {
+                      clearRememberedEmail();
+                    }
+                  }}
+                />
+                Remember me on this device
+              </label>
+
               {authError ? (
                 <div style={{ marginBottom: 12, color: "#ff9ea7", fontWeight: 600 }}>{authError}</div>
               ) : null}
@@ -1221,6 +1279,22 @@ export default function App() {
               {authMessage ? (
                 <div style={{ marginBottom: 12, color: "#9ee7c2", fontWeight: 600 }}>{authMessage}</div>
               ) : null}
+
+              <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "#b9cdf0", fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={authRememberMe}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setAuthRememberMe(checked);
+                    setRememberMePreference(checked);
+                    if (!checked) {
+                      clearRememberedEmail();
+                    }
+                  }}
+                />
+                Remember me on this device
+              </label>
 
               <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
                 <button
