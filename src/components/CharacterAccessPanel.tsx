@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type {
   CampaignAccessRow,
   CharacterAccessRole,
@@ -229,7 +230,7 @@ export default function CharacterAccessPanel({
         ))}
       </div>
 
-      {showAddModal ? (
+      {showAddModal ? createPortal(
         <div
           style={{
             position: "fixed",
@@ -305,10 +306,11 @@ export default function CharacterAccessPanel({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
 
-      {removeModalUserId ? (
+      {removeModalUserId ? createPortal(
         <div
           style={{
             position: "fixed",
@@ -352,7 +354,8 @@ export default function CharacterAccessPanel({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       ) : null}
     </section>
   );
