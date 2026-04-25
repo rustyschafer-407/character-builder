@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
@@ -231,6 +231,7 @@ export default function App() {
   const [accessManagementError, setAccessManagementError] = useState("");
   const [inviteAcceptStatus, setInviteAcceptStatus] = useState<"idle" | "accepting" | "success" | "error">("idle");
   const [inviteAcceptError, setInviteAcceptError] = useState("");
+  const inviteAcceptanceStartedRef = useRef(false);
 
   useEffect(() => {
     applyDisplayPreferences(displayPreferences);
@@ -774,6 +775,12 @@ export default function App() {
   }, [authReady, currentUserId, inviteRouteActive, inviteTokenFromQuery]);
 
   useEffect(() => {
+    inviteAcceptanceStartedRef.current = false;
+    setInviteAcceptStatus("idle");
+    setInviteAcceptError("");
+  }, [inviteRouteActive, inviteTokenFromQuery, currentUserId]);
+
+  useEffect(() => {
     if (!authReady || !currentUserId || currentPathname !== "/" || !returnToFromQuery || typeof window === "undefined") {
       return;
     }
@@ -796,9 +803,10 @@ export default function App() {
       return;
     }
 
-    if (inviteAcceptStatus !== "idle") {
+    if (inviteAcceptanceStartedRef.current) {
       return;
     }
+    inviteAcceptanceStartedRef.current = true;
 
     let cancelled = false;
 
@@ -859,7 +867,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [authReady, currentUserId, inviteAcceptStatus, inviteRouteActive, inviteTokenFromQuery]);
+  }, [authReady, currentUserId, inviteRouteActive, inviteTokenFromQuery]);
 
   async function runAccessMutation(action: () => Promise<void>) {
     setAccessManagementError("");
