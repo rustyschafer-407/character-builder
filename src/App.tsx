@@ -30,10 +30,14 @@ import {
 import {
   getCurrentSession,
   getSessionUser,
+  listLoginPickerProfiles,
   onAuthStateChange,
   requestEmailSignIn,
+  requestPasswordReset,
+  resolveLoginPickerEmail,
   signInWithGoogle,
   signOut,
+  updateCurrentUserPassword,
 } from "./lib/authRepository";
 import { getRememberMePreference, hasSupabaseEnv, setRememberMePreference } from "./lib/supabaseClient";
 import { resolveUserEmail, resolveUserName } from "./lib/userDisplay";
@@ -67,33 +71,51 @@ import {
   type DisplayPreferences,
 } from "./lib/displayPreferences";
 
-const rememberedEmailStorageKey = "character-builder.rememberedEmail";
+const rememberedProfileStorageKey = "character-builder.rememberedProfile";
+const includeAdminInLoginPicker = String(import.meta.env.VITE_LOGIN_PICKER_INCLUDE_ADMINS ?? "").toLowerCase() === "true";
 
-function readRememberedEmail() {
+function readRememberedProfileId() {
   if (typeof window === "undefined") return "";
   try {
-    return window.localStorage.getItem(rememberedEmailStorageKey) ?? "";
+    return window.localStorage.getItem(rememberedProfileStorageKey) ?? "";
   } catch {
     return "";
   }
 }
 
-function writeRememberedEmail(email: string) {
+function writeRememberedProfileId(profileId: string) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(rememberedEmailStorageKey, email);
+    window.localStorage.setItem(rememberedProfileStorageKey, profileId);
   } catch {
-    // Ignore storage write errors; auth still works without remembered email.
+    // Ignore storage write errors; auth still works without remembered profile.
   }
 }
 
-function clearRememberedEmail() {
+function clearRememberedProfileId() {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.removeItem(rememberedEmailStorageKey);
+    window.localStorage.removeItem(rememberedProfileStorageKey);
   } catch {
     // Ignore storage removal errors.
   }
+}
+
+function hasRecoveryContextInLocation() {
+  if (typeof window === "undefined") return false;
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const searchType = searchParams.get("type")?.toLowerCase();
+  if (searchType === "recovery") return true;
+  if (searchParams.has("code")) return true;
+
+  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+  const hashParams = new URLSearchParams(hash);
+  const hashType = hashParams.get("type")?.toLowerCase();
+  if (hashType === "recovery") return true;
+  if (hashParams.has("access_token") || hashParams.has("refresh_token")) return true;
+
+  return false;
 }
 
 function applyClassAttributeModifiers(
@@ -174,15 +196,31 @@ export default function App() {
     if (typeof window === "undefined") return "";
     return new URLSearchParams(window.location.search).get("token")?.trim() ?? "";
   }, []);
+  const authActionFromQuery = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("auth")?.trim().toLowerCase() ?? "";
+  }, []);
   const inviteRouteActive = currentPathname === "/invite";
+  const updatePasswordRouteActive = currentPathname === "/update-password";
   const inviteSignInFlow = inviteRouteActive || returnToFromQuery.startsWith("/invite");
   const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
   const [displayOpen, setDisplayOpen] = useState(false);
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
   const [authRememberMe, setAuthRememberMe] = useState(() => getRememberMePreference());
-  const [authEmail, setAuthEmail] = useState(() => (getRememberMePreference() ? readRememberedEmail() : ""));
+  const [authCardMode, setAuthCardMode] = useState<"sign-in" | "reset-request">(() =>
+    authActionFromQuery === "reset" ? "reset-request" : "sign-in"
+  );
+  const [loginPickerProfiles, setLoginPickerProfiles] = useState<Array<{ id: string; label: string }>>([]);
+  const [loginPickerLoading, setLoginPickerLoading] = useState(false);
+  const [authProfileId, setAuthProfileId] = useState(() => (getRememberMePreference() ? readRememberedProfileId() : ""));
   const [authPassword, setAuthPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [updatePasswordValue, setUpdatePasswordValue] = useState("");
+  const [updatePasswordConfirm, setUpdatePasswordConfirm] = useState("");
+  const [updatePasswordRecoveryReady, setUpdatePasswordRecoveryReady] = useState(false);
+  const [updatePasswordChecked, setUpdatePasswordChecked] = useState(false);
+  const [updatePasswordComplete, setUpdatePasswordComplete] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -222,6 +260,12 @@ export default function App() {
   const [inviteAcceptStatus, setInviteAcceptStatus] = useState<"idle" | "accepting" | "success" | "error">("idle");
   const [inviteAcceptError, setInviteAcceptError] = useState("");
   const inviteAcceptanceStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (authActionFromQuery !== "reset") return;
+    setUseEmailFallback(true);
+    setAuthCardMode("reset-request");
+  }, [authActionFromQuery]);
 
   useEffect(() => {
     applyDisplayPreferences(displayPreferences);
@@ -287,10 +331,14 @@ export default function App() {
 
     void initializeSession();
 
-    const unsubscribe = onAuthStateChange(async (_event, session) => {
+    const unsubscribe = onAuthStateChange(async (event, session) => {
       const user = getSessionUser(session);
       setCurrentUserId(user?.id ?? null);
       setAuthError("");
+
+      if (event === "PASSWORD_RECOVERY") {
+        setUpdatePasswordRecoveryReady(true);
+      }
 
       if (!user) {
         setCurrentUserProfile(null);
@@ -321,20 +369,153 @@ export default function App() {
     };
   }, [cloudEnabled]);
 
-  async function handleEmailCodeRequest() {
+  useEffect(() => {
+    if (!cloudEnabled || currentUserId || !useEmailFallback) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function loadPickerProfiles() {
+      setLoginPickerLoading(true);
+      try {
+        const profiles = await listLoginPickerProfiles(includeAdminInLoginPicker);
+        if (isCancelled) return;
+        setLoginPickerProfiles(profiles);
+        setAuthProfileId((previous) => {
+          if (previous && profiles.some((profile) => profile.id === previous)) {
+            return previous;
+          }
+          return profiles[0]?.id ?? "";
+        });
+      } catch (error) {
+        if (isCancelled) return;
+        const message = error instanceof Error ? error.message : "Unable to load user list";
+        setAuthError(message);
+      } finally {
+        if (!isCancelled) {
+          setLoginPickerLoading(false);
+        }
+      }
+    }
+
+    void loadPickerProfiles();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [cloudEnabled, currentUserId, useEmailFallback]);
+
+  useEffect(() => {
+    if (!cloudEnabled || !updatePasswordRouteActive) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function checkRecoverySession() {
+      setUpdatePasswordChecked(false);
+      try {
+        const session = await getCurrentSession();
+        if (isCancelled) return;
+        const hasRecoveryContext = hasRecoveryContextInLocation();
+        setUpdatePasswordRecoveryReady(Boolean(session?.user) && (hasRecoveryContext || updatePasswordRecoveryReady));
+      } catch {
+        if (isCancelled) return;
+        setUpdatePasswordRecoveryReady(false);
+      } finally {
+        if (!isCancelled) {
+          setUpdatePasswordChecked(true);
+        }
+      }
+    }
+
+    void checkRecoverySession();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [cloudEnabled, updatePasswordRouteActive, updatePasswordRecoveryReady]);
+
+  async function handlePickerPasswordSignIn() {
     setAuthLoading(true);
     setAuthError("");
     setAuthMessage("");
     try {
       setRememberMePreference(authRememberMe);
       if (authRememberMe) {
-        writeRememberedEmail(authEmail.trim());
+        writeRememberedProfileId(authProfileId.trim());
       } else {
-        clearRememberedEmail();
+        clearRememberedProfileId();
       }
-      await requestEmailSignIn(authEmail.trim(), authPassword);
+      const email = await resolveLoginPickerEmail(authProfileId, includeAdminInLoginPicker);
+      await requestEmailSignIn(email, authPassword);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Authentication failed";
+      setAuthError(message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handlePasswordResetRequest() {
+    const trimmedEmail = resetEmail.trim();
+    if (!trimmedEmail) {
+      setAuthError("Enter your email address.");
+      setAuthMessage("");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      await requestPasswordReset(trimmedEmail);
+      setAuthMessage("If an account exists for that email, we sent a password reset link.");
+    } catch (error) {
+      const rawMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const message =
+        rawMessage.includes("rate") || rawMessage.includes("too many")
+          ? "You have requested too many reset links. Please wait a bit and try again."
+          : "We couldn't send a reset link right now. Please try again.";
+      setAuthError(message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleUpdatePasswordSubmit() {
+    const nextPassword = updatePasswordValue.trim();
+    const confirmPassword = updatePasswordConfirm.trim();
+
+    if (!nextPassword || !confirmPassword) {
+      setAuthError("Enter and confirm your new password.");
+      setAuthMessage("");
+      return;
+    }
+
+    if (nextPassword !== confirmPassword) {
+      setAuthError("Passwords do not match.");
+      setAuthMessage("");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      await updateCurrentUserPassword(nextPassword);
+      await signOut();
+      setUpdatePasswordComplete(true);
+      setAuthMessage("Password updated. Please sign in.");
+      setUpdatePasswordValue("");
+      setUpdatePasswordConfirm("");
+    } catch (error) {
+      const rawMessage = error instanceof Error ? error.message.toLowerCase() : "";
+      const message =
+        rawMessage.includes("same")
+          ? "Choose a different password than your current one."
+          : "We couldn't update your password. Request a new reset link and try again.";
       setAuthError(message);
     } finally {
       setAuthLoading(false);
@@ -348,9 +529,9 @@ export default function App() {
     try {
       setRememberMePreference(authRememberMe);
       if (authRememberMe) {
-        writeRememberedEmail(authEmail.trim());
+        writeRememberedProfileId(authProfileId.trim());
       } else {
-        clearRememberedEmail();
+        clearRememberedProfileId();
       }
       await signInWithGoogle();
       // OAuth will redirect, but ensure profile exists when we return
@@ -1058,68 +1239,65 @@ export default function App() {
     );
   }
 
-  if (!currentUserId) {
+  if (updatePasswordRouteActive) {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
-          {inviteSignInFlow ? (
-            <div style={{ marginBottom: 12, color: "var(--cb-text-muted)", fontSize: 13, fontWeight: 600 }}>
-              Sign in to accept your campaign invite. You will be redirected to the invite automatically after sign-in.
-            </div>
-          ) : null}
-          {useEmailFallback ? (
+          {!updatePasswordChecked ? (
             <>
-              <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Email Sign In</h2>
-              <p style={{ ...mutedTextStyle }}>
-                Enter your email and password to sign in.
+              <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Checking reset link</h2>
+              <p style={{ ...mutedTextStyle, marginBottom: 0 }}>Verifying your password reset session...</p>
+            </>
+          ) : updatePasswordComplete ? (
+            <>
+              <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Choose a new password</h2>
+              <p style={{ ...mutedTextStyle, marginBottom: 12 }}>{authMessage || "Password updated. Please sign in."}</p>
+              <a href="/" className="button-control" style={{ ...primaryButtonStyle, display: "inline-flex", textDecoration: "none" }}>
+                Back to sign in
+              </a>
+            </>
+          ) : !updatePasswordRecoveryReady ? (
+            <>
+              <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Choose a new password</h2>
+              <p style={{ ...mutedTextStyle, marginBottom: 12 }}>
+                This password reset link is invalid or expired. Request a new link.
               </p>
-
+              <a href="/?auth=reset" className="button-control" style={{ ...buttonStyle, display: "inline-flex", textDecoration: "none" }}>
+                Request reset link
+              </a>
+            </>
+          ) : (
+            <>
+              <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Choose a new password</h2>
               <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "var(--cb-muted-label)" }}>
-                Email
-                <input
-                  type="email"
-                  value={authEmail}
-                  onChange={(e) => {
-                    setAuthEmail(e.target.value);
-                    setAuthError("");
-                    setAuthMessage("");
-                  }}
-                  autoComplete="email"
-                  className="form-control"
-                  style={inputStyle}
-                />
-              </label>
-
-              <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "var(--cb-muted-label)" }}>
-                Password
+                New password
                 <input
                   type="password"
-                  value={authPassword}
+                  value={updatePasswordValue}
                   onChange={(e) => {
-                    setAuthPassword(e.target.value);
+                    setUpdatePasswordValue(e.target.value);
                     setAuthError("");
                     setAuthMessage("");
                   }}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   className="form-control"
                   style={inputStyle}
                 />
               </label>
-
-              <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "var(--cb-muted-label)", fontSize: 13 }}>
+              <label style={{ display: "block", marginBottom: 12, fontWeight: 600, color: "var(--cb-muted-label)" }}>
+                Confirm password
                 <input
-                  type="checkbox"
-                  checked={authRememberMe}
+                  type="password"
+                  value={updatePasswordConfirm}
                   onChange={(e) => {
-                    const checked = e.target.checked;
-                    setAuthRememberMe(checked);
-                    setRememberMePreference(checked);
-                    if (!checked) {
-                      clearRememberedEmail();
-                    }
+                    setUpdatePasswordConfirm(e.target.value);
+                    setAuthError("");
+                    setAuthMessage("");
                   }}
+                  autoComplete="new-password"
+                  className="form-control"
+                  style={inputStyle}
                 />
-                Remember me on this device
               </label>
 
               {authError ? (
@@ -1132,21 +1310,203 @@ export default function App() {
 
               <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
                 <button
-                  onClick={() => void handleEmailCodeRequest()}
+                  onClick={() => void handleUpdatePasswordSubmit()}
                   className="button-control"
                   style={primaryButtonStyle}
-                  disabled={authLoading || !authEmail.trim() || authPassword.length === 0}
+                  disabled={authLoading}
                 >
-                  {authLoading ? "Signing in..." : "Sign In"}
+                  {authLoading ? "Saving..." : "Save password"}
                 </button>
-                <button
-                  onClick={() => setUseEmailFallback(false)}
-                  className="button-control"
-                  style={buttonStyle}
-                >
-                  Back to Google Sign In
-                </button>
+                <a href="/?auth=reset" className="button-control" style={{ ...buttonStyle, display: "inline-flex", textDecoration: "none" }}>
+                  Request a new reset link
+                </a>
               </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!currentUserId) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...panelStyle, maxWidth: 520 }}>
+          {inviteSignInFlow ? (
+            <div style={{ marginBottom: 12, color: "var(--cb-text-muted)", fontSize: 13, fontWeight: 600 }}>
+              Sign in to accept your campaign invite. You will be redirected to the invite automatically after sign-in.
+            </div>
+          ) : null}
+          {useEmailFallback ? (
+            <>
+              {authCardMode === "reset-request" ? (
+                <>
+                  <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Reset your password</h2>
+                  <p style={{ ...mutedTextStyle }}>
+                    Enter your email and we&apos;ll send a link to choose a new password.
+                  </p>
+
+                  <label style={{ display: "block", marginBottom: 12, fontWeight: 600, color: "var(--cb-muted-label)" }}>
+                    Email
+                    <input
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => {
+                        setResetEmail(e.target.value);
+                        setAuthError("");
+                        setAuthMessage("");
+                      }}
+                      autoComplete="email"
+                      className="form-control"
+                      style={inputStyle}
+                    />
+                  </label>
+
+                  {authError ? (
+                    <div style={{ marginBottom: 12, color: "var(--cb-danger-text)", fontWeight: 600 }}>{authError}</div>
+                  ) : null}
+
+                  {authMessage ? (
+                    <div style={{ marginBottom: 12, color: "var(--cb-success-text)", fontWeight: 600 }}>{authMessage}</div>
+                  ) : null}
+
+                  <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+                    <button
+                      onClick={() => void handlePasswordResetRequest()}
+                      className="button-control"
+                      style={primaryButtonStyle}
+                      disabled={authLoading || resetEmail.trim().length === 0}
+                    >
+                      {authLoading ? "Sending..." : "Send reset link"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setAuthCardMode("sign-in");
+                        setAuthError("");
+                        setAuthMessage("");
+                      }}
+                      className="button-control"
+                      style={buttonStyle}
+                    >
+                      Back to sign in
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Password Sign In</h2>
+                  <p style={{ ...mutedTextStyle }}>
+                    Choose your name and enter your password to sign in.
+                  </p>
+
+                  <label style={{ display: "block", marginBottom: 10, fontWeight: 600, color: "var(--cb-muted-label)" }}>
+                    User
+                    <select
+                      value={authProfileId}
+                      onChange={(e) => {
+                        setAuthProfileId(e.target.value);
+                        setAuthError("");
+                        setAuthMessage("");
+                      }}
+                      className="form-control"
+                      style={inputStyle}
+                      disabled={authLoading || loginPickerLoading}
+                    >
+                      {loginPickerProfiles.length === 0 ? (
+                        <option value="">
+                          {loginPickerLoading ? "Loading users..." : "No users available"}
+                        </option>
+                      ) : null}
+                      {loginPickerProfiles.map((profile) => (
+                        <option key={profile.id} value={profile.id}>
+                          {profile.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label style={{ display: "block", marginBottom: 4, fontWeight: 600, color: "var(--cb-muted-label)" }}>
+                    Password
+                    <input
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => {
+                        setAuthPassword(e.target.value);
+                        setAuthError("");
+                        setAuthMessage("");
+                      }}
+                      autoComplete="current-password"
+                      className="form-control"
+                      style={inputStyle}
+                    />
+                  </label>
+                  <button
+                    onClick={() => {
+                      setAuthCardMode("reset-request");
+                      setAuthError("");
+                      setAuthMessage("");
+                    }}
+                    type="button"
+                    style={{
+                      marginBottom: 12,
+                      padding: 0,
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--cb-text-muted)",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      fontSize: 13,
+                    }}
+                  >
+                    Forgot or change password?
+                  </button>
+
+                  <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "var(--cb-muted-label)", fontSize: 13 }}>
+                    <input
+                      type="checkbox"
+                      checked={authRememberMe}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setAuthRememberMe(checked);
+                        setRememberMePreference(checked);
+                        if (!checked) {
+                          clearRememberedProfileId();
+                        }
+                      }}
+                    />
+                    Remember me on this device
+                  </label>
+
+                  {authError ? (
+                    <div style={{ marginBottom: 12, color: "var(--cb-danger-text)", fontWeight: 600 }}>{authError}</div>
+                  ) : null}
+
+                  {authMessage ? (
+                    <div style={{ marginBottom: 12, color: "var(--cb-success-text)", fontWeight: 600 }}>{authMessage}</div>
+                  ) : null}
+
+                  <div style={{ display: "flex", gap: 8, flexDirection: "column" }}>
+                    <button
+                      onClick={() => void handlePickerPasswordSignIn()}
+                      className="button-control"
+                      style={primaryButtonStyle}
+                      disabled={authLoading || loginPickerLoading || !authProfileId || authPassword.length === 0}
+                    >
+                      {authLoading ? "Signing in..." : "Sign In"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUseEmailFallback(false);
+                        setAuthCardMode("sign-in");
+                      }}
+                      className="button-control"
+                      style={buttonStyle}
+                    >
+                      Back to Google Sign In
+                    </button>
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <>
@@ -1173,7 +1533,12 @@ export default function App() {
                   {authLoading ? "Signing in..." : "Continue with Google"}
                 </button>
                 <button
-                  onClick={() => setUseEmailFallback(true)}
+                  onClick={() => {
+                    setUseEmailFallback(true);
+                    setAuthCardMode(authActionFromQuery === "reset" ? "reset-request" : "sign-in");
+                    setAuthError("");
+                    setAuthMessage("");
+                  }}
                   className="button-control"
                   style={buttonStyle}
                 >
