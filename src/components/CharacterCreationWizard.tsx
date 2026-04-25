@@ -406,85 +406,23 @@ export default function CharacterCreationWizard({
 
       <div className={attributesCrackClassName}>
       {step === 0 && (
-        <div style={{ display: "grid", gap: 10 }}>
-          {/* ── Quickstart path ── */}
-          <div style={{ marginBottom: 0 }}>
-            <p style={{ margin: "0 0 7px", fontSize: 11, fontWeight: 500, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.55 }}>
-              Choose how to begin
-            </p>
-            <button
-              onClick={onOpenQuickstart}
-              style={{
-                width: "100%",
-                padding: "15px 20px",
-                borderRadius: 12,
-                border: "1.5px solid rgba(73, 224, 255, 0.55)",
-                background: "rgba(73, 224, 255, 0.10)",
-                boxShadow: "0 0 0 0 rgba(73,224,255,0)",
-                color: "var(--text-primary)",
-                cursor: "pointer",
-                textAlign: "left",
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                transition: "background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s",
-              }}
-              onMouseEnter={(e) => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.background = "rgba(73, 224, 255, 0.17)";
-                el.style.borderColor = "rgba(73, 224, 255, 0.82)";
-                el.style.boxShadow = "0 0 14px 2px rgba(73,224,255,0.18)";
-                el.style.transform = "scale(1.012)";
-              }}
-              onMouseLeave={(e) => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.background = "rgba(73, 224, 255, 0.10)";
-                el.style.borderColor = "rgba(73, 224, 255, 0.55)";
-                el.style.boxShadow = "0 0 0 0 rgba(73,224,255,0)";
-                el.style.transform = "scale(1)";
-              }}
-              onMouseDown={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.988)";
-              }}
-              onMouseUp={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.012)";
-              }}
-            >
-              <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>⚡</span>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 3, color: "#e9fdff" }}>
-                  Quickstart Character
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                  Generate a complete playable character in seconds
-                </div>
-              </div>
-            </button>
-          </div>
-
-          {/* ── divider ── */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0" }}>
-            <div style={{ flex: 1, height: 1, background: "var(--border-soft)", opacity: 0.4 }} />
-            <span style={{ fontSize: 11, color: "var(--text-secondary)", opacity: 0.4, fontWeight: 500, letterSpacing: "0.03em" }}>or create manually</span>
-            <div style={{ flex: 1, height: 1, background: "var(--border-soft)", opacity: 0.4 }} />
-          </div>
-
-          {/* ── Manual path ── */}
-          <label style={{ fontWeight: 500, color: "rgba(185,205,240,0.75)", fontSize: 13 }}>
+        <div style={{ display: "grid", gap: 12 }}>
+          {/* ── Primary: manual inputs ── */}
+          <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
             Character Name
             <input
               value={draft.identity.name}
               onChange={(e) => onNameChange(e.target.value)}
-              style={{ ...inputStyle, borderColor: "rgba(255,255,255,0.12)" }}
+              style={inputStyle}
             />
           </label>
 
-          <label style={{ fontWeight: 500, color: "rgba(185,205,240,0.75)", fontSize: 13 }}>
+          <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
             Campaign
             <select
               value={draft.campaignId}
               onChange={(e) => onCampaignChange(e.target.value)}
-              style={{ ...selectStyle, borderColor: "rgba(255,255,255,0.12)" }}
+              style={selectStyle}
             >
               {campaigns.map((campaign) => (
                 <option key={campaign.id} value={campaign.id}>
@@ -495,10 +433,46 @@ export default function CharacterCreationWizard({
           </label>
 
           {selectedCampaign?.description && (
-            <p style={{ margin: "-4px 0 0", fontSize: 11.5, color: "var(--text-secondary)", opacity: 0.55, paddingLeft: 2, lineHeight: 1.55 }}>
+            <p style={{ margin: "-6px 0 0", fontSize: 12, color: "var(--text-secondary)", opacity: 0.55, paddingLeft: 2, lineHeight: 1.55 }}>
               {selectedCampaign.description}
             </p>
           )}
+
+          {/* ── Tertiary: Quickstart inline row ── */}
+          <button
+            onClick={onOpenQuickstart}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              background: "none",
+              border: "none",
+              padding: "4px 2px",
+              cursor: "pointer",
+              color: "var(--text-secondary)",
+              fontSize: 13,
+              opacity: 0.65,
+              transition: "opacity 0.15s, color 0.15s",
+              textAlign: "left",
+              width: "fit-content",
+            }}
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.opacity = "1";
+              el.style.color = "var(--accent-primary)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.opacity = "0.65";
+              el.style.color = "var(--text-secondary)";
+            }}
+          >
+            <span style={{ fontSize: 14, lineHeight: 1 }}>⚡</span>
+            <span>
+              <span style={{ fontWeight: 600 }}>Quickstart Character</span>
+              <span style={{ marginLeft: 6, opacity: 0.75 }}>— generate a complete character in seconds</span>
+            </span>
+          </button>
         </div>
       )}
 
