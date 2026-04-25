@@ -263,7 +263,7 @@ export default function GuidanceOverlay() {
       {/* Chalk ring around target element */}
       <div
         aria-hidden
-        className="chalk-target-ring"
+        className="chalk-ring"
         style={{
           position: "fixed",
           top: targetRect.top - 6,
@@ -305,7 +305,7 @@ export default function GuidanceOverlay() {
           aria-modal="false"
           aria-label={activeStep.title}
           aria-describedby={bodyId}
-          className="chalk-card"
+          className="guidance-card"
           style={{
             position: "fixed",
             top: cardPos.top,
@@ -314,19 +314,19 @@ export default function GuidanceOverlay() {
             zIndex: 9992,
           }}
         >
-          <p className="chalk-card-title">{activeStep.title}</p>
-          <p id={bodyId} className="chalk-card-body">{activeStep.body}</p>
-          <div className="chalk-card-actions">
+          <p className="guidance-card-title">{activeStep.title}</p>
+          <p id={bodyId} className="guidance-card-body">{activeStep.body}</p>
+          <div className="guidance-card-actions">
             <button
               ref={firstButtonRef}
-              className="chalk-btn chalk-btn-primary"
+              className="guidance-btn guidance-btn-primary"
               aria-label={hasNextStep ? "Next hint" : "Got it, dismiss hint"}
               onClick={hasNextStep ? advance : dismissCurrent}
             >
               {hasNextStep ? "Next" : "Got it"}
             </button>
             <button
-              className="chalk-btn chalk-btn-muted"
+              className="guidance-btn guidance-btn-muted"
               aria-label={`Don't show "${activeStep.title}" again`}
               onClick={dismissPermanently}
             >

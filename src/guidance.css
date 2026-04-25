@@ -3,91 +3,74 @@
    Works on top of all cb themes (dark & light)
    ============================================================ */
 
-/* --- hand-drawn chalk target ring --- */
-.chalk-target-ring {
+/* --- hand-drawn chalk target ring (separate overlay element) --- */
+.chalk-ring {
   position: fixed;
   pointer-events: none;
-  border-radius: 14px 18px 13px 20px;
-  opacity: 0.92;
-  animation: chalk-breathe 3s ease-in-out infinite;
+  z-index: 9998;
 }
 
-.chalk-target-ring::before,
-.chalk-target-ring::after {
+.chalk-ring::before,
+.chalk-ring::after {
   content: "";
   position: absolute;
-  inset: -5px;
-  border: 2px solid rgba(235, 235, 210, 0.72);
-  border-radius: 16px 21px 14px 19px;
+  inset: -6px;
+  border: 2px solid rgba(245, 245, 220, 0.75);
+  border-radius: 18px 22px 16px 24px;
   transform: rotate(-0.4deg);
-  filter: drop-shadow(0 0 4px rgba(235, 235, 210, 0.25));
+  filter: blur(0.2px) drop-shadow(0 0 6px rgba(245, 245, 220, 0.25));
 }
 
-.chalk-target-ring::after {
-  inset: -8px;
+.chalk-ring::after {
+  inset: -10px;
   opacity: 0.35;
-  transform: rotate(0.6deg);
-  border-radius: 19px 14px 22px 15px;
+  transform: rotate(0.8deg);
+  border-radius: 24px 16px 22px 18px;
 }
 
-/* Subtle chalk dust texture */
-.chalk-target-ring::before,
-.chalk-target-ring::after,
-.chalk-card::after {
-  background-image:
-    radial-gradient(circle at 20% 30%, rgba(255, 255, 230, 0.18) 0 1px, transparent 1.5px),
-    radial-gradient(circle at 70% 60%, rgba(255, 255, 230, 0.10) 0 1px, transparent 2px);
-  background-size: 12px 10px, 17px 13px;
-  background-repeat: repeat;
-  mix-blend-mode: screen;
+@media (prefers-reduced-motion: no-preference) {
+  .chalk-ring {
+    animation: chalkPulse 3s ease-in-out infinite;
+  }
 }
 
-@keyframes chalk-breathe {
+@keyframes chalkPulse {
   0%, 100% {
-    opacity: 0.82;
-    transform: scale(0.995);
+    opacity: 0.85;
   }
   50% {
     opacity: 1;
-    transform: scale(1.005);
   }
 }
 
 /* --- chalk note card --- */
-.chalk-card {
+.guidance-card {
   position: relative;
-  background: rgba(20, 22, 16, 0.92);
-  border: none;
-  border-radius: 11px 16px 12px 18px;
-  padding: 14px 16px 12px;
+  background: rgba(18, 20, 14, 0.92);
+  color: #f3f3e8;
+  border-radius: 16px 20px 14px 22px;
+  padding: 16px 18px;
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.45),
-    inset 0 0 14px rgba(250, 245, 220, 0.06);
+    0 8px 24px rgba(0, 0, 0, 0.42),
+    inset 0 0 12px rgba(245, 245, 220, 0.06);
   transform: rotate(-0.3deg);
   animation: chalk-card-in 200ms ease-out both;
 }
 
-.chalk-card::before,
-.chalk-card::after {
+.guidance-card::before,
+.guidance-card::after {
   content: "";
   position: absolute;
   inset: -4px;
   pointer-events: none;
+  border: 2px solid rgba(245, 245, 220, 0.65);
+  border-radius: 18px 24px 16px 20px;
 }
 
-.chalk-card::before {
-  border: 2px solid rgba(235, 235, 210, 0.72);
-  border-radius: 14px 20px 12px 19px;
-  transform: rotate(-0.35deg);
-  filter: drop-shadow(0 0 4px rgba(235, 235, 210, 0.2));
-}
-
-.chalk-card::after {
+.guidance-card::after {
   inset: -7px;
-  border: 1.5px solid rgba(235, 235, 210, 0.28);
-  border-radius: 18px 13px 21px 14px;
-  transform: rotate(0.55deg);
-  opacity: 0.72;
+  opacity: 0.3;
+  transform: rotate(0.6deg);
 }
 
 @keyframes chalk-card-in {
@@ -102,104 +85,93 @@
 }
 
 /* light theme override: keep card readable */
-[data-cb-theme="paper"] .chalk-card,
-[data-cb-theme="feywild"] .chalk-card {
+[data-cb-theme="paper"] .guidance-card,
+[data-cb-theme="feywild"] .guidance-card {
   background: rgba(245, 242, 232, 0.94);
+  color: #2a2510;
   box-shadow:
     0 8px 20px rgba(0, 0, 0, 0.16),
     inset 0 0 12px rgba(30, 26, 14, 0.06);
 }
 
-[data-cb-theme="paper"] .chalk-card::before,
-[data-cb-theme="feywild"] .chalk-card::before {
+[data-cb-theme="paper"] .guidance-card::before,
+[data-cb-theme="feywild"] .guidance-card::before,
+[data-cb-theme="paper"] .guidance-card::after,
+[data-cb-theme="feywild"] .guidance-card::after {
   border-color: rgba(42, 37, 16, 0.5);
 }
 
-[data-cb-theme="paper"] .chalk-card::after,
-[data-cb-theme="feywild"] .chalk-card::after {
-  border-color: rgba(42, 37, 16, 0.24);
-}
-
-.chalk-card-title {
+.guidance-card-title {
   margin: 0 0 6px;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: rgba(244, 240, 224, 0.96);
+  color: rgba(243, 243, 232, 0.98);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
-[data-cb-theme="paper"] .chalk-card-title,
-[data-cb-theme="feywild"] .chalk-card-title {
+[data-cb-theme="paper"] .guidance-card-title,
+[data-cb-theme="feywild"] .guidance-card-title {
   color: #2a2510;
   text-shadow: none;
 }
 
-.chalk-card-body {
+.guidance-card-body {
   margin: 0 0 12px;
   font-size: 12px;
   line-height: 1.55;
-  color: rgba(230, 225, 202, 0.9);
+  color: rgba(243, 243, 232, 0.9);
 }
 
-[data-cb-theme="paper"] .chalk-card-body,
-[data-cb-theme="feywild"] .chalk-card-body {
+[data-cb-theme="paper"] .guidance-card-body,
+[data-cb-theme="feywild"] .guidance-card-body {
   color: #3a3520;
 }
 
 /* --- action buttons --- */
-.chalk-card-actions {
+.guidance-card-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.chalk-btn {
+.guidance-btn {
   flex: 1;
   min-width: 80px;
-  padding: 6px 10px;
+  padding: 6px 14px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  border-radius: 9px 13px 8px 12px;
-  border: 1.5px solid rgba(235, 235, 210, 0.45);
-  background: rgba(235, 235, 210, 0.05);
-  color: rgba(244, 240, 224, 0.94);
+  border-radius: 12px 16px 10px 14px;
+  border: 2px solid rgba(245, 245, 220, 0.6);
+  background: transparent;
+  color: #f3f3e8;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, transform 120ms ease;
+  transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
-.chalk-btn:hover {
-  border-color: rgba(235, 235, 210, 0.7);
-  box-shadow: 0 0 10px rgba(235, 235, 210, 0.22);
-  transform: translateY(-0.5px);
+.guidance-btn:hover {
+  box-shadow: 0 0 8px rgba(245, 245, 220, 0.3);
 }
 
-.chalk-btn:focus-visible {
+.guidance-btn:focus-visible {
   outline: 2px solid rgba(244, 240, 224, 0.8);
   outline-offset: 2px;
 }
 
-.chalk-btn-primary {
-  background: rgba(235, 235, 210, 0.14);
+.guidance-btn-primary {
+  background: rgba(245, 245, 220, 0.08);
 }
 
-.chalk-btn-muted {
-  background: rgba(235, 235, 210, 0.03);
-  color: rgba(224, 220, 198, 0.82);
+.guidance-btn-muted {
+  color: rgba(243, 243, 232, 0.92);
 }
 
-[data-cb-theme="paper"] .chalk-btn,
-[data-cb-theme="feywild"] .chalk-btn {
-  border-color: rgba(42, 37, 16, 0.38);
-  background: rgba(42, 37, 16, 0.06);
+[data-cb-theme="paper"] .guidance-btn,
+[data-cb-theme="feywild"] .guidance-btn {
+  border-color: rgba(42, 37, 16, 0.55);
   color: #2a2510;
-}
-
-[data-cb-theme="paper"] .chalk-btn-muted,
-[data-cb-theme="feywild"] .chalk-btn-muted {
-  color: rgba(42, 37, 16, 0.72);
 }
 
 /* --- curved chalk arrow --- */
@@ -217,19 +189,19 @@
 
 .chalk-arrow-main {
   fill: none;
-  stroke: rgba(235, 235, 210, 0.86);
+  stroke: rgba(245, 245, 220, 0.8);
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 7 3 4 6;
+  filter: drop-shadow(0 0 4px rgba(245, 245, 220, 0.3));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chalk-target-ring,
-  .chalk-card {
+  .chalk-ring,
+  .guidance-card {
     animation: none;
   }
-  .chalk-btn {
+  .guidance-btn {
     transition: none;
   }
 }
