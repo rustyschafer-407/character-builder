@@ -745,32 +745,32 @@ export default function AdminScreen({
         <h2 style={sectionTitleStyle}>Admin Screen</h2>
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto" }}>
-        <button onClick={() => setTab("campaign")} style={{ ...buttonStyle, background: tab === "campaign" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto", flexShrink: 0, paddingBottom: 4 }}>
+        <button onClick={() => setTab("campaign")} className="button-control" style={{ ...buttonStyle, background: tab === "campaign" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Campaign
         </button>
-        <button onClick={() => setTab("skills")} style={{ ...buttonStyle, background: tab === "skills" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("skills")} className="button-control" style={{ ...buttonStyle, background: tab === "skills" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Skills
         </button>
-        <button onClick={() => setTab("powers")} style={{ ...buttonStyle, background: tab === "powers" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("powers")} className="button-control" style={{ ...buttonStyle, background: tab === "powers" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Powers
         </button>
-        <button onClick={() => setTab("items")} style={{ ...buttonStyle, background: tab === "items" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("items")} className="button-control" style={{ ...buttonStyle, background: tab === "items" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Items
         </button>
-        <button onClick={() => setTab("attacks")} style={{ ...buttonStyle, background: tab === "attacks" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("attacks")} className="button-control" style={{ ...buttonStyle, background: tab === "attacks" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Attacks
         </button>
-        <button onClick={() => setTab("classes")} style={{ ...buttonStyle, background: tab === "classes" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("classes")} className="button-control" style={{ ...buttonStyle, background: tab === "classes" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Classes
         </button>
-        <button onClick={() => setTab("races")} style={{ ...buttonStyle, background: tab === "races" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
+        <button onClick={() => setTab("races")} className="button-control" style={{ ...buttonStyle, background: tab === "races" ? "rgba(73, 224, 255, 0.18)" : buttonStyle.background }}>
           Races
         </button>
         </div>
 
       {tab === "campaign" && (
-        <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
+        <main style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
           {!selectedCampaign ? (
             <div style={cardStyle()}>
               <p style={{ margin: 0, ...mutedTextStyle }}>The selected campaign is no longer available in this editor state.</p>
