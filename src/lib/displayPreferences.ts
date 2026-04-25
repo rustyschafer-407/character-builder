@@ -4,7 +4,15 @@ export type CbTheme =
   | "dark"
   | "high-contrast-light"
   | "high-contrast-dark"
-  | "low-glare-dark";
+  | "low-glare-dark"
+  | "arcane"
+  | "tavern"
+  | "neon"
+  | "terminal"
+  | "paper"
+  | "slate"
+  | "dragonfire"
+  | "feywild";
 
 export type CbTextSize = "normal" | "large";
 export type CbDensity = "comfortable" | "compact";
@@ -28,6 +36,14 @@ export const THEME_OPTIONS: Array<{ value: CbTheme; label: string }> = [
   { value: "high-contrast-light", label: "High Contrast Light" },
   { value: "high-contrast-dark", label: "High Contrast Dark" },
   { value: "low-glare-dark", label: "Low Glare Dark" },
+  { value: "arcane", label: "Arcane" },
+  { value: "tavern", label: "Tavern" },
+  { value: "neon", label: "Neon" },
+  { value: "terminal", label: "Terminal" },
+  { value: "paper", label: "Paper" },
+  { value: "slate", label: "Slate" },
+  { value: "dragonfire", label: "Dragonfire" },
+  { value: "feywild", label: "Feywild" },
 ];
 
 export const TEXT_SIZE_OPTIONS: Array<{ value: CbTextSize; label: string }> = [
