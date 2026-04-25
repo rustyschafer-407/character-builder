@@ -823,6 +823,7 @@ export default function App() {
     if (!character) return false;
 
     const campaignRole = campaignRolesByCampaignId[character.campaignId];
+    if (isGm && campaignRole) return true;
     if (campaignRole === "editor") return true;
 
     const directRole = characterRolesByCharacterId[characterId];

@@ -403,8 +403,10 @@ export async function listAccessibleCharacterRows() {
       const campaignRole = context.campaignRolesByCampaignId[character.campaign_id]
       const directRole = context.characterRolesByCharacterId[character.id] ?? null
       const createdByCurrentUser = character.created_by === context.profile?.id
+      const gmHasCampaignMembership = Boolean(context.profile?.is_gm && campaignRole)
       const canEdit = Boolean(
         context.profile?.is_admin ||
+          gmHasCampaignMembership ||
           campaignRole === "editor" ||
           directRole === "editor" ||
           createdByCurrentUser
