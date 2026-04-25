@@ -691,6 +691,10 @@ export default function App() {
   }
 
   function openAccessManagement() {
+    if (!uiCanOpenAccessManagement) {
+      return;
+    }
+
     cancelAdmin();
     setSecurityOpen(true);
   }
@@ -799,6 +803,7 @@ export default function App() {
   const uiCanManageCharacterAccess = Boolean(
     selected && currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[selected.campaignId] === "editor")
   );
+  const uiCanOpenAccessManagement = uiCanManageUsers || uiCanManageCampaignAccess;
   const uiCanEditCharacterById = (characterId: string) => {
     if (isAdmin) return true;
     const character = characters.find((item) => item.id === characterId);
@@ -1169,10 +1174,10 @@ export default function App() {
 
 
   useEffect(() => {
-    if (securityOpen && !uiCanManageUsers && !uiCanManageCampaignAccess && !uiCanManageCharacterAccess) {
+    if (securityOpen && !uiCanOpenAccessManagement) {
       setSecurityOpen(false);
     }
-  }, [securityOpen, uiCanManageUsers, uiCanManageCampaignAccess, uiCanManageCharacterAccess]);
+  }, [securityOpen, uiCanOpenAccessManagement]);
 
   if (!cloudEnabled) {
     return (
@@ -1604,7 +1609,7 @@ export default function App() {
                   Edit Campaign
                 </button>
               ) : null}
-              {(uiCanManageUsers || uiCanManageCampaignAccess || uiCanManageCharacterAccess) ? (
+              {uiCanOpenAccessManagement ? (
                 <button onClick={openAccessManagement} className="button-control" style={buttonStyle}>
                   Access
                 </button>
