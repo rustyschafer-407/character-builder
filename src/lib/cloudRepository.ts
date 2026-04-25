@@ -440,6 +440,34 @@ export async function listLoginPickerProfileSummariesByIds(userIds: string[]) {
   if (uniqueIds.length === 0) return [] as ProfileRow[]
 
   const supabase = getSupabaseClient()
+  const { data: accessRows, error: accessError } = await supabase.rpc(
+    "list_access_profile_summaries",
+    { p_user_ids: uniqueIds } as never
+  )
+  if (!accessError) {
+    const accessRowsById = new Map<string, { display_name: string | null; email: string | null }>()
+    for (const row of (accessRows ?? []) as { profile_id: string; display_name: string | null; email: string | null }[]) {
+      if (!row.profile_id) continue
+      accessRowsById.set(row.profile_id, {
+        display_name: row.display_name?.trim() || null,
+        email: row.email?.trim() || null,
+      })
+    }
+
+    return uniqueIds.map((userId) => {
+      const value = accessRowsById.get(userId) ?? { display_name: null, email: null }
+      return {
+        id: userId,
+        email: value.email,
+        display_name: value.display_name,
+        is_admin: false,
+        is_gm: false,
+        created_at: "",
+        updated_at: "",
+      } satisfies ProfileRow
+    })
+  }
+
   const { data: loginPickerRows, error: loginPickerError } = await supabase.rpc(
     "list_login_picker_profiles",
     { p_include_admin: true } as never
