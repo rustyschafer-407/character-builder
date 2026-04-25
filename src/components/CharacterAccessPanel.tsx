@@ -108,13 +108,13 @@ export default function CharacterAccessPanel({
   return (
     <section style={{ ...panelStyle, display: "grid", gap: 12 }}>
       {/* ── Header ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h3 style={{ margin: "0 0 3px", color: "var(--text-primary)", fontSize: 17 }}>Access &amp; Permissions</h3>
           <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>Manage who can view or edit this character.</div>
         </div>
         <button
-          style={primaryButtonStyle}
+          className="button-control" style={primaryButtonStyle}
           disabled={busy}
           onClick={() => {
             setShowAddModal(true);
@@ -127,19 +127,19 @@ export default function CharacterAccessPanel({
 
       {/* ── Error / success banners ── */}
       {errorMessage ? (
-        <div style={{ border: "1px solid rgba(255,122,157,0.45)", background: "rgba(255,122,157,0.14)", borderRadius: 10, padding: "10px 12px", color: "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
+        <div style={{ border: "1px solid rgba(255,122,157,0.45)", background: "rgba(255,122,157,0.14)", borderRadius: 10, padding: "12px 12px 12px", color: "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
           {errorMessage}
         </div>
       ) : null}
       {accessResult ? (
-        <div style={{ border: accessResult.type === "success" ? "1px solid rgba(90,236,178,0.45)" : "1px solid rgba(255,122,157,0.45)", background: accessResult.type === "success" ? "rgba(90,236,178,0.14)" : "rgba(255,122,157,0.14)", borderRadius: 10, padding: "10px 12px", color: accessResult.type === "success" ? "#ccffe7" : "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
+        <div style={{ border: accessResult.type === "success" ? "1px solid rgba(90,236,178,0.45)" : "1px solid rgba(255,122,157,0.45)", background: accessResult.type === "success" ? "rgba(90,236,178,0.14)" : "rgba(255,122,157,0.14)", borderRadius: 10, padding: "12px 12px 12px", color: accessResult.type === "success" ? "#ccffe7" : "#ffd6e2", fontWeight: 600, fontSize: 13 }}>
           {accessResult.message}
         </div>
       ) : null}
 
       {/* ── Unified access list ── */}
       <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, padding: "9px 14px", background: "rgba(16,30,58,0.55)", color: "#b9cdf0", fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, padding: "8px 12px", background: "rgba(16,30,58,0.55)", color: "#b9cdf0", fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
           <div>User</div>
           <div>Email</div>
           <div>Permission</div>
@@ -148,13 +148,13 @@ export default function CharacterAccessPanel({
         </div>
 
         {explicitRows.length === 0 && inheritedRows.length === 0 && (
-          <div style={{ padding: "14px", color: "var(--text-secondary)", fontSize: 13 }}>No one has access yet.</div>
+          <div style={{ padding: "16px", color: "var(--text-secondary)", fontSize: 13 }}>No one has access yet.</div>
         )}
 
         {explicitRows.map((row) => (
           <div
             key={`direct-${row.user_id}`}
-            style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "10px 14px", borderTop: "1px solid rgba(58,78,127,0.35)", transition: "background 0.12s" }}
+            style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "12px", borderTop: "1px solid rgba(58,78,127,0.35)", transition: "background 0.12s" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(73,224,255,0.04)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
           >
@@ -168,7 +168,8 @@ export default function CharacterAccessPanel({
             <select
               value={row.role}
               disabled={busy}
-              style={{ background: "rgba(16,30,58,0.8)", border: "1px solid rgba(73,224,255,0.35)", borderRadius: 7, padding: "4px 8px", color: "#e9fdff", fontSize: 13, cursor: "pointer" }}
+              className="form-control"
+              style={{ background: "rgba(16,30,58,0.8)", border: "1px solid rgba(73,224,255,0.35)", borderRadius: 7, color: "#e9fdff", fontSize: 13, cursor: "pointer" }}
               onChange={(e) => {
                 const newRole = e.target.value as CharacterAccessRole;
                 void runAction(async () => {
@@ -184,7 +185,8 @@ export default function CharacterAccessPanel({
             <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
               <button
                 title="Remove access"
-                style={{ ...buttonStyle, padding: "5px 8px", color: "#ff8fa8", borderColor: "rgba(255,122,157,0.35)", background: "rgba(255,122,157,0.08)", fontSize: 13 }}
+                className="button-control"
+                style={{ ...buttonStyle, color: "#ff8fa8", borderColor: "rgba(255,122,157,0.35)", background: "rgba(255,122,157,0.08)", fontSize: 13 }}
                 disabled={busy}
                 onClick={() => setRemoveModalUserId(row.user_id)}
               >
@@ -197,7 +199,7 @@ export default function CharacterAccessPanel({
         {inheritedRows.map((row) => (
           <div
             key={`inherited-${row.user_id}`}
-            style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "10px 14px", borderTop: "1px solid rgba(58,78,127,0.35)", opacity: 0.82, transition: "background 0.12s" }}
+            style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "12px", borderTop: "1px solid rgba(58,78,127,0.35)", opacity: 0.82, transition: "background 0.12s" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.02)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
           >
@@ -244,12 +246,12 @@ export default function CharacterAccessPanel({
           }}
         >
           <div
-            style={{ ...panelStyle, width: "min(640px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+            style={{ ...panelStyle, width: "min(640px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
               <strong>Add Player Access</strong>
-              <button style={buttonStyle} disabled={busy} onClick={() => setShowAddModal(false)}>
+              <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => setShowAddModal(false)}>
                 Close
               </button>
             </div>
@@ -259,10 +261,10 @@ export default function CharacterAccessPanel({
               <select
                 value={newAccessUserId}
                 onChange={(e) => setNewAccessUserId(e.target.value)}
-                style={inputStyle}
+                className="form-control" style={inputStyle}
                 disabled={busy}
               >
-                <option value="">Select user</option>
+                <option value="">Choose user</option>
                 {addUserIds.map((userId) => (
                   <option key={userId} value={userId}>
                     {getUserLabel(userId)}
@@ -276,7 +278,7 @@ export default function CharacterAccessPanel({
               <select
                 value={newAccessRole}
                 onChange={(e) => setNewAccessRole(e.target.value as CharacterAccessRole)}
-                style={inputStyle}
+                className="form-control" style={inputStyle}
                 disabled={busy}
               >
                 <option value="editor">Can edit</option>
@@ -286,7 +288,7 @@ export default function CharacterAccessPanel({
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
               <button
-                style={primaryButtonStyle}
+                className="button-control" style={primaryButtonStyle}
                 disabled={busy || !newAccessUserId}
                 onClick={() => {
                   if (!newAccessUserId) return;
@@ -323,20 +325,20 @@ export default function CharacterAccessPanel({
           }}
         >
           <div
-            style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+            style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
             onClick={(event) => event.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
               <strong>Remove Character Access</strong>
-              <button style={buttonStyle} disabled={busy} onClick={() => setRemoveModalUserId("")}>Close</button>
+              <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => setRemoveModalUserId("")}>Close</button>
             </div>
             <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
               Remove access for {getUserLabel(removeModalUserId)}?
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-              <button style={buttonStyle} disabled={busy} onClick={() => setRemoveModalUserId("")}>Close</button>
+              <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => setRemoveModalUserId("")}>Close</button>
               <button
-                style={primaryButtonStyle}
+                className="button-control" style={primaryButtonStyle}
                 disabled={busy}
                 onClick={() => {
                   void runAction(async () => {

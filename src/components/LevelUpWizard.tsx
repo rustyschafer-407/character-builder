@@ -88,12 +88,12 @@ export default function LevelUpWizard({
         }}
       >
         <h2 style={sectionTitleStyle}>Level Up Wizard</h2>
-        <button onClick={onCancel} style={buttonStyle}>
+        <button onClick={onCancel} className="button-control" style={buttonStyle}>
           Cancel
         </button>
       </div>
 
-      <div style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "grid", gap: 16 }}>
         <div
           style={{
             padding: 12,
@@ -171,7 +171,7 @@ export default function LevelUpWizard({
               </div>
             )}
 
-            <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gap: 12 }}>
               <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>
                 {labels.skills} Choices ({selectedSkillIds.length}/{newSkillChoices})
               </div>
@@ -193,7 +193,7 @@ export default function LevelUpWizard({
                     <label
                       key={skill.id}
                       style={{
-                        padding: 10,
+                        padding: 12,
                         borderRadius: 8,
                         border: "1px solid var(--border-soft)",
                         background: selected
@@ -203,7 +203,7 @@ export default function LevelUpWizard({
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        gap: 10,
+                        gap: 12,
                       }}
                     >
                       <span>
@@ -233,7 +233,7 @@ export default function LevelUpWizard({
               )}
             </div>
 
-            <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ display: "grid", gap: 12 }}>
               <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>
                 {labels.powers} Choices ({selectedPowerIds.length}/{newPowerChoices})
               </div>
@@ -255,7 +255,7 @@ export default function LevelUpWizard({
                     <label
                       key={power.id}
                       style={{
-                        padding: 10,
+                        padding: 12,
                         borderRadius: 8,
                         border: "1px solid var(--border-soft)",
                         background: selected
@@ -265,7 +265,7 @@ export default function LevelUpWizard({
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        gap: 10,
+                        gap: 12,
                       }}
                     >
                       <span>
@@ -303,10 +303,10 @@ export default function LevelUpWizard({
           marginTop: 24,
         }}
       >
-        <button onClick={onCancel} style={buttonStyle}>
+        <button onClick={onCancel} className="button-control" style={buttonStyle}>
           Back
         </button>
-        <button onClick={onApply} disabled={!canApply} style={buttonStyle}>
+        <button onClick={onApply} disabled={!canApply} className="button-control" style={buttonStyle}>
           {applyPending ? "Applying..." : "Apply Level Up"}
         </button>
       </div>

@@ -21,7 +21,7 @@ export default function AttacksSection({ character, label, onAdd, onChange }: Pr
         }}
       >
         <h2 style={sectionTitleStyle}>{label}</h2>
-        <button onClick={onAdd} style={buttonStyle}>
+        <button onClick={onAdd} className="button-control" style={buttonStyle}>
           Add Attack
         </button>
       </div>
@@ -44,18 +44,18 @@ export default function AttacksSection({ character, label, onAdd, onChange }: Pr
               <input
                 value={a.name}
                 onChange={(e) => onChange(a.id, "name", e.target.value)}
-                style={inputStyle}
+                className="form-control" style={inputStyle}
               />
               <input
                 value={a.damage}
                 onChange={(e) => onChange(a.id, "damage", e.target.value)}
-                style={inputStyle}
+                className="form-control" style={inputStyle}
               />
               <input
                 type="number"
                 value={a.bonus}
                 onChange={(e) => onChange(a.id, "bonus", Number(e.target.value) || 0)}
-                style={inputStyle}
+                className="form-control" style={inputStyle}
               />
               <div style={{ color: "var(--text-primary)" }}>
                 Total: <strong>{total >= 0 ? "+" : ""}{total}</strong>

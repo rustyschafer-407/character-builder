@@ -36,7 +36,7 @@ export default function AttributesSection({
                 type="number"
                 value={character.attributes[attr]}
                 onChange={(e) => onChange(attr, Number(e.target.value) || 0)}
-                style={inputStyle}
+                className="form-control" style={inputStyle}
               />
             </div>
 

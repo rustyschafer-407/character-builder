@@ -19,10 +19,10 @@ export const panelStyle: React.CSSProperties = {
 
 export const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "10px 12px",
-  height: 44,
-  minHeight: 44,
-  lineHeight: "22px",
+  padding: "0 12px",
+  height: 40,
+  minHeight: 40,
+  lineHeight: "1.2",
   marginTop: 4,
   boxSizing: "border-box",
   borderRadius: 10,
@@ -36,11 +36,12 @@ export const inputStyle: React.CSSProperties = {
 export const selectStyle: React.CSSProperties = {
   ...inputStyle,
   padding: "0 12px",
-  lineHeight: "normal",
+  lineHeight: "1.2",
 };
 
 export const buttonStyle: React.CSSProperties = {
-  padding: "9px 13px",
+  minHeight: 40,
+  padding: "0 12px",
   borderRadius: 10,
   border: "1px solid var(--border-bright)",
   background: "rgba(16, 30, 58, 0.92)",
@@ -48,6 +49,11 @@ export const buttonStyle: React.CSSProperties = {
   cursor: "pointer",
   fontSize: 14,
   fontWeight: 600,
+  lineHeight: "1.2",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 8,
   transition: "transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease",
   boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
 };
@@ -65,7 +71,7 @@ export const dangerButtonStyle: React.CSSProperties = {
   background: "rgba(255, 122, 157, 0.18)",
   border: "1px solid rgba(255, 122, 157, 0.45)",
   color: "#ffd6e2",
-  padding: "0 8px",
+  padding: "0 12px",
 };
 
 export const sectionTitleStyle: React.CSSProperties = {
@@ -90,7 +96,7 @@ export const labelTextStyle: React.CSSProperties = {
 export const cardStyle: React.CSSProperties = {
   border: "1px solid #324977",
   borderRadius: 10,
-  padding: 10,
+  padding: 12,
   background: "rgba(11, 22, 42, 0.72)",
 };
 

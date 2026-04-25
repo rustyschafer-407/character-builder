@@ -305,11 +305,11 @@ export default function AccessManagementPanel({
   }
 
   return (
-    <section style={{ ...panelStyle, marginBottom: 20, display: "grid", gap: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+    <section style={{ ...panelStyle, marginBottom: 24, display: "grid", gap: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h2 style={{ ...sectionTitleStyle, margin: 0 }}>Permissions</h2>
         {errorMessage ? (
-          <button onClick={onClearError} style={buttonStyle}>
+          <button onClick={onClearError} className="button-control" style={buttonStyle}>
             Clear Message
           </button>
         ) : null}
@@ -325,7 +325,7 @@ export default function AccessManagementPanel({
             border: "1px solid rgba(255, 122, 157, 0.45)",
             background: "rgba(255, 122, 157, 0.14)",
             borderRadius: 10,
-            padding: "10px 12px",
+            padding: "12px 12px 12px",
             color: "#ffd6e2",
             fontWeight: 600,
             fontSize: 13,
@@ -344,7 +344,7 @@ export default function AccessManagementPanel({
             border: "1px solid rgba(90, 236, 178, 0.45)",
             background: "rgba(90, 236, 178, 0.14)",
             borderRadius: 10,
-            padding: "10px 12px",
+            padding: "12px 12px 12px",
             color: "#ccffe7",
             fontWeight: 700,
             fontSize: 13,
@@ -374,10 +374,10 @@ export default function AccessManagementPanel({
 
       {activeWorkflow === "people" && canManageUsers ? (
         <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, padding: 12, display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>People</h3>
             <button
-              style={primaryButtonStyle}
+              className="button-control" style={primaryButtonStyle}
               disabled={busy}
               onClick={() => {
                 setShowCreatePlayerPanel((current) => !current);
@@ -396,7 +396,7 @@ export default function AccessManagementPanel({
                 border: peopleResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
                 background: peopleResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
                 borderRadius: 10,
-                padding: "10px 12px",
+                padding: "12px 12px 12px",
                 color: peopleResult.type === "success" ? "#ccffe7" : "#ffd6e2",
                 fontWeight: 600,
                 fontSize: 13,
@@ -407,7 +407,7 @@ export default function AccessManagementPanel({
           ) : null}
 
           <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Name</div>
               <div>Email</div>
               <div>Roles</div>
@@ -428,7 +428,7 @@ export default function AccessManagementPanel({
                       gridTemplateColumns: "1.4fr 1.8fr 1fr auto",
                       gap: 8,
                       alignItems: "center",
-                      padding: "10px 12px",
+                      padding: "12px 12px 12px",
                       borderTop: "1px solid rgba(58, 78, 127, 0.35)",
                       background: hoveredPeopleRowId === user.id ? "rgba(73, 224, 255, 0.08)" : "transparent",
                       transition: "background 120ms ease",
@@ -459,11 +459,11 @@ export default function AccessManagementPanel({
                       ))}
                     </div>
                     <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
-                      <button style={buttonStyle} disabled={busy} onClick={() => openEditUser(user)}>
+                      <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => openEditUser(user)}>
                         Edit
                       </button>
                       <button
-                        style={buttonStyle}
+                        className="button-control" style={buttonStyle}
                         disabled={busy}
                         onClick={() => {
                           setEditUserId(user.id);
@@ -482,21 +482,21 @@ export default function AccessManagementPanel({
           </div>
 
           {showCreatePlayerPanel ? (
-            <div style={{ ...panelStyle, border: "1px solid var(--border-bright)", padding: 12, display: "grid", gap: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div style={{ ...panelStyle, border: "1px solid var(--border-bright)", padding: 12, display: "grid", gap: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                 <strong>Add Player</strong>
-                <button style={buttonStyle} onClick={() => setShowCreatePlayerPanel(false)} disabled={busy}>
+                <button className="button-control" style={buttonStyle} onClick={() => setShowCreatePlayerPanel(false)} disabled={busy}>
                   Close
                 </button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
                   Display Name
                   <input
                     type="text"
                     value={createPlayerDisplayName}
                     onChange={(e) => setCreatePlayerDisplayName(e.target.value)}
-                    style={inputStyle}
+                    className="form-control" style={inputStyle}
                     disabled={busy}
                   />
                 </label>
@@ -506,7 +506,7 @@ export default function AccessManagementPanel({
                     type="email"
                     value={createPlayerEmail}
                     onChange={(e) => setCreatePlayerEmail(e.target.value)}
-                    style={inputStyle}
+                    className="form-control" style={inputStyle}
                     disabled={busy}
                   />
                 </label>
@@ -517,7 +517,7 @@ export default function AccessManagementPanel({
                   type="password"
                   value={createPlayerTemporaryPassword}
                   onChange={(e) => setCreatePlayerTemporaryPassword(e.target.value)}
-                  style={inputStyle}
+                  className="form-control" style={inputStyle}
                   disabled={busy}
                 />
               </label>
@@ -526,8 +526,8 @@ export default function AccessManagementPanel({
                   Temporary password must be at least 8 characters.
                 </div>
               ) : null}
-              <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
                   <input
                     type="checkbox"
                     checked={createPlayerIsGm}
@@ -536,7 +536,7 @@ export default function AccessManagementPanel({
                   />
                   Can create campaigns
                 </label>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
                   <input
                     type="checkbox"
                     checked={createPlayerIsAdmin}
@@ -552,7 +552,7 @@ export default function AccessManagementPanel({
                     border: createPlayerResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
                     background: createPlayerResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
                     borderRadius: 10,
-                    padding: "10px 12px",
+                    padding: "12px 12px 12px",
                     color: createPlayerResult.type === "success" ? "#ccffe7" : "#ffd6e2",
                     fontWeight: 600,
                     fontSize: 13,
@@ -592,7 +592,7 @@ export default function AccessManagementPanel({
                   {busy ? "Creating..." : "Create Player"}
                 </button>
                 <button
-                  style={buttonStyle}
+                  className="button-control" style={buttonStyle}
                   disabled={busy}
                   onClick={() => {
                     resetCreatePlayerForm();
@@ -621,23 +621,23 @@ export default function AccessManagementPanel({
               }}
             >
               <div
-                style={{ ...panelStyle, width: "min(620px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+                style={{ ...panelStyle, width: "min(620px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <strong>Edit User Roles</strong>
-                  <button style={buttonStyle} onClick={requestCloseEditModal} disabled={busy}>
+                  <button className="button-control" style={buttonStyle} onClick={requestCloseEditModal} disabled={busy}>
                     Close
                   </button>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
                     Display Name
                     <input
                       type="text"
                       value={resolveUserName(selectedEditUser, selectedEditUser.id)}
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                       readOnly
                       disabled
                     />
@@ -647,15 +647,15 @@ export default function AccessManagementPanel({
                     <input
                       type="email"
                       value={selectedEditUser.email || selectedEditUser.id}
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                       readOnly
                       disabled
                     />
                   </label>
                 </div>
 
-                <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+                  <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
                     <input
                       type="checkbox"
                       checked={editUserIsAdmin}
@@ -664,7 +664,7 @@ export default function AccessManagementPanel({
                     />
                     Admin
                   </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                  <label className="tap-row" style={{ display: "flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
                     <input
                       type="checkbox"
                       checked={editUserIsGm}
@@ -677,7 +677,7 @@ export default function AccessManagementPanel({
 
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
                   <button
-                    style={primaryButtonStyle}
+                    className="button-control" style={primaryButtonStyle}
                     disabled={busy}
                     onClick={() => {
                       if (!selectedEditUser) return;
@@ -694,7 +694,7 @@ export default function AccessManagementPanel({
                   >
                     Save
                   </button>
-                  <button style={buttonStyle} disabled={busy} onClick={requestCloseEditModal}>
+                  <button className="button-control" style={buttonStyle} disabled={busy} onClick={requestCloseEditModal}>
                     Close
                   </button>
                   <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255, 122, 157, 0.3)", margin: "0 4px" }} />
@@ -737,12 +737,12 @@ export default function AccessManagementPanel({
               }}
             >
               <div
-                style={{ ...panelStyle, width: "min(620px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+                style={{ ...panelStyle, width: "min(620px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <strong>Set Password</strong>
-                  <button style={buttonStyle} onClick={() => setShowSetPasswordPanel(false)} disabled={busy}>
+                  <button className="button-control" style={buttonStyle} onClick={() => setShowSetPasswordPanel(false)} disabled={busy}>
                     Close
                   </button>
                 </div>
@@ -755,7 +755,7 @@ export default function AccessManagementPanel({
                   User: {resolveUserName(selectedEditUser, selectedEditUser.id)} ({selectedEditUser.email || selectedEditUser.id})
                 </div>
 
-                <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ display: "grid", gap: 12 }}>
                   <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
                     New Password
                     <input
@@ -766,7 +766,7 @@ export default function AccessManagementPanel({
                       spellCheck={false}
                       value={setPasswordNewPassword}
                       onChange={(e) => setSetPasswordNewPassword(e.target.value)}
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                       disabled={busy}
                     />
                   </label>
@@ -780,11 +780,11 @@ export default function AccessManagementPanel({
                       spellCheck={false}
                       value={setPasswordConfirmPassword}
                       onChange={(e) => setSetPasswordConfirmPassword(e.target.value)}
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                       disabled={busy}
                     />
                   </label>
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
+                  <label className="tap-row" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#b9cdf0", fontWeight: 600 }}>
                     <input
                       type="checkbox"
                       checked={setPasswordVisible}
@@ -801,7 +801,7 @@ export default function AccessManagementPanel({
                       border: "1px solid rgba(255, 122, 157, 0.45)",
                       background: "rgba(255, 122, 157, 0.14)",
                       borderRadius: 10,
-                      padding: "10px 12px",
+                      padding: "12px 12px 12px",
                       color: "#ffd6e2",
                       fontWeight: 600,
                       fontSize: 13,
@@ -813,14 +813,14 @@ export default function AccessManagementPanel({
 
                 <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
                   <button
-                    style={primaryButtonStyle}
+                    className="button-control" style={primaryButtonStyle}
                     disabled={busy || !setPasswordNewPassword.trim() || !setPasswordConfirmPassword.trim()}
                     onClick={handleSetPassword}
                   >
                     Set Password
                   </button>
                   <button
-                    style={buttonStyle}
+                    className="button-control" style={buttonStyle}
                     disabled={busy}
                     onClick={() => {
                       resetSetPasswordForm();
@@ -838,11 +838,11 @@ export default function AccessManagementPanel({
 
       {activeWorkflow === "campaign-members" && canManageCampaignAccess ? (
         <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, padding: 12, display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Campaign Members: {campaignName}</h3>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
-                style={buttonStyle}
+                className="button-control" style={buttonStyle}
                 disabled={busy}
                 onClick={() => setShowCampaignAddPanel((current) => !current)}
               >
@@ -861,7 +861,7 @@ export default function AccessManagementPanel({
                 border: campaignMemberResult.type === "success" ? "1px solid rgba(90, 236, 178, 0.45)" : "1px solid rgba(255, 122, 157, 0.45)",
                 background: campaignMemberResult.type === "success" ? "rgba(90, 236, 178, 0.14)" : "rgba(255, 122, 157, 0.14)",
                 borderRadius: 10,
-                padding: "10px 12px",
+                padding: "12px 12px 12px",
                 color: campaignMemberResult.type === "success" ? "#ccffe7" : "#ffd6e2",
                 fontWeight: 600,
                 fontSize: 13,
@@ -888,13 +888,13 @@ export default function AccessManagementPanel({
               }}
             >
               <div
-                style={{ ...panelStyle, width: "min(680px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+                style={{ ...panelStyle, width: "min(680px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <strong>Add Player</strong>
                   <button
-                    style={buttonStyle}
+                    className="button-control" style={buttonStyle}
                     disabled={busy}
                     onClick={() => {
                       setShowCampaignAddPanel(false);
@@ -908,7 +908,7 @@ export default function AccessManagementPanel({
                 </div>
 
                 <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
-                  Search or enter email
+                  User email
                   <input
                     type="text"
                     value={campaignSearchOrEmail}
@@ -923,9 +923,9 @@ export default function AccessManagementPanel({
                       });
                       setCampaignAssignUserId(matchedUserId ?? "");
                     }}
-                    placeholder="Search by name, or enter email"
+                    placeholder="Search by name or type an email"
                     list="campaign-user-candidate-list"
-                    style={inputStyle}
+                    className="form-control" style={inputStyle}
                     disabled={busy}
                   />
                 </label>
@@ -939,13 +939,13 @@ export default function AccessManagementPanel({
                   })}
                 </datalist>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
                   <label style={{ fontWeight: 600, color: "#b9cdf0", maxWidth: 280 }}>
                     Member Type
                     <select
                       value={campaignAssignRole}
                       onChange={(e) => setCampaignAssignRole(e.target.value as CampaignAccessRole)}
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                       disabled={busy}
                     >
                       <option value="player">Player</option>
@@ -968,12 +968,12 @@ export default function AccessManagementPanel({
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                   <button
-                    style={primaryButtonStyle}
+                    className="button-control" style={primaryButtonStyle}
                     disabled={busy || !campaignSearchOrEmail.trim()}
                     onClick={() => {
                       const inputValue = campaignSearchOrEmail.trim();
                       if (!inputValue) {
-                        setCampaignMemberResult({ type: "error", message: "Enter a name or email." });
+                        setCampaignMemberResult({ type: "error", message: "Type a name or email." });
                         return;
                       }
 
@@ -1012,7 +1012,7 @@ export default function AccessManagementPanel({
           ) : null}
 
           <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Display Name</div>
               <div>Email</div>
               <div>Role</div>
@@ -1039,7 +1039,7 @@ export default function AccessManagementPanel({
                         gridTemplateColumns: "1.2fr 1.4fr 1fr auto",
                         gap: 8,
                         alignItems: "center",
-                        padding: "10px 12px",
+                        padding: "12px 12px 12px",
                         borderTop: "1px solid rgba(58, 78, 127, 0.35)",
                         background: hoveredCampaignRowId === row.user_id ? "rgba(73, 224, 255, 0.08)" : "transparent",
                         transition: "background 120ms ease",
@@ -1052,7 +1052,7 @@ export default function AccessManagementPanel({
                       <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{campaignRoleLabel(row.role)}</div>
                       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
                         <button
-                          style={buttonStyle}
+                          className="button-control" style={buttonStyle}
                           disabled={busy}
                           onClick={() => {
                             setCampaignRoleModalUserId(row.user_id);
@@ -1062,7 +1062,7 @@ export default function AccessManagementPanel({
                           Change
                         </button>
                         <button
-                          style={buttonStyle}
+                          className="button-control" style={buttonStyle}
                           disabled={busy}
                           onClick={() => {
                             if (removingLastEditor) {
@@ -1099,12 +1099,12 @@ export default function AccessManagementPanel({
               }}
             >
               <div
-                style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+                style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <strong>Change Member Type</strong>
-                  <button style={buttonStyle} disabled={busy} onClick={() => setCampaignRoleModalUserId("")}>Close</button>
+                  <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => setCampaignRoleModalUserId("")}>Close</button>
                 </div>
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{getUserLabel(campaignRoleModalUserId)}</div>
                 <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
@@ -1112,7 +1112,7 @@ export default function AccessManagementPanel({
                   <select
                     value={campaignRoleModalValue}
                     onChange={(e) => setCampaignRoleModalValue(e.target.value as CampaignAccessRole)}
-                    style={inputStyle}
+                    className="form-control" style={inputStyle}
                     disabled={busy}
                   >
                     <option value="player">Player</option>
@@ -1126,7 +1126,7 @@ export default function AccessManagementPanel({
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <button
-                    style={primaryButtonStyle}
+                    className="button-control" style={primaryButtonStyle}
                     disabled={busy}
                     onClick={() => {
                       const currentRole = campaignAccessRows.find((row) => row.user_id === campaignRoleModalUserId)?.role;
@@ -1166,26 +1166,26 @@ export default function AccessManagementPanel({
               }}
             >
               <div
-                style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 14, display: "grid", gap: 12 }}
+                style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
                 onClick={(event) => event.stopPropagation()}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
                   <strong>Remove Member</strong>
-                  <button style={buttonStyle} disabled={busy} onClick={() => setCampaignRemoveModalUserId("")}>Close</button>
+                  <button className="button-control" style={buttonStyle} disabled={busy} onClick={() => setCampaignRemoveModalUserId("")}>Close</button>
                 </div>
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
                   Remove {getUserLabel(campaignRemoveModalUserId)} from this campaign?
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
                   <button
-                    style={buttonStyle}
+                    className="button-control" style={buttonStyle}
                     disabled={busy}
                     onClick={() => setCampaignRemoveModalUserId("")}
                   >
                     Close
                   </button>
                   <button
-                    style={primaryButtonStyle}
+                    className="button-control" style={primaryButtonStyle}
                     disabled={busy}
                     onClick={() => {
                       void runAction(async () => {
@@ -1206,22 +1206,22 @@ export default function AccessManagementPanel({
 
       {activeWorkflow === "character-access" && canManageCharacterAccess && characterName ? (
         <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, padding: 12, display: "grid", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Character Access: {characterName}</h3>
           </div>
 
-          <div style={{ ...panelStyle, padding: 12, display: "grid", gap: 10 }}>
+          <div style={{ ...panelStyle, padding: 12, display: "grid", gap: 12 }}>
             <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>Add Character Access</div>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 10, alignItems: "end" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 12, alignItems: "end" }}>
               <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
                 User
                 <select
                   value={characterAssignUserId}
                   onChange={(e) => setCharacterAssignUserId(e.target.value)}
-                  style={inputStyle}
+                  className="form-control" style={inputStyle}
                   disabled={busy}
                 >
-                  <option value="">Select user</option>
+                  <option value="">Choose user</option>
                   {characterUserCandidateIds.map((userId) => (
                     <option key={userId} value={userId}>
                       {getUserLabel(userId)}
@@ -1234,7 +1234,7 @@ export default function AccessManagementPanel({
                 <select
                   value={characterAssignRole}
                   onChange={(e) => setCharacterAssignRole(e.target.value as CharacterAccessRole)}
-                  style={inputStyle}
+                  className="form-control" style={inputStyle}
                   disabled={busy}
                 >
                   {characterRoleOptions.map((role) => (
@@ -1245,7 +1245,7 @@ export default function AccessManagementPanel({
                 </select>
               </label>
               <button
-                style={primaryButtonStyle}
+                className="button-control" style={primaryButtonStyle}
                 disabled={busy || !characterAssignUserId}
                 onClick={() => {
                   if (!characterAssignUserId) return;
@@ -1262,7 +1262,7 @@ export default function AccessManagementPanel({
           </div>
 
           <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "#b9cdf0", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>User</div>
               <div>Permission</div>
               <div>Actions</div>
@@ -1276,7 +1276,7 @@ export default function AccessManagementPanel({
                     row.role === "viewer" ? ["viewer", "editor"] : characterRoleOptions;
 
                   return (
-                    <div key={`${row.character_id}-${row.user_id}`} style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, alignItems: "center", padding: "10px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
+                    <div key={`${row.character_id}-${row.user_id}`} style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, alignItems: "center", padding: "12px 12px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
                       <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>{getUserLabel(row.user_id)}</div>
                       <select
                         value={row.role}
@@ -1284,7 +1284,7 @@ export default function AccessManagementPanel({
                           const nextRole = e.target.value as CharacterAccessRole;
                           void runAction(() => onUpdateCharacterAccess({ userId: row.user_id, role: nextRole }));
                         }}
-                        style={inputStyle}
+                        className="form-control" style={inputStyle}
                         disabled={busy}
                       >
                         {rowRoleOptions.map((role) => (
@@ -1294,7 +1294,7 @@ export default function AccessManagementPanel({
                         ))}
                       </select>
                       <button
-                        style={buttonStyle}
+                        className="button-control" style={buttonStyle}
                         disabled={busy}
                         onClick={() => {
                           if (!window.confirm(`Remove character access for ${getUserLabel(row.user_id)}?`)) return;

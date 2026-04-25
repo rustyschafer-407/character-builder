@@ -214,6 +214,7 @@ export default function CharacterCreationWizard({
   const pendingRollEffectTimerRef = useRef<number | null>(null);
   const method = draft.attributeGeneration?.method ?? selectedCampaign?.attributeRules.generationMethods[0] ?? "pointBuy";
   const stepTitles = getStepTitles(labels);
+  const currentStepTitle = stepTitles[step] ?? "Overview";
   const classModifiersText = formatClassAttributeModifiers(selectedClass);
   const raceModifiersText = formatRaceAttributeModifiers(selectedRace);
   const attributeBonusTotals = getAttributeBonusTotals(selectedClass, selectedRace);
@@ -360,8 +361,8 @@ export default function CharacterCreationWizard({
           flexWrap: "wrap",
         }}
       >
-        <h2 style={sectionTitleStyle}>Character Creation Wizard</h2>
-        <button onClick={onCancel} style={buttonStyle}>
+        <h2 style={sectionTitleStyle}>Character Wizard: {currentStepTitle}</h2>
+        <button onClick={onCancel} className="button-control" style={buttonStyle}>
           Cancel
         </button>
       </div>
@@ -400,7 +401,7 @@ export default function CharacterCreationWizard({
           );
         })}
       </div>
-      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 10, opacity: 0.45, fontWeight: 400 }}>
+      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 12, opacity: 0.45, fontWeight: 400 }}>
         Step {step + 1} of {stepTitles.length} — {stepTitles[step]}
       </div>
 
@@ -413,7 +414,8 @@ export default function CharacterCreationWizard({
             <input
               value={draft.identity.name}
               onChange={(e) => onNameChange(e.target.value)}
-              style={inputStyle}
+              placeholder="Name your character"
+              className="form-control" style={inputStyle}
             />
           </label>
 
@@ -422,7 +424,7 @@ export default function CharacterCreationWizard({
             <select
               value={draft.campaignId}
               onChange={(e) => onCampaignChange(e.target.value)}
-              style={selectStyle}
+              className="form-control" style={selectStyle}
             >
               {campaigns.map((campaign) => (
                 <option key={campaign.id} value={campaign.id}>
@@ -477,11 +479,11 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 1 && (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {racesForCampaign.length === 0 && (
             <div
               style={{
-                padding: 10,
+                padding: 12,
                 borderRadius: 8,
                 border: "1px solid rgba(255, 188, 83, 0.55)",
                 background: "rgba(255, 188, 83, 0.12)",
@@ -497,7 +499,7 @@ export default function CharacterCreationWizard({
             <select
               value={draft.raceId}
               onChange={(e) => onRaceChange(e.target.value)}
-              style={selectStyle}
+              className="form-control" style={selectStyle}
               disabled={racesForCampaign.length === 0}
             >
               {racesForCampaign.length === 0 && <option value="">No species available</option>}
@@ -534,11 +536,11 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 2 && (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {classesForCampaign.length === 0 && (
             <div
               style={{
-                padding: 10,
+                padding: 12,
                 borderRadius: 8,
                 border: "1px solid rgba(255, 188, 83, 0.55)",
                 background: "rgba(255, 188, 83, 0.12)",
@@ -554,7 +556,7 @@ export default function CharacterCreationWizard({
             <select
               value={draft.classId}
               onChange={(e) => onClassChange(e.target.value)}
-              style={selectStyle}
+              className="form-control" style={selectStyle}
               disabled={classesForCampaign.length === 0}
             >
               {classesForCampaign.length === 0 && <option value="">No classes available</option>}
@@ -594,11 +596,11 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 3 && (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gap: 16 }}>
           {(selectedClass || selectedRace) && (
             <div
               style={{
-                padding: 10,
+                padding: 12,
                 borderRadius: 8,
                 background: "rgba(10, 20, 39, 0.78)",
                 border: "1px solid var(--border-soft)",
@@ -627,7 +629,7 @@ export default function CharacterCreationWizard({
                   e.target.value as "pointBuy" | "randomRoll" | "manual"
                 )
               }
-              style={selectStyle}
+              className="form-control" style={selectStyle}
             >
               <option value="manual">Manual</option>
               <option value="pointBuy">Point Buy</option>
@@ -638,7 +640,7 @@ export default function CharacterCreationWizard({
           {method === "pointBuy" && (
             <div
               style={{
-                padding: 10,
+                padding: 12,
                 borderRadius: 8,
                 background: "rgba(73, 224, 255, 0.18)",
                 color: "var(--text-primary)",
@@ -652,7 +654,7 @@ export default function CharacterCreationWizard({
 
           {method === "randomRoll" && (
             <div>
-              <button onClick={handleRollAttributesClick} style={buttonStyle}>
+              <button onClick={handleRollAttributesClick} className="button-control" style={buttonStyle}>
                 Roll Stats
               </button>
             </div>
@@ -736,10 +738,10 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 4 && (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           <div
             style={{
-              padding: 10,
+              padding: 12,
               borderRadius: 8,
               background: "rgba(73, 224, 255, 0.18)",
               color: "var(--text-primary)",
@@ -761,7 +763,7 @@ export default function CharacterCreationWizard({
               <label
                 key={attr}
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
                   background: checked ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
@@ -769,7 +771,7 @@ export default function CharacterCreationWizard({
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  gap: 10,
+                  gap: 12,
                 }}
               >
                 <span>
@@ -788,14 +790,14 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 5 && (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {skillChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForSkillRule(rule, draft.skills);
             return (
               <div
                 key={`${index}-${rule.skillIds.join("-")}`}
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   background: "rgba(73, 224, 255, 0.18)",
                   color: "var(--text-primary)",
@@ -831,7 +833,7 @@ export default function CharacterCreationWizard({
               <label
                 key={skill.id}
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
                   background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
@@ -840,7 +842,7 @@ export default function CharacterCreationWizard({
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  gap: 10,
+                  gap: 12,
                 }}
               >
                 <span>
@@ -864,14 +866,14 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 6 && (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {powerChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForPowerRule(rule, draft.powers);
             return (
               <div
                 key={`${index}-${rule.powerIds.join("-")}`}
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   background: "rgba(73, 224, 255, 0.18)",
                   color: "var(--text-primary)",
@@ -906,7 +908,7 @@ export default function CharacterCreationWizard({
               <label
                 key={power.id}
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
                   background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
@@ -915,7 +917,7 @@ export default function CharacterCreationWizard({
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  gap: 10,
+                  gap: 12,
                 }}
               >
                 <span>
@@ -937,14 +939,14 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 7 && (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {itemChoiceRules.map((rule, index) => {
             const selectedCount = getSelectedCountForItemRule(rule, draft.inventory);
             return (
               <div
                 key={`${index}-${rule.itemIds.join("-")}`}
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   background: "rgba(73, 224, 255, 0.18)",
                   color: "var(--text-primary)",
@@ -979,7 +981,7 @@ export default function CharacterCreationWizard({
               <label
                 key={item.id}
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
                   background: isSelected ? "rgba(73, 224, 255, 0.18)" : "rgba(9, 20, 38, 0.82)",
@@ -988,7 +990,7 @@ export default function CharacterCreationWizard({
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  gap: 10,
+                  gap: 12,
                 }}
               >
                 <span>
@@ -1010,7 +1012,7 @@ export default function CharacterCreationWizard({
       )}
 
       {step === 8 && (
-        <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gap: 16 }}>
           {quickstartActive && (
             <div
               style={{
@@ -1082,12 +1084,12 @@ export default function CharacterCreationWizard({
           )}
           {quickstartActive && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={onFinish} style={buttonStyle}>Keep Character</button>
-              <button onClick={onQuickstartRerollEverything} style={buttonStyle}>Reroll Everything</button>
-              <button onClick={onQuickstartRerollName} style={buttonStyle}>Reroll Name</button>
-              <button onClick={onQuickstartRerollAttributes} style={buttonStyle}>Reroll Attributes</button>
-              <button onClick={onQuickstartRerollSkills} style={buttonStyle}>Reroll Skills</button>
-              <button onClick={onQuickstartEditManually} style={buttonStyle}>Edit Manually</button>
+              <button onClick={onFinish} className="button-control" style={buttonStyle}>Keep Character</button>
+              <button onClick={onQuickstartRerollEverything} className="button-control" style={buttonStyle}>Reroll Everything</button>
+              <button onClick={onQuickstartRerollName} className="button-control" style={buttonStyle}>Reroll Name</button>
+              <button onClick={onQuickstartRerollAttributes} className="button-control" style={buttonStyle}>Reroll Attributes</button>
+              <button onClick={onQuickstartRerollSkills} className="button-control" style={buttonStyle}>Reroll Skills</button>
+              <button onClick={onQuickstartEditManually} className="button-control" style={buttonStyle}>Edit Manually</button>
             </div>
           )}
         </div>
@@ -1128,7 +1130,7 @@ export default function CharacterCreationWizard({
             Next
           </button>
         ) : (
-          <button onClick={onFinish} style={buttonStyle}>
+          <button onClick={onFinish} className="button-control" style={buttonStyle}>
             {quickstartActive ? "Keep Character" : "Finish Character"}
           </button>
         )}
@@ -1160,12 +1162,12 @@ export default function CharacterCreationWizard({
               background: "linear-gradient(165deg, var(--surface-1), var(--surface-0))",
               padding: 16,
               display: "grid",
-              gap: 14,
+              gap: 16,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
               <h3 id="quickstart-title" style={{ margin: 0, color: "var(--text-primary)" }}>Character Quickstart</h3>
-              <button onClick={onCloseQuickstart} style={buttonStyle}>Close</button>
+              <button onClick={onCloseQuickstart} className="button-control" style={buttonStyle}>Close</button>
             </div>
 
             <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
@@ -1206,11 +1208,11 @@ export default function CharacterCreationWizard({
             </div>
 
             {quickstartMode === "guided" && (
-              <div style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "grid", gap: 12 }}>
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
                   Lock key choices and randomize the rest.
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
                   <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
                     Race / Species
                     <select
@@ -1221,7 +1223,7 @@ export default function CharacterCreationWizard({
                           raceId: e.target.value || undefined,
                         })
                       }
-                      style={selectStyle}
+                      className="form-control" style={selectStyle}
                       disabled={!hasRaceOptions}
                     >
                       <option value="">Random</option>
@@ -1246,7 +1248,7 @@ export default function CharacterCreationWizard({
                           classId: e.target.value || undefined,
                         })
                       }
-                      style={selectStyle}
+                      className="form-control" style={selectStyle}
                       disabled={!hasClassOptions}
                     >
                       <option value="">Random</option>
@@ -1271,7 +1273,7 @@ export default function CharacterCreationWizard({
                           background: e.target.value || undefined,
                         })
                       }
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                       placeholder="Random if blank"
                     />
                   </label>
@@ -1280,7 +1282,7 @@ export default function CharacterCreationWizard({
             )}
 
             {quickstartMode === "concepts" && quickstartConcepts.length > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 12 }}>
                 {quickstartConcepts.map((concept, index) => (
                   <div
                     key={`${concept.id}-${index}`}
@@ -1314,7 +1316,7 @@ export default function CharacterCreationWizard({
                         event.stopPropagation();
                         onQuickstartChooseConcept(index);
                       }}
-                      style={buttonStyle}
+                      className="button-control" style={buttonStyle}
                     >
                       Use This Concept
                     </button>
@@ -1326,7 +1328,7 @@ export default function CharacterCreationWizard({
             {quickstartMode === "concepts" && quickstartConcepts.length === 0 && (
               <div
                 style={{
-                  padding: 10,
+                  padding: 12,
                   borderRadius: 8,
                   border: "1px solid var(--border-soft)",
                   background: "rgba(9, 20, 38, 0.82)",
@@ -1364,9 +1366,9 @@ export default function CharacterCreationWizard({
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {quickstartMode === "concepts" && (
-                  <button onClick={onQuickstartRerollConcepts} style={buttonStyle}>Reroll 3 Concepts</button>
+                  <button onClick={onQuickstartRerollConcepts} className="button-control" style={buttonStyle}>Reroll 3 Concepts</button>
                 )}
-                <button onClick={onQuickstartGenerate} style={buttonStyle}>
+                <button onClick={onQuickstartGenerate} className="button-control" style={buttonStyle}>
                   {quickstartMode === "concepts" ? "Generate 3 Concepts" : "Generate & Review"}
                 </button>
               </div>

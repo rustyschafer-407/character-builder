@@ -76,6 +76,7 @@ export default function IdentitySection({
               </div>
               <button
                 onClick={startNameEdit}
+                className="button-control"
                 style={{ ...buttonStyle, padding: "6px 10px", minWidth: 38 }}
                 aria-label="Edit character name"
                 title="Edit name"
@@ -101,16 +102,17 @@ export default function IdentitySection({
                       cancelNameEdit();
                     }
                   }}
-                  style={inputStyle}
+                  placeholder="Character name"
+                  className="form-control" style={inputStyle}
                   autoFocus
                   disabled={readOnly}
                 />
               </label>
               <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={saveNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Save name" disabled={readOnly}>
+                <button onClick={saveNameEdit} className="button-control" style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Save name" disabled={readOnly}>
                   ✓
                 </button>
-                <button onClick={cancelNameEdit} style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Cancel name edit" disabled={readOnly}>
+                <button onClick={cancelNameEdit} className="button-control" style={{ ...buttonStyle, padding: "6px 10px" }} aria-label="Cancel name edit" disabled={readOnly}>
                   ✕
                 </button>
               </div>
@@ -140,10 +142,10 @@ export default function IdentitySection({
 
         {/* Right: action buttons */}
         <div style={{ display: "grid", gap: 8, minWidth: 160 }}>
-          <button onClick={copyToRoll20} style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
+          <button onClick={copyToRoll20} className="button-control" style={{ ...primaryButtonStyle, padding: "8px 14px" }}>
             Copy to Roll20
           </button>
-          <button onClick={onOpenLevelUpWizard} style={{ ...buttonStyle, padding: "8px 14px" }} disabled={readOnly}>
+          <button onClick={onOpenLevelUpWizard} className="button-control" style={{ ...buttonStyle, padding: "8px 14px" }} disabled={readOnly}>
             Level Up
           </button>
         </div>

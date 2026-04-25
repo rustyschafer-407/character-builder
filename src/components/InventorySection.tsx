@@ -32,7 +32,7 @@ export default function InventorySection({
         }}
       >
         <h2 style={sectionTitleStyle}>{label}</h2>
-        <button onClick={onAddManualItem} style={buttonStyle}>
+        <button onClick={onAddManualItem} className="button-control" style={buttonStyle}>
           Add Item
         </button>
       </div>
@@ -128,7 +128,7 @@ export default function InventorySection({
                 />
               </label>
 
-              <button onClick={() => onRemoveManualItem(item.name)} style={buttonStyle}>
+              <button onClick={() => onRemoveManualItem(item.name)} className="button-control" style={buttonStyle}>
                 Remove
               </button>
             </div>

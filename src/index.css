@@ -21,6 +21,11 @@
   --font-body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-heading: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
 }
 
 * {
@@ -100,9 +105,54 @@ textarea {
   font-family: var(--font-body);
 }
 
+.form-control,
+input:not([type="checkbox"]):not([type="radio"]),
+select {
+  width: 100%;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid #3a4e7f;
+  background: rgba(8, 16, 31, 0.82);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.form-control::placeholder,
+input:not([type="checkbox"]):not([type="radio"])::placeholder,
+textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+select.form-control,
+select {
+  padding-right: 28px;
+}
+
+.button-control,
+button {
+  min-height: 40px;
+}
+
+.tap-row {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tap-row:hover {
+  background: rgba(73, 224, 255, 0.06);
+}
+
 input[type="number"] {
   color-scheme: dark;
-  padding-right: 10px;
+  padding-right: 12px;
 }
 
 input[type="number"]::-webkit-outer-spin-button,

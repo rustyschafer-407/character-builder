@@ -72,7 +72,7 @@ export default function SheetFieldsSection({
             type="text"
             value={sheet.speed ?? ""}
             onChange={(e) => onSpeedChange(e.target.value)}
-            style={inputStyle}
+            className="form-control" style={inputStyle}
             placeholder="30 ft"
           />
         </label>
@@ -83,7 +83,7 @@ export default function SheetFieldsSection({
             type="number"
             value={sheet.acBase}
             onChange={(e) => onAcBaseChange(Number(e.target.value) || 0)}
-            style={inputStyle}
+            className="form-control" style={inputStyle}
           />
         </label>
 
@@ -93,7 +93,7 @@ export default function SheetFieldsSection({
             type="number"
             value={sheet.acBonus}
             onChange={(e) => onAcBonusChange(Number(e.target.value) || 0)}
-            style={inputStyle}
+            className="form-control" style={inputStyle}
           />
         </label>
 
@@ -119,7 +119,7 @@ export default function SheetFieldsSection({
             type="number"
             value={sheet.initMisc}
             onChange={(e) => onInitMiscChange(Number(e.target.value) || 0)}
-            style={inputStyle}
+            className="form-control" style={inputStyle}
           />
         </label>
 
@@ -173,7 +173,7 @@ export default function SheetFieldsSection({
                   type="number"
                   value={bonus}
                   onChange={(e) => onSaveBonusChange(attr, Number(e.target.value) || 0)}
-                  style={inputStyle}
+                  className="form-control" style={inputStyle}
                 />
               </div>
               <div>{total >= 0 ? `+${total}` : total}</div>

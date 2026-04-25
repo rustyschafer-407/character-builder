@@ -186,11 +186,11 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
     <aside style={{ ...panelStyle, padding: 12, height: "100%", overflow: "auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <h3 style={{ margin: 0, color: "var(--text-primary)" }}>{props.title}</h3>
-        <button onClick={props.onAdd} style={buttonStyle}>
+        <button onClick={props.onAdd} className="button-control" style={buttonStyle}>
           Add
         </button>
       </div>
-      {props.helper ? <div style={{ marginBottom: 10 }}>{props.helper}</div> : null}
+      {props.helper ? <div style={{ marginBottom: 12 }}>{props.helper}</div> : null}
       <div style={{ display: "grid", gap: 8 }}>
         {props.items.length === 0 ? (
           <p style={{ margin: 0, ...mutedTextStyle }}>Nothing here yet.</p>
@@ -204,7 +204,7 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
                   style={{
                     flex: 1,
                     textAlign: "left",
-                    padding: 10,
+                    padding: 12,
                     borderRadius: 8,
                     border: isSelected ? "1px solid var(--accent-primary)" : "1px solid var(--border-soft)",
                     background: isSelected ? "rgba(73, 224, 255, 0.16)" : "rgba(11, 22, 42, 0.75)",
@@ -217,7 +217,7 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
                     {props.subtitle ? props.subtitle(item) : item.id}
                   </div>
                 </button>
-                <button onClick={() => props.onDelete(item.id)} style={buttonStyle}>
+                <button onClick={() => props.onDelete(item.id)} className="button-control" style={buttonStyle}>
                   ✕
                 </button>
               </div>
@@ -789,10 +789,10 @@ export default function AdminScreen({
                   </div>
 
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" style={buttonStyle} onClick={duplicateActiveCampaign}>
+                    <button type="button" className="button-control" style={buttonStyle} onClick={duplicateActiveCampaign}>
                       Duplicate Campaign
                     </button>
-                    <button type="button" style={buttonStyle} onClick={deleteActiveCampaign}>
+                    <button type="button" className="button-control" style={buttonStyle} onClick={deleteActiveCampaign}>
                       Delete Campaign
                     </button>
                   </div>
@@ -805,7 +805,7 @@ export default function AdminScreen({
                     <input
                       value={selectedCampaign.name}
                       onChange={(e) => updateCampaign({ ...selectedCampaign, name: e.target.value })}
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                       autoFocus={autoFocusCampaignName}
                     />
                   </label>
@@ -815,7 +815,7 @@ export default function AdminScreen({
                     <input
                       value={selectedCampaign.description ?? ""}
                       onChange={(e) => updateCampaign({ ...selectedCampaign, description: e.target.value })}
-                      style={inputStyle}
+                      className="form-control" style={inputStyle}
                     />
                   </label>
                 </div>
@@ -828,10 +828,10 @@ export default function AdminScreen({
       {tab === "classes" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign first to manage classes.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage classes.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
               title={`Classes (${selectedCampaign.name})`}
               helper="Classes belong to the selected campaign."
@@ -845,7 +845,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedClass ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Select a class to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a class to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -857,7 +857,7 @@ export default function AdminScreen({
                         <input
                           value={selectedClass.name}
                           onChange={(e) => updateClass({ ...selectedClass, name: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <label style={labelTextStyle}>
@@ -865,7 +865,7 @@ export default function AdminScreen({
                         <input
                           value={selectedClass.description ?? ""}
                           onChange={(e) => updateClass({ ...selectedClass, description: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <label style={labelTextStyle}>
@@ -881,7 +881,7 @@ export default function AdminScreen({
                               },
                             })
                           }
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         >
                           {HIT_DIE_OPTIONS.map((die) => (
                             <option key={die} value={die}>
@@ -985,14 +985,14 @@ export default function AdminScreen({
                               <div style={{ display: "flex", gap: 6 }}>
                                 <button
                                   type="button"
-                                  style={buttonStyle}
+                                  className="button-control" style={buttonStyle}
                                   onClick={() => setClassRuleIds("skillChoiceRules", sortedCampaignSkills.map((skill) => skill.id))}
                                 >
                                   Select All
                                 </button>
                                 <button
                                   type="button"
-                                  style={buttonStyle}
+                                  className="button-control" style={buttonStyle}
                                   onClick={() => setClassRuleIds("skillChoiceRules", [])}
                                 >
                                   Clear
@@ -1033,14 +1033,14 @@ export default function AdminScreen({
                               <div style={{ display: "flex", gap: 6 }}>
                                 <button
                                   type="button"
-                                  style={buttonStyle}
+                                  className="button-control" style={buttonStyle}
                                   onClick={() => setClassRuleIds("powerChoiceRules", sortedCampaignPowers.map((power) => power.id))}
                                 >
                                   Select All
                                 </button>
                                 <button
                                   type="button"
-                                  style={buttonStyle}
+                                  className="button-control" style={buttonStyle}
                                   onClick={() => setClassRuleIds("powerChoiceRules", [])}
                                 >
                                   Clear
@@ -1084,14 +1084,14 @@ export default function AdminScreen({
                               <div style={{ display: "flex", gap: 6 }}>
                                 <button
                                   type="button"
-                                  style={buttonStyle}
+                                  className="button-control" style={buttonStyle}
                                   onClick={() => setClassRuleIds("itemChoiceRules", sortedCampaignItems.map((item) => item.id))}
                                 >
                                   Select All
                                 </button>
                                 <button
                                   type="button"
-                                  style={buttonStyle}
+                                  className="button-control" style={buttonStyle}
                                   onClick={() => setClassRuleIds("itemChoiceRules", [])}
                                 >
                                   Clear
@@ -1140,14 +1140,14 @@ export default function AdminScreen({
                           <div style={{ display: "flex", gap: 6 }}>
                             <button
                               type="button"
-                              style={buttonStyle}
+                              className="button-control" style={buttonStyle}
                               onClick={() => setClassFieldIds("startingAttackTemplateIds", selectedCampaign.attackTemplates.map((attack) => attack.id))}
                             >
                               Select All
                             </button>
                             <button
                               type="button"
-                              style={buttonStyle}
+                              className="button-control" style={buttonStyle}
                               onClick={() => setClassFieldIds("startingAttackTemplateIds", [])}
                             >
                               Clear
@@ -1176,14 +1176,14 @@ export default function AdminScreen({
                           <div style={{ display: "flex", gap: 6 }}>
                             <button
                               type="button"
-                              style={buttonStyle}
+                              className="button-control" style={buttonStyle}
                               onClick={() => setClassFieldIds("defaultPowerIds", sortedCampaignPowers.map((power) => power.id))}
                             >
                               Select All
                             </button>
                             <button
                               type="button"
-                              style={buttonStyle}
+                              className="button-control" style={buttonStyle}
                               onClick={() => setClassFieldIds("defaultPowerIds", [])}
                             >
                               Clear
@@ -1230,9 +1230,9 @@ export default function AdminScreen({
                         </p>
                       </div>
                     ) : (
-                      <div style={{ display: "grid", gap: 10 }}>
+                      <div style={{ display: "grid", gap: 12 }}>
                         {getClassLevelProgressionRows().map((row, index) => (
-                          <div key={`${row.level}-${index}`} style={{ ...panelStyle, padding: 10 }}>
+                          <div key={`${row.level}-${index}`} style={{ ...panelStyle, padding: 12 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
                               <strong style={{ color: "var(--text-primary)" }}>Level {row.level}</strong>
                               <button
@@ -1244,7 +1244,7 @@ export default function AdminScreen({
                               </button>
                             </div>
 
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 10, alignItems: "end" }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 12, alignItems: "end" }}>
                               <label style={labelTextStyle}>
                                 Level
                                 <input
@@ -1256,7 +1256,7 @@ export default function AdminScreen({
                                       level: Math.max(1, Number(e.target.value) || 1),
                                     })
                                   }
-                                  style={inputStyle}
+                                  className="form-control" style={inputStyle}
                                 />
                               </label>
                               <label style={labelTextStyle}>
@@ -1270,7 +1270,7 @@ export default function AdminScreen({
                                       hitDiceGained: Math.max(0, Number(e.target.value) || 0),
                                     })
                                   }
-                                  style={inputStyle}
+                                  className="form-control" style={inputStyle}
                                 />
                               </label>
                               <label style={labelTextStyle}>
@@ -1282,7 +1282,7 @@ export default function AdminScreen({
                                       hpGainMode: e.target.value as LevelProgressionHpGainMode,
                                     })
                                   }
-                                  style={inputStyle}
+                                  className="form-control" style={inputStyle}
                                 >
                                   {HP_GAIN_MODE_OPTIONS.map((mode) => (
                                     <option key={mode.value} value={mode.value}>
@@ -1303,7 +1303,7 @@ export default function AdminScreen({
                                       proficiencyBonus: raw === "" ? undefined : Math.max(0, Number(raw) || 0),
                                     });
                                   }}
-                                  style={inputStyle}
+                                  className="form-control" style={inputStyle}
                                 />
                               </label>
                               <label style={labelTextStyle}>
@@ -1317,7 +1317,7 @@ export default function AdminScreen({
                                       newSkillChoices: Math.max(0, Number(e.target.value) || 0),
                                     })
                                   }
-                                  style={inputStyle}
+                                  className="form-control" style={inputStyle}
                                 />
                               </label>
                               <label style={labelTextStyle}>
@@ -1331,12 +1331,12 @@ export default function AdminScreen({
                                       newPowerChoices: Math.max(0, Number(e.target.value) || 0),
                                     })
                                   }
-                                  style={inputStyle}
+                                  className="form-control" style={inputStyle}
                                 />
                               </label>
                             </div>
 
-                            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 200px 112px", gap: 8, alignItems: "end" }}>
                                 <div style={{ color: "var(--text-secondary)", fontSize: 13, gridColumn: "1 / span 2" }}>
                                   Attribute Bonuses: {formatBonusSummary(row.attributeBonuses)}
@@ -1366,7 +1366,7 @@ export default function AdminScreen({
                                               attribute: e.target.value as AttributeKey,
                                             })
                                           }
-                                          style={inputStyle}
+                                          className="form-control" style={inputStyle}
                                         >
                                           {ATTRIBUTE_KEYS.map((attribute) => (
                                             <option key={attribute} value={attribute}>
@@ -1385,7 +1385,7 @@ export default function AdminScreen({
                                               amount: Number(e.target.value) || 0,
                                             })
                                           }
-                                          style={inputStyle}
+                                          className="form-control" style={inputStyle}
                                         />
                                       </label>
                                       <button
@@ -1415,10 +1415,10 @@ export default function AdminScreen({
       {tab === "races" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign first to manage races.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage races.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
               title={`Races (${selectedCampaign.name})`}
               helper="Races belong to the selected campaign."
@@ -1432,7 +1432,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedRace ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Select a race to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a race to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1444,7 +1444,7 @@ export default function AdminScreen({
                         <input
                           value={selectedRace.name}
                           onChange={(e) => updateRace({ ...selectedRace, name: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <label style={labelTextStyle}>
@@ -1452,7 +1452,7 @@ export default function AdminScreen({
                         <input
                           value={selectedRace.description ?? ""}
                           onChange={(e) => updateRace({ ...selectedRace, description: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                     </div>
@@ -1488,7 +1488,7 @@ export default function AdminScreen({
                         <div style={{ display: "flex", gap: 6 }}>
                           <button
                             type="button"
-                            style={buttonStyle}
+                            className="button-control" style={buttonStyle}
                             onClick={() =>
                               updateRace({
                                 ...selectedRace,
@@ -1500,7 +1500,7 @@ export default function AdminScreen({
                           </button>
                           <button
                             type="button"
-                            style={buttonStyle}
+                            className="button-control" style={buttonStyle}
                             onClick={() => updateRace({ ...selectedRace, defaultPowerIds: [] })}
                           >
                             Clear
@@ -1542,7 +1542,7 @@ export default function AdminScreen({
                         <div style={{ display: "flex", gap: 6 }}>
                           <button
                             type="button"
-                            style={buttonStyle}
+                            className="button-control" style={buttonStyle}
                             onClick={() =>
                               updateRace({
                                 ...selectedRace,
@@ -1554,7 +1554,7 @@ export default function AdminScreen({
                           </button>
                           <button
                             type="button"
-                            style={buttonStyle}
+                            className="button-control" style={buttonStyle}
                             onClick={() => updateRace({ ...selectedRace, availableClassIds: [] })}
                           >
                             Clear
@@ -1601,10 +1601,10 @@ export default function AdminScreen({
       {tab === "skills" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign first to manage skills.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage skills.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
               title={`Skills (${selectedCampaign.name})`}
               helper="Skills belong to the selected campaign."
@@ -1618,7 +1618,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedSkill ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Select a skill to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a skill to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1630,7 +1630,7 @@ export default function AdminScreen({
                         <input
                           value={selectedSkill.name}
                           onChange={(e) => updateSkill({ ...selectedSkill, name: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <label style={labelTextStyle}>
@@ -1638,7 +1638,7 @@ export default function AdminScreen({
                         <select
                           value={selectedSkill.attribute}
                           onChange={(e) => updateSkill({ ...selectedSkill, attribute: e.target.value as AttributeKey })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         >
                           <option value="STR">STR</option>
                           <option value="DEX">DEX</option>
@@ -1660,10 +1660,10 @@ export default function AdminScreen({
       {tab === "powers" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign first to manage powers.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage powers.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
               title={`Powers (${selectedCampaign.name})`}
               helper="Powers belong to the selected campaign."
@@ -1677,7 +1677,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedPower ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Select a power to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a power to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1689,7 +1689,7 @@ export default function AdminScreen({
                         <input
                           value={selectedPower.name}
                           onChange={(e) => updatePower({ ...selectedPower, name: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <label style={labelTextStyle}>
@@ -1699,7 +1699,7 @@ export default function AdminScreen({
                           min={0}
                           value={selectedPower.usesPerDay ?? 0}
                           onChange={(e) => updatePower({ ...selectedPower, usesPerDay: Math.max(0, Number(e.target.value) || 0) })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <label style={labelTextStyle}>
@@ -1707,7 +1707,7 @@ export default function AdminScreen({
                         <select
                           value={selectedPower.saveAttribute ?? "none"}
                           onChange={(e) => updatePower({ ...selectedPower, saveAttribute: e.target.value === "none" ? undefined : (e.target.value as AttributeKey) })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         >
                           <option value="none">None</option>
                           <option value="STR">STR</option>
@@ -1764,7 +1764,7 @@ export default function AdminScreen({
                         value={selectedPower.description ?? ""}
                         onChange={(e) => updatePower({ ...selectedPower, description: e.target.value })}
                         style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
-                        placeholder="Enter power description..."
+                        placeholder="Describe the power"
                       />
                     </label>
                   </section>
@@ -1778,10 +1778,10 @@ export default function AdminScreen({
       {tab === "items" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign first to manage items.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage items.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
               title={`Items (${selectedCampaign.name})`}
               helper="Items belong to the selected campaign."
@@ -1795,7 +1795,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedItem ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Select an item to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose an item to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1807,7 +1807,7 @@ export default function AdminScreen({
                         <input
                           value={selectedItem.name}
                           onChange={(e) => updateItem({ ...selectedItem, name: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <div
@@ -1856,7 +1856,7 @@ export default function AdminScreen({
                         value={selectedItem.description ?? ""}
                         onChange={(e) => updateItem({ ...selectedItem, description: e.target.value })}
                         style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
-                        placeholder="Enter item description..."
+                        placeholder="Describe the item"
                       />
                     </label>
                   </section>
@@ -1870,10 +1870,10 @@ export default function AdminScreen({
       {tab === "attacks" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Select a campaign first to manage attacks.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage attacks.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 20, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
             <EntityListEditor
               title={`Attacks (${selectedCampaign.name})`}
               helper="Attacks belong to the selected campaign."
@@ -1887,7 +1887,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedAttack ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Select an attack to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose an attack to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1899,7 +1899,7 @@ export default function AdminScreen({
                         <input
                           value={selectedAttack.name}
                           onChange={(e) => updateAttack({ ...selectedAttack, name: e.target.value })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                       <label style={labelTextStyle}>
@@ -1907,7 +1907,7 @@ export default function AdminScreen({
                         <select
                           value={selectedAttack.attribute}
                           onChange={(e) => updateAttack({ ...selectedAttack, attribute: e.target.value as AttributeKey })}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         >
                           <option value="STR">STR</option>
                           <option value="DEX">DEX</option>
@@ -1928,7 +1928,7 @@ export default function AdminScreen({
                             const damage = bonus > 0 ? `${diceCount}d${dieType} + ${bonus}` : `${diceCount}d${dieType}`;
                             updateAttack({ ...selectedAttack, damage });
                           }}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         >
                           <option value="1">1</option>
                           <option value="2">2</option>
@@ -1953,7 +1953,7 @@ export default function AdminScreen({
                             const damage = bonus > 0 ? `${diceCount}d${dieType} + ${bonus}` : `${diceCount}d${dieType}`;
                             updateAttack({ ...selectedAttack, damage });
                           }}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         >
                           <option value="4">d4</option>
                           <option value="6">d6</option>
@@ -1975,7 +1975,7 @@ export default function AdminScreen({
                             const damage = bonus > 0 ? `${diceCount}d${dieType} + ${bonus}` : `${diceCount}d${dieType}`;
                             updateAttack({ ...selectedAttack, damage, bonus: bonus || undefined });
                           }}
-                          style={inputStyle}
+                          className="form-control" style={inputStyle}
                         />
                       </label>
                     </div>
@@ -1998,7 +1998,7 @@ export default function AdminScreen({
             background: "rgba(2, 6, 16, 0.6)",
             display: "grid",
             placeItems: "center",
-            padding: 20,
+            padding: 24,
             zIndex: 1000,
           }}
         >
@@ -2018,7 +2018,7 @@ export default function AdminScreen({
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <button
                 type="button"
-                style={buttonStyle}
+                className="button-control" style={buttonStyle}
                 onClick={() => setDuplicateCampaignNoticeName(null)}
               >
                 OK
