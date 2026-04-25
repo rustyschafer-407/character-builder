@@ -163,17 +163,6 @@ function makeDraftFromCampaignClassAndRace(
   return draft;
 }
 
-interface CampaignInviteSummary {
-  id: string;
-  token: string;
-  campaign_id: string;
-  email: string | null;
-  role: "player" | "editor";
-  expires_at: string;
-  used_at: string | null;
-  created_at: string;
-  inviteUrl: string;
-}
 
 export default function App() {
   const currentPathname = typeof window === "undefined" ? "/" : window.location.pathname;
@@ -987,130 +976,8 @@ export default function App() {
     });
   }
 
-  async function handleCreateCampaignInvite(input: { email?: string; role: "player" | "editor" }) {
-    if (!currentCampaignRowId) {
-      return { ok: false as const, message: "Campaign is not selected.", inviteUrl: "" };
-    }
-
-    const session = await getCurrentSession();
-    const accessToken = session?.access_token;
-    if (!accessToken) {
-      return { ok: false as const, message: "You must be signed in to create an invite.", inviteUrl: "" };
-    }
-
-    try {
-      const response = await fetch("/api/campaign-create-invite", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          campaignId: currentCampaignRowId,
-          email: input.email?.trim() || null,
-          role: input.role,
-        }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: string; inviteUrl?: string }
-        | null;
-
-      if (!response.ok || !payload?.inviteUrl) {
-        return {
-          ok: false as const,
-          message: payload?.error || "Failed to generate invite link.",
-          inviteUrl: "",
-        };
-      }
-
-      return {
-        ok: true as const,
-        message: "Invite link created.",
-        inviteUrl: payload.inviteUrl,
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to generate invite link.";
-      return { ok: false as const, message, inviteUrl: "" };
-    }
-  }
-
-  async function handleListCampaignInvites() {
-    if (!currentCampaignRowId) {
-      return { ok: false as const, message: "Campaign is not selected.", invites: [] as CampaignInviteSummary[] };
-    }
-
-    const session = await getCurrentSession();
-    const accessToken = session?.access_token;
-    if (!accessToken) {
-      return { ok: false as const, message: "You must be signed in to view invites.", invites: [] as CampaignInviteSummary[] };
-    }
-
-    try {
-      const response = await fetch(`/api/campaign-list-invites?campaignId=${encodeURIComponent(currentCampaignRowId)}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: string; invites?: CampaignInviteSummary[] }
-        | null;
-
-      if (!response.ok) {
-        return {
-          ok: false as const,
-          message: payload?.error || "Failed to load invites.",
-          invites: [] as CampaignInviteSummary[],
-        };
-      }
-
-      return {
-        ok: true as const,
-        message: "Invites loaded.",
-        invites: payload?.invites ?? [],
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load invites.";
-      return { ok: false as const, message, invites: [] as CampaignInviteSummary[] };
-    }
-  }
-
-  async function handleRevokeCampaignInvite(input: { inviteId: string }) {
-    const session = await getCurrentSession();
-    const accessToken = session?.access_token;
-    if (!accessToken) {
-      return { ok: false as const, message: "You must be signed in to revoke invites." };
-    }
-
-    try {
-      const response = await fetch("/api/campaign-revoke-invite", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ inviteId: input.inviteId }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-
-      if (!response.ok) {
-        return {
-          ok: false as const,
-          message: payload?.error || "Failed to revoke invite.",
-        };
-      }
-
-      return {
-        ok: true as const,
-        message: "Invite revoked.",
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to revoke invite.";
-      return { ok: false as const, message };
-    }
+  async function handleAddCampaignMember(input: { userId: string; role: "player" | "editor" }) {
+    await handleAssignCampaignAccess(input);
   }
 
   async function handleUpdateCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
@@ -1555,9 +1422,7 @@ export default function App() {
           onSaveUserRoles={handleSaveUserRoles}
           onDeleteUser={handleDeleteUser}
           onCreatePlayer={handleCreatePlayer}
-          onCreateCampaignInvite={handleCreateCampaignInvite}
-          onListCampaignInvites={handleListCampaignInvites}
-          onRevokeCampaignInvite={handleRevokeCampaignInvite}
+          onAddCampaignMember={handleAddCampaignMember}
           onUpdateCampaignAccess={handleUpdateCampaignAccess}
           onRemoveCampaignAccess={handleRemoveCampaignAccess}
           onAssignCharacterAccess={handleAssignCharacterAccess}

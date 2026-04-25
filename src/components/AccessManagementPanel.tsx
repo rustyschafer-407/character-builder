@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   CampaignAccessRole,
   CampaignAccessRow,
@@ -30,23 +30,7 @@ interface AccessManagementPanelProps {
     isAdmin: boolean;
     isGm: boolean;
   }) => Promise<{ ok: boolean; message: string }>;
-  onCreateCampaignInvite: (input: { email?: string; role: CampaignAccessRole }) => Promise<{ ok: boolean; message: string; inviteUrl: string }>;
-  onListCampaignInvites: () => Promise<{
-    ok: boolean;
-    message: string;
-    invites: Array<{
-      id: string;
-      token: string;
-      campaign_id: string;
-      email: string | null;
-      role: CampaignAccessRole;
-      expires_at: string;
-      used_at: string | null;
-      created_at: string;
-      inviteUrl: string;
-    }>;
-  }>;
-  onRevokeCampaignInvite: (input: { inviteId: string }) => Promise<{ ok: boolean; message: string }>;
+  onAddCampaignMember: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
   onUpdateCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
   onRemoveCampaignAccess: (userId: string) => Promise<void>;
   onAssignCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
@@ -70,9 +54,7 @@ export default function AccessManagementPanel({
   onSaveUserRoles,
   onDeleteUser,
   onCreatePlayer,
-  onCreateCampaignInvite,
-  onListCampaignInvites,
-  onRevokeCampaignInvite,
+  onAddCampaignMember,
   onUpdateCampaignAccess,
   onRemoveCampaignAccess,
   onAssignCharacterAccess,
@@ -100,22 +82,7 @@ export default function AccessManagementPanel({
   const [createPlayerResult, setCreatePlayerResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const [showCampaignAddPanel, setShowCampaignAddPanel] = useState(false);
-  const [campaignSearchOrEmail, setCampaignSearchOrEmail] = useState("");
-  const [campaignInviteLink, setCampaignInviteLink] = useState("");
-  const [campaignInvites, setCampaignInvites] = useState<
-    Array<{
-      id: string;
-      token: string;
-      campaign_id: string;
-      email: string | null;
-      role: CampaignAccessRole;
-      expires_at: string;
-      used_at: string | null;
-      created_at: string;
-      inviteUrl: string;
-    }>
-  >([]);
-  const [campaignInvitesLoading, setCampaignInvitesLoading] = useState(false);
+  const [campaignAddUserId, setCampaignAddUserId] = useState("");
   const [campaignMemberResult, setCampaignMemberResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [campaignRoleModalUserId, setCampaignRoleModalUserId] = useState("");
   const [campaignRoleModalValue, setCampaignRoleModalValue] = useState<CampaignAccessRole>("player");
@@ -161,40 +128,10 @@ export default function AccessManagementPanel({
     () => campaignAccessRows.filter((row) => row.role === "editor").length,
     [campaignAccessRows]
   );
-  function resetCampaignInviteForm() {
-    setCampaignSearchOrEmail("");
+  function resetCampaignAddForm() {
+    setCampaignAddUserId("");
     setCampaignAssignRole("player");
-    setCampaignInviteLink("");
   }
-
-  function campaignInviteStatus(invite: { expires_at: string; used_at: string | null }) {
-    if (invite.used_at) return "Used" as const;
-    const expiresMs = Date.parse(invite.expires_at);
-    if (!Number.isFinite(expiresMs) || expiresMs <= Date.now()) return "Expired" as const;
-    return "Active" as const;
-  }
-
-  function campaignInviteExpiresInText(expiresAt: string) {
-    const expiresMs = Date.parse(expiresAt);
-    if (!Number.isFinite(expiresMs)) return "Invite expiration unavailable";
-
-    const daysRemaining = Math.max(0, Math.ceil((expiresMs - Date.now()) / (24 * 60 * 60 * 1000)));
-    return `Invite expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
-  }
-
-  const reloadCampaignInvites = useCallback(async () => {
-    setCampaignInvitesLoading(true);
-    try {
-      const result = await onListCampaignInvites();
-      if (!result.ok) {
-        setCampaignMemberResult({ type: "error", message: result.message });
-        return;
-      }
-      setCampaignInvites(result.invites);
-    } finally {
-      setCampaignInvitesLoading(false);
-    }
-  }, [onListCampaignInvites]);
 
   useEffect(() => {
     if (workflowOptions.length === 0) {
@@ -216,13 +153,6 @@ export default function AccessManagementPanel({
     return () => window.clearTimeout(timeoutId);
   }, [setPasswordToast]);
 
-  useEffect(() => {
-    if (!showCampaignAddPanel) {
-      return;
-    }
-
-    void reloadCampaignInvites();
-  }, [showCampaignAddPanel, reloadCampaignInvites]);
 
   async function runAction(action: () => Promise<void>) {
     onClearError();
@@ -893,19 +823,17 @@ export default function AccessManagementPanel({
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Campaign Members: {campaignName}</h3>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
-                className="button-control" style={buttonStyle}
+                className="button-control" style={primaryButtonStyle}
                 disabled={busy}
                 onClick={() => {
                   setShowCampaignAddPanel((current) => {
                     const next = !current;
-                    if (!next) {
-                      resetCampaignInviteForm();
-                    }
+                    if (!next) resetCampaignAddForm();
                     return next;
                   });
                 }}
               >
-                {showCampaignAddPanel ? "Close" : "Invite Link"}
+                Add Member
               </button>
             </div>
           </div>
@@ -944,21 +872,21 @@ export default function AccessManagementPanel({
               onClick={() => {
                 if (busy) return;
                 setShowCampaignAddPanel(false);
-                resetCampaignInviteForm();
+                resetCampaignAddForm();
               }}
             >
               <div
-                style={{ ...panelStyle, width: "min(680px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
+                style={{ ...panelStyle, width: "min(560px, 96vw)", border: "1px solid var(--border-bright)", padding: 16, display: "grid", gap: 12 }}
                 onClick={(event) => event.stopPropagation()}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <strong>Invite a Player</strong>
+                  <strong>Add Campaign Member</strong>
                   <button
                     className="button-control" style={buttonStyle}
                     disabled={busy}
                     onClick={() => {
                       setShowCampaignAddPanel(false);
-                      resetCampaignInviteForm();
+                      resetCampaignAddForm();
                     }}
                   >
                     Close
@@ -966,34 +894,36 @@ export default function AccessManagementPanel({
                 </div>
 
                 <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
-                  Email (optional)
-                  <input
-                    type="email"
-                    value={campaignSearchOrEmail}
-                    onChange={(e) => setCampaignSearchOrEmail(e.target.value)}
-                    placeholder="name@example.com"
+                  Player
+                  <select
+                    value={campaignAddUserId}
+                    onChange={(e) => setCampaignAddUserId(e.target.value)}
                     className="form-control" style={inputStyle}
                     disabled={busy}
-                  />
+                  >
+                    <option value="">Choose player</option>
+                    {users
+                      .filter((u) => !campaignAccessRows.some((r) => r.user_id === u.id))
+                      .map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {getUserLabel(u.id)}
+                        </option>
+                      ))}
+                  </select>
                 </label>
-                <div style={{ color: "var(--text-secondary)", fontSize: 12, marginTop: -4 }}>
-                  Leave email blank to create a link anyone can use.
-                </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
-                  <label style={{ fontWeight: 600, color: "var(--cb-muted-label)", maxWidth: 280 }}>
-                    Role
-                    <select
-                      value={campaignAssignRole}
-                      onChange={(e) => setCampaignAssignRole(e.target.value as CampaignAccessRole)}
-                      className="form-control" style={inputStyle}
-                      disabled={busy}
-                    >
-                      <option value="player">Player</option>
-                      <option value="editor">GM</option>
-                    </select>
-                  </label>
-                </div>
+                <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
+                  Role
+                  <select
+                    value={campaignAssignRole}
+                    onChange={(e) => setCampaignAssignRole(e.target.value as CampaignAccessRole)}
+                    className="form-control" style={inputStyle}
+                    disabled={busy}
+                  >
+                    <option value="player">Player</option>
+                    <option value="editor">GM</option>
+                  </select>
+                </label>
 
                 <div style={{ color: "var(--text-secondary)", fontSize: 12, lineHeight: 1.45 }}>
                   Player: can create and manage their own characters
@@ -1004,149 +934,19 @@ export default function AccessManagementPanel({
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                   <button
                     className="button-control" style={primaryButtonStyle}
-                    disabled={busy}
+                    disabled={busy || !campaignAddUserId}
                     onClick={() => {
+                      if (!campaignAddUserId) return;
                       void runAction(async () => {
-                        const email = campaignSearchOrEmail.trim().toLowerCase();
-                        const result = await onCreateCampaignInvite({ email: email || undefined, role: campaignAssignRole });
-                        if (!result.ok) {
-                          setCampaignMemberResult({ type: "error", message: result.message });
-                          return;
-                        }
-
-                        setCampaignInviteLink(result.inviteUrl);
-                        await reloadCampaignInvites();
-                        setCampaignMemberResult({ type: "success", message: "Invite link ready." });
+                        await onAddCampaignMember({ userId: campaignAddUserId, role: campaignAssignRole });
+                        setCampaignMemberResult({ type: "success", message: "Member added." });
+                        resetCampaignAddForm();
+                        setShowCampaignAddPanel(false);
                       });
                     }}
                   >
-                    Generate Invite Link
+                    {busy ? "Adding..." : "Add Member"}
                   </button>
-                </div>
-
-                {campaignInviteLink ? (
-                  <div style={{ display: "grid", gap: 8, border: "1px solid var(--cb-success-soft-border)", background: "var(--cb-success-soft)", borderRadius: 10, padding: 12, marginTop: 8 }}>
-                    <div style={{ fontWeight: 700, color: "var(--cb-success-text)" }}>Invite link ready</div>
-                    <label style={{ fontWeight: 600, color: "var(--cb-success-text)" }}>
-                      Link
-                      <input
-                        type="text"
-                        readOnly
-                        value={campaignInviteLink}
-                        className="form-control"
-                        style={{ ...inputStyle, marginTop: 6 }}
-                      />
-                    </label>
-                    <div style={{ color: "var(--cb-success-text)", fontSize: 12, fontWeight: 600 }}>
-                      Expires in 7 days
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        className="button-control"
-                        style={primaryButtonStyle}
-                        onClick={() => {
-                          void (async () => {
-                            try {
-                              await navigator.clipboard.writeText(campaignInviteLink);
-                              setCampaignMemberResult({ type: "success", message: "Invite link copied." });
-                            } catch {
-                              setCampaignMemberResult({ type: "error", message: "Could not copy. Select the link and copy it manually." });
-                            }
-                          })();
-                        }}
-                      >
-                        Copy Link
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
-                  <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>Existing invites</div>
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {campaignInvitesLoading ? (
-                      <div style={{ padding: 12, color: "var(--text-secondary)", fontSize: 13 }}>Loading invites...</div>
-                    ) : campaignInvites.length === 0 ? (
-                      <div style={{ padding: 12, color: "var(--text-secondary)", fontSize: 13 }}>No invites yet.</div>
-                    ) : (
-                      campaignInvites.map((invite) => {
-                        const status = campaignInviteStatus(invite);
-                        const statusText =
-                          status === "Active"
-                            ? `Active • ${campaignInviteExpiresInText(invite.expires_at).replace("Invite ", "")}`
-                            : status === "Used"
-                              ? "Used • Already used"
-                              : "Expired • Invite has expired";
-
-                        return (
-                          <div
-                            key={invite.id}
-                            style={{
-                              border: "1px solid var(--border-soft)",
-                              borderRadius: 10,
-                              padding: 12,
-                              display: "grid",
-                              gap: 8,
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start", flexWrap: "wrap" }}>
-                              <div style={{ display: "grid", gap: 4 }}>
-                                <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>
-                                  {invite.email || "Open Invite"} ({campaignRoleLabel(invite.role)})
-                                </div>
-                                <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>{statusText}</div>
-                              </div>
-                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                <button
-                                  className="button-control"
-                                  style={buttonStyle}
-                                  disabled={busy}
-                                  onClick={() => {
-                                    void (async () => {
-                                      try {
-                                        await navigator.clipboard.writeText(invite.inviteUrl);
-                                        setCampaignMemberResult({ type: "success", message: "Invite link copied." });
-                                      } catch {
-                                        setCampaignMemberResult({ type: "error", message: "Could not copy. Select the link and copy it manually." });
-                                      }
-                                    })();
-                                  }}
-                                >
-                                  Copy
-                                </button>
-                                <button
-                                  className="button-control"
-                                  style={buttonStyle}
-                                  disabled={busy}
-                                  onClick={() => {
-                                    if (!window.confirm("Revoke this invite link?")) {
-                                      return;
-                                    }
-
-                                    void runAction(async () => {
-                                      const result = await onRevokeCampaignInvite({ inviteId: invite.id });
-                                      if (!result.ok) {
-                                        setCampaignMemberResult({ type: "error", message: result.message });
-                                        return;
-                                      }
-
-                                      await reloadCampaignInvites();
-                                      if (campaignInviteLink === invite.inviteUrl) {
-                                        setCampaignInviteLink("");
-                                      }
-                                      setCampaignMemberResult({ type: "success", message: "Invite revoked." });
-                                    });
-                                  }}
-                                >
-                                  Revoke
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
