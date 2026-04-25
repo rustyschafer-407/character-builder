@@ -1973,7 +1973,7 @@ export default function App() {
             background: "var(--cb-modal-overlay)",
             display: "grid",
             placeItems: "center",
-            padding: 16,
+            padding: 20,
             zIndex: 90,
           }}
           onClick={() => setDisplayOpen(false)}
@@ -1981,20 +1981,70 @@ export default function App() {
           <div
             style={{
               ...panelStyle,
-              width: "min(560px, 96vw)",
+              width: "min(640px, 100%)",
               border: "1px solid var(--cb-border-strong)",
               display: "grid",
-              gap: 12,
+              gap: 16,
+              padding: 24,
+              borderRadius: 16,
             }}
             onClick={(event) => event.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-              <div>
-                <h2 style={{ ...mutedTextStyle, margin: 0, fontSize: 12, letterSpacing: "0.04em", fontWeight: 700 }}>DISPLAY</h2>
-                <div style={{ color: "var(--cb-text)", fontSize: 24, fontWeight: 800 }}>Accessibility & Theme</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div
+                  aria-hidden
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 12,
+                    border: "1px solid var(--cb-display-icon-border)",
+                    background: "linear-gradient(145deg, var(--cb-accent-soft-strong), var(--cb-display-icon-bg))",
+                    color: "var(--cb-display-icon-fg)",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: 18,
+                    fontWeight: 700,
+                    letterSpacing: "0.02em",
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <rect x="3.5" y="5" width="17" height="12" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                    <path d="M9 20h6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    <path d="M12 17v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ color: "var(--cb-text)", fontSize: 34, fontWeight: 800, lineHeight: 1.2 }}>
+                    Accessibility & Theme
+                  </div>
+                  <div style={{ ...mutedTextStyle, marginTop: 4, fontSize: 15 }}>
+                    Customize how this campaign looks for you.
+                  </div>
+                </div>
               </div>
-              <button onClick={() => setDisplayOpen(false)} className="button-control" style={buttonStyle}>
-                Close
+
+              <button
+                onClick={() => setDisplayOpen(false)}
+                className="button-control"
+                style={{
+                  ...buttonStyle,
+                  width: 40,
+                  minWidth: 40,
+                  padding: 0,
+                  fontSize: 26,
+                  lineHeight: 1,
+                  border: "1px solid var(--cb-display-icon-border)",
+                  color: "var(--cb-display-icon-fg)",
+                }}
+                aria-label="Close display settings"
+                title="Close"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
               </button>
             </div>
 
