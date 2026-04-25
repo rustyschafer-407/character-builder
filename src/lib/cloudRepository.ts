@@ -440,71 +440,42 @@ export async function listLoginPickerProfileSummariesByIds(userIds: string[]) {
   if (uniqueIds.length === 0) return [] as ProfileRow[]
 
   const supabase = getSupabaseClient()
-  const { data: accessRows, error: accessError } = await supabase.rpc(
-    "list_access_profile_summaries_text",
+
+  // Use the consolidated access-context RPC (migration 0016).
+  const { data: rpcRows, error: rpcError } = await supabase.rpc(
+    "get_profiles_for_access_context",
     { p_user_ids: uniqueIds } as never
   )
-  if (!accessError) {
-    const accessRowsById = new Map<string, { display_name: string | null; email: string | null }>()
-    for (const row of (accessRows ?? []) as { profile_id: string; display_name: string | null; email: string | null }[]) {
-      if (!row.profile_id) continue
-      accessRowsById.set(row.profile_id, {
-        display_name: row.display_name?.trim() || null,
-        email: row.email?.trim() || null,
-      })
-    }
 
-    return uniqueIds.map((userId) => {
-      const value = accessRowsById.get(userId) ?? { display_name: null, email: null }
-      return {
-        id: userId,
-        email: value.email,
-        display_name: value.display_name,
-        is_admin: false,
-        is_gm: false,
-        created_at: "",
-        updated_at: "",
-      } satisfies ProfileRow
-    })
+  if (rpcError) {
+    console.error("[listLoginPickerProfileSummariesByIds] RPC error:", rpcError.message)
   }
 
-  const { data: loginPickerRows, error: loginPickerError } = await supabase.rpc(
-    "list_login_picker_profiles",
-    { p_include_admin: true } as never
-  )
-  if (loginPickerError) throw loginPickerError
-
-  const labelById = new Map<string, string>()
-  for (const row of (loginPickerRows ?? []) as { profile_id: string; display_label: string | null }[]) {
+  const resolvedById = new Map<string, { display_name: string | null; email: string | null }>()
+  for (const row of (rpcRows ?? []) as { profile_id: string; display_name: string | null; email: string | null }[]) {
     if (!row.profile_id) continue
-    labelById.set(row.profile_id, row.display_label?.trim() || "")
+    resolvedById.set(row.profile_id, {
+      display_name: row.display_name?.trim() || null,
+      email: row.email?.trim() || null,
+    })
   }
 
-  const emailEntries = await Promise.all(
-    uniqueIds.map(async (userId) => {
-      const { data, error } = await supabase.rpc("resolve_login_profile_email", {
-        p_profile_id: userId,
-        p_include_admin: true,
-      } as never)
-      if (error) {
-        return [userId, null] as const
-      }
-      const resolvedEmail = data as unknown
-      const email = typeof resolvedEmail === "string" ? resolvedEmail.trim() : ""
-      return [userId, email || null] as const
-    })
-  )
-  const emailById = new Map(emailEntries)
+  if (resolvedById.size === 0 && !rpcError) {
+    console.warn("[listLoginPickerProfileSummariesByIds] RPC returned 0 rows for ids:", uniqueIds)
+  }
 
-  return uniqueIds.map((userId) => ({
-    id: userId,
-    email: emailById.get(userId) ?? null,
-    display_name: labelById.get(userId) || null,
-    is_admin: false,
-    is_gm: false,
-    created_at: "",
-    updated_at: "",
-  })) as ProfileRow[]
+  return uniqueIds.map((userId) => {
+    const value = resolvedById.get(userId) ?? { display_name: null, email: null }
+    return {
+      id: userId,
+      email: value.email,
+      display_name: value.display_name,
+      is_admin: false,
+      is_gm: false,
+      created_at: "",
+      updated_at: "",
+    } satisfies ProfileRow
+  })
 }
 
 export async function getProfileByEmail(email: string): Promise<ProfileRow | null> {
