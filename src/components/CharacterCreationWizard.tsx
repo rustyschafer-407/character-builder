@@ -369,10 +369,10 @@ export default function CharacterCreationWizard({
       <div
         className="wizard-steps"
         style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${stepTitles.length}, minmax(0, 1fr))`,
-          gap: 8,
-          marginBottom: 20,
+          display: "flex",
+          alignItems: "center",
+          gap: 0,
+          marginBottom: 16,
         }}
       >
         {stepTitles.map((title, index) => {
@@ -383,63 +383,81 @@ export default function CharacterCreationWizard({
           return (
             <div
               key={title}
+              title={`Step ${index + 1}: ${title}`}
               style={{
-                padding: 10,
-                borderRadius: 10,
-                textAlign: "center",
-                fontSize: 13,
-                fontWeight: 700,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 1,
+                flex: 1,
+                height: 4,
+                borderRadius: 2,
+                margin: "0 2px",
                 background: isCurrent
-                  ? "rgba(73, 224, 255, 0.22)"
+                  ? "var(--accent-primary)"
                   : isDone
-                  ? "rgba(138, 247, 207, 0.16)"
-                  : "rgba(9, 20, 38, 0.82)",
-                color: isCurrent ? "#e9fdff" : isDone ? "#c9ffe8" : "var(--text-secondary)",
-                border: isCurrent
-                  ? "1px solid var(--accent-primary)"
-                  : isDone
-                  ? "1px solid rgba(138, 247, 207, 0.45)"
-                  : "1px solid var(--border-soft)",
+                  ? "rgba(138, 247, 207, 0.55)"
+                  : "rgba(255,255,255,0.08)",
+                transition: "background 0.2s",
               }}
-            >
-              <span>{index + 1}.</span>
-              <span>{title}</span>
-            </div>
+            />
           );
         })}
+      </div>
+      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12, opacity: 0.7 }}>
+        Step {step + 1} of {stepTitles.length} — {stepTitles[step]}
       </div>
 
       <div className={attributesCrackClassName}>
       {step === 0 && (
-        <div style={{ display: "grid", gap: 14 }}>
-          <div
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: "1px solid var(--border-soft)",
-              background: "rgba(10, 20, 39, 0.78)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <strong style={{ color: "var(--text-primary)" }}>Character Quickstart</strong>
-              <div style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4 }}>
-                Generate a playable character in seconds, then review before saving.
+        <div style={{ display: "grid", gap: 10 }}>
+          {/* ── Quickstart path ── */}
+          <div style={{ marginBottom: 2 }}>
+            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Choose how to begin
+            </p>
+            <button
+              onClick={onOpenQuickstart}
+              style={{
+                width: "100%",
+                padding: "16px 20px",
+                borderRadius: 12,
+                border: "1.5px solid rgba(73, 224, 255, 0.45)",
+                background: "rgba(73, 224, 255, 0.08)",
+                color: "var(--text-primary)",
+                cursor: "pointer",
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                transition: "background 0.15s, border-color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(73, 224, 255, 0.14)";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(73, 224, 255, 0.7)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(73, 224, 255, 0.08)";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(73, 224, 255, 0.45)";
+              }}
+            >
+              <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>⚡</span>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 3, color: "#e9fdff" }}>
+                  Quickstart Character
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                  Generate a complete playable character in seconds
+                </div>
               </div>
-            </div>
-            <button onClick={onOpenQuickstart} style={buttonStyle}>Generate Character</button>
+            </button>
           </div>
 
-          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+          {/* ── OR divider ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "2px 0" }}>
+            <div style={{ flex: 1, height: 1, background: "var(--border-soft)" }} />
+            <span style={{ fontSize: 12, color: "var(--text-secondary)", opacity: 0.6, fontWeight: 600, letterSpacing: "0.05em" }}>OR</span>
+            <div style={{ flex: 1, height: 1, background: "var(--border-soft)" }} />
+          </div>
+
+          {/* ── Manual path ── */}
+          <label style={{ fontWeight: 600, color: "#b9cdf0", fontSize: 14 }}>
             Character Name
             <input
               value={draft.identity.name}
@@ -448,7 +466,7 @@ export default function CharacterCreationWizard({
             />
           </label>
 
-          <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+          <label style={{ fontWeight: 600, color: "#b9cdf0", fontSize: 14 }}>
             Campaign
             <select
               value={draft.campaignId}
@@ -463,18 +481,10 @@ export default function CharacterCreationWizard({
             </select>
           </label>
 
-          {selectedCampaign && (
-            <div
-              style={{
-                padding: 12,
-                borderRadius: 8,
-                background: "rgba(10, 20, 39, 0.78)",
-                border: "1px solid var(--border-soft)",
-                color: "var(--text-primary)",
-              }}
-            >
-              {selectedCampaign.description || "No description."}
-            </div>
+          {selectedCampaign?.description && (
+            <p style={{ margin: "0", fontSize: 12, color: "var(--text-secondary)", opacity: 0.75, paddingLeft: 2 }}>
+              {selectedCampaign.description}
+            </p>
           )}
         </div>
       )}
