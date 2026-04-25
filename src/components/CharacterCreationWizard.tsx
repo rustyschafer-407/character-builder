@@ -89,6 +89,7 @@ interface Props {
 }
 
 const ATTRS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
+type RollEffectType = "glow" | "glow-strong" | "crack" | "crack-strong";
 
 function getStepTitles(labels: CampaignLabels) {
   return [
@@ -168,11 +169,12 @@ export default function CharacterCreationWizard({
   onCancel,
   onFinish,
 }: Props) {
-  const [rollEffect, setRollEffect] = useState<"glow" | "crack" | null>(null);
+  const [rollEffect, setRollEffect] = useState<RollEffectType | null>(null);
   const glowSoundRef = useRef<HTMLAudioElement | null>(null);
   const crackSoundRef = useRef<HTMLAudioElement | null>(null);
   const hasUserInteractedRef = useRef(false);
   const lastSoundPlayedAtRef = useRef(0);
+  const pendingRollEffectTimerRef = useRef<number | null>(null);
   const method = draft.attributeGeneration?.method ?? selectedCampaign?.attributeRules.generationMethods[0] ?? "pointBuy";
   const stepTitles = getStepTitles(labels);
   const classModifiersText = formatClassAttributeModifiers(selectedClass);
@@ -183,13 +185,21 @@ export default function CharacterCreationWizard({
   useEffect(() => {
     if (!rollEffect) return;
 
-    const durationMs = rollEffect === "glow" ? 1500 : 1000;
+    const durationMs = rollEffect.startsWith("glow") ? 1500 : 1000;
     const timer = window.setTimeout(() => setRollEffect(null), durationMs);
 
     return () => {
       window.clearTimeout(timer);
     };
   }, [rollEffect]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingRollEffectTimerRef.current) {
+        window.clearTimeout(pendingRollEffectTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const glowAudio = new Audio("/sounds/chime.wav");
@@ -220,7 +230,7 @@ export default function CharacterCreationWizard({
       return;
     }
 
-    const audioToPlay = rollEffect === "glow" ? glowSoundRef.current : crackSoundRef.current;
+    const audioToPlay = rollEffect.startsWith("glow") ? glowSoundRef.current : crackSoundRef.current;
     if (!audioToPlay) return;
 
     lastSoundPlayedAtRef.current = now;
@@ -241,11 +251,44 @@ export default function CharacterCreationWizard({
   function handleRollAttributesClick() {
     hasUserInteractedRef.current = true;
     const rolls = onRollAttributes();
-    const hasHighRoll = rolls.some((r) => r === 18);
-    const hasLowRoll = rolls.some((r) => r <= 7);
+    const total = rolls.reduce((sum, r) => sum + r, 0);
 
-    setRollEffect(hasHighRoll ? "glow" : hasLowRoll ? "crack" : null);
+    let nextEffect: RollEffectType | null = null;
+    if (total >= 85) {
+      nextEffect = "glow-strong";
+    } else if (total >= 80) {
+      nextEffect = "glow";
+    } else if (total <= 60) {
+      nextEffect = "crack-strong";
+    } else if (total <= 65) {
+      nextEffect = "crack";
+    }
+
+    if (pendingRollEffectTimerRef.current) {
+      window.clearTimeout(pendingRollEffectTimerRef.current);
+      pendingRollEffectTimerRef.current = null;
+    }
+
+    // Reset before delayed apply so identical consecutive effects still retrigger.
+    setRollEffect(null);
+
+    if (!nextEffect) {
+      return;
+    }
+
+    pendingRollEffectTimerRef.current = window.setTimeout(() => {
+      setRollEffect(nextEffect);
+      pendingRollEffectTimerRef.current = null;
+    }, 150);
   }
+
+  const showAttributesCrackOverlay = step === 3 && Boolean(rollEffect?.startsWith("crack"));
+  const attributesCrackClassName =
+    showAttributesCrackOverlay && rollEffect === "crack-strong"
+      ? "wizard-step-content effect-crack-panel effect-crack-panel-strong"
+      : showAttributesCrackOverlay
+      ? "wizard-step-content effect-crack-panel"
+      : "wizard-step-content";
 
   return (
     <section
@@ -316,6 +359,7 @@ export default function CharacterCreationWizard({
         })}
       </div>
 
+      <div className={attributesCrackClassName}>
       {step === 0 && (
         <div style={{ display: "grid", gap: 14 }}>
           <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
@@ -910,6 +954,7 @@ export default function CharacterCreationWizard({
           )}
         </div>
       )}
+      </div>
 
       <div
         style={{
@@ -935,7 +980,7 @@ export default function CharacterCreationWizard({
 
       {rollEffect && (
         <div className="wizard-roll-feedback" aria-live="polite">
-          {rollEffect === "glow"
+          {rollEffect.startsWith("glow")
             ? "Exceptional potential detected."
             : "Structural integrity... questionable."}
         </div>
