@@ -400,7 +400,7 @@ export default function CharacterCreationWizard({
           );
         })}
       </div>
-      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12, opacity: 0.7 }}>
+      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 10, opacity: 0.45, fontWeight: 400 }}>
         Step {step + 1} of {stepTitles.length} — {stepTitles[step]}
       </div>
 
@@ -408,33 +408,46 @@ export default function CharacterCreationWizard({
       {step === 0 && (
         <div style={{ display: "grid", gap: 10 }}>
           {/* ── Quickstart path ── */}
-          <div style={{ marginBottom: 2 }}>
-            <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <div style={{ marginBottom: 0 }}>
+            <p style={{ margin: "0 0 7px", fontSize: 11, fontWeight: 500, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.04em", opacity: 0.55 }}>
               Choose how to begin
             </p>
             <button
               onClick={onOpenQuickstart}
               style={{
                 width: "100%",
-                padding: "16px 20px",
+                padding: "15px 20px",
                 borderRadius: 12,
-                border: "1.5px solid rgba(73, 224, 255, 0.45)",
-                background: "rgba(73, 224, 255, 0.08)",
+                border: "1.5px solid rgba(73, 224, 255, 0.55)",
+                background: "rgba(73, 224, 255, 0.10)",
+                boxShadow: "0 0 0 0 rgba(73,224,255,0)",
                 color: "var(--text-primary)",
                 cursor: "pointer",
                 textAlign: "left",
                 display: "flex",
                 alignItems: "center",
                 gap: 16,
-                transition: "background 0.15s, border-color 0.15s",
+                transition: "background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.1s",
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(73, 224, 255, 0.14)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(73, 224, 255, 0.7)";
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.background = "rgba(73, 224, 255, 0.17)";
+                el.style.borderColor = "rgba(73, 224, 255, 0.82)";
+                el.style.boxShadow = "0 0 14px 2px rgba(73,224,255,0.18)";
+                el.style.transform = "scale(1.012)";
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(73, 224, 255, 0.08)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(73, 224, 255, 0.45)";
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.background = "rgba(73, 224, 255, 0.10)";
+                el.style.borderColor = "rgba(73, 224, 255, 0.55)";
+                el.style.boxShadow = "0 0 0 0 rgba(73,224,255,0)";
+                el.style.transform = "scale(1)";
+              }}
+              onMouseDown={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.988)";
+              }}
+              onMouseUp={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.012)";
               }}
             >
               <span style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>⚡</span>
@@ -449,29 +462,29 @@ export default function CharacterCreationWizard({
             </button>
           </div>
 
-          {/* ── OR divider ── */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "2px 0" }}>
-            <div style={{ flex: 1, height: 1, background: "var(--border-soft)" }} />
-            <span style={{ fontSize: 12, color: "var(--text-secondary)", opacity: 0.6, fontWeight: 600, letterSpacing: "0.05em" }}>OR</span>
-            <div style={{ flex: 1, height: 1, background: "var(--border-soft)" }} />
+          {/* ── divider ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0" }}>
+            <div style={{ flex: 1, height: 1, background: "var(--border-soft)", opacity: 0.4 }} />
+            <span style={{ fontSize: 11, color: "var(--text-secondary)", opacity: 0.4, fontWeight: 500, letterSpacing: "0.03em" }}>or create manually</span>
+            <div style={{ flex: 1, height: 1, background: "var(--border-soft)", opacity: 0.4 }} />
           </div>
 
           {/* ── Manual path ── */}
-          <label style={{ fontWeight: 600, color: "#b9cdf0", fontSize: 14 }}>
+          <label style={{ fontWeight: 500, color: "rgba(185,205,240,0.75)", fontSize: 13 }}>
             Character Name
             <input
               value={draft.identity.name}
               onChange={(e) => onNameChange(e.target.value)}
-              style={inputStyle}
+              style={{ ...inputStyle, borderColor: "rgba(255,255,255,0.12)" }}
             />
           </label>
 
-          <label style={{ fontWeight: 600, color: "#b9cdf0", fontSize: 14 }}>
+          <label style={{ fontWeight: 500, color: "rgba(185,205,240,0.75)", fontSize: 13 }}>
             Campaign
             <select
               value={draft.campaignId}
               onChange={(e) => onCampaignChange(e.target.value)}
-              style={selectStyle}
+              style={{ ...selectStyle, borderColor: "rgba(255,255,255,0.12)" }}
             >
               {campaigns.map((campaign) => (
                 <option key={campaign.id} value={campaign.id}>
@@ -482,7 +495,7 @@ export default function CharacterCreationWizard({
           </label>
 
           {selectedCampaign?.description && (
-            <p style={{ margin: "0", fontSize: 12, color: "var(--text-secondary)", opacity: 0.75, paddingLeft: 2 }}>
+            <p style={{ margin: "-4px 0 0", fontSize: 11.5, color: "var(--text-secondary)", opacity: 0.55, paddingLeft: 2, lineHeight: 1.55 }}>
               {selectedCampaign.description}
             </p>
           )}
@@ -1114,12 +1127,30 @@ export default function CharacterCreationWizard({
           marginTop: 24,
         }}
       >
-        <button onClick={onBack} disabled={step === 0} style={buttonStyle}>
+        <button
+          onClick={onBack}
+          disabled={step === 0}
+          style={{
+            ...buttonStyle,
+            opacity: step === 0 ? 0.3 : 0.6,
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.15)",
+          }}
+        >
           Back
         </button>
 
         {step < stepTitles.length - 1 ? (
-          <button onClick={onNext} style={buttonStyle}>
+          <button
+            onClick={onNext}
+            style={{
+              ...buttonStyle,
+              background: "rgba(73,224,255,0.18)",
+              border: "1px solid rgba(73,224,255,0.55)",
+              color: "#e9fdff",
+              fontWeight: 700,
+            }}
+          >
             Next
           </button>
         ) : (
