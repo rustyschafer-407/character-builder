@@ -104,6 +104,10 @@ export function buildCloudHydratedState(input: {
       .map((row) => [row.id, row.character_role] as const)
   ) as Record<string, "viewer" | "editor">
 
+  const characterCanEditByCharacterId = Object.fromEntries(
+    input.characterRows.map((row) => [row.id, Boolean(row.can_edit)] as const)
+  ) as Record<string, boolean>
+
   const accessibleCampaignIds = new Set(gameData.campaigns.map((campaign) => campaign.id))
 
   const characters = input.characterRows
@@ -127,5 +131,6 @@ export function buildCloudHydratedState(input: {
     campaignRolesByCampaignId,
     campaignCreatedByByCampaignId,
     characterRolesByCharacterId,
+    characterCanEditByCharacterId,
   }
 }

@@ -317,6 +317,7 @@ export default function App() {
     setGameData,
     characters,
     setCharacters,
+    characterCanEditByCharacterId,
     campaignRowIdsByAppId,
     campaignCreatedByByCampaignId,
     cloudStatus,
@@ -873,6 +874,8 @@ export default function App() {
   const uiCanOpenAccessManagement = uiCanManageUsers || (!isGm && uiCanManageCampaignAccess);
   const uiCanEditCharacterById = (characterId: string) => {
     if (isAdmin) return true;
+    if (characterCanEditByCharacterId[characterId]) return true;
+
     const character = characters.find((item) => item.id === characterId);
     if (!character) return false;
 

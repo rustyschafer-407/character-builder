@@ -42,6 +42,7 @@ export function useCloudSync({
     cloudEnabled ? initialCloudGameData : seedGameData
   );
   const [characters, setCharacters] = useState<CharacterRecord[]>([]);
+  const [characterCanEditByCharacterId, setCharacterCanEditByCharacterId] = useState<Record<string, boolean>>({});
   const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
   const [campaignCreatedByByCampaignId, setCampaignCreatedByByCampaignId] = useState<Record<string, string | null>>({});
   const [cloudStatus, setCloudStatus] = useState(
@@ -90,6 +91,7 @@ export function useCloudSync({
     if (!currentUserId) {
       setCampaignRowIdsByAppId({});
       setCampaignCreatedByByCampaignId({});
+      setCharacterCanEditByCharacterId({});
       setGameData(initialCloudGameData);
       setCharacters([]);
       setCampaignId("");
@@ -136,6 +138,7 @@ export function useCloudSync({
         setCampaignCreatedByByCampaignId(hydrated.campaignCreatedByByCampaignId);
         setCampaignRolesByCampaignId(hydrated.campaignRolesByCampaignId);
         setCharacterRolesByCharacterId(hydrated.characterRolesByCharacterId);
+        setCharacterCanEditByCharacterId(hydrated.characterCanEditByCharacterId);
         setGameData(hydrated.gameData);
         setCharacters(hydrated.characters);
         setCampaignId((current) =>
@@ -244,6 +247,12 @@ export function useCloudSync({
             character,
           })
         );
+        // Backend RLS already determines editability; for new creator-owned
+        // characters, ensure UI permissions reflect edit access immediately.
+        setCharacterCanEditByCharacterId((previous) => ({
+          ...previous,
+          [character.id]: true,
+        }));
         setCloudStatus("Authenticated cloud access active");
         setCloudError("");
       } catch (error) {
@@ -265,6 +274,11 @@ export function useCloudSync({
 
       try {
         await deleteCharacterRow(characterId);
+        setCharacterCanEditByCharacterId((previous) => {
+          const next = { ...previous };
+          delete next[characterId];
+          return next;
+        });
         setCloudStatus("Authenticated cloud access active");
         setCloudError("");
       } catch (error) {
@@ -282,6 +296,7 @@ export function useCloudSync({
     setGameData,
     characters,
     setCharacters,
+    characterCanEditByCharacterId,
     campaignRowIdsByAppId,
     campaignCreatedByByCampaignId,
     cloudStatus,
