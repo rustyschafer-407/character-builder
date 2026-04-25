@@ -308,6 +308,12 @@ export default function App() {
 
         if (user) {
           await ensureProfileExists();
+          try {
+            await claimCampaignEmailAccessInvites();
+          } catch {
+            // Invite claiming is best-effort to keep first-load access current.
+          }
+
           const context = await getAccessContext();
           if (isCancelled) return;
           setCurrentUserProfile(context.profile);
@@ -348,6 +354,12 @@ export default function App() {
       try {
         // Ensure profile exists and safely sync email/display_name from auth metadata.
         await ensureProfileExists();
+        try {
+          await claimCampaignEmailAccessInvites();
+        } catch {
+          // Invite claiming is best-effort to keep first-load access current.
+        }
+
         const context = await getAccessContext();
         setCurrentUserProfile(context.profile);
         setIsAdmin(Boolean(context.profile?.is_admin));

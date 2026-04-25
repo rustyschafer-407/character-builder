@@ -3,8 +3,9 @@ import type { Dispatch, SetStateAction } from "react";
 import { createGameData, gameData as seedGameData } from "../data/gameData";
 import { buildCloudHydratedState } from "../lib/cloudHydration";
 import {
+  claimCampaignEmailAccessInvites,
   deleteCharacterRow,
-  getCurrentProfile,
+  ensureProfileExists,
   listAccessibleCampaignRows,
   listAccessibleCharacterRows,
   upsertCampaignBySlug,
@@ -110,7 +111,13 @@ export function useCloudSync({
       try {
         setCloudStatus("Loading campaigns and characters...");
 
-        const profile = await getCurrentProfile();
+        const profile = await ensureProfileExists();
+        try {
+          await claimCampaignEmailAccessInvites();
+        } catch {
+          // Invite claiming is best-effort so initial hydration can continue.
+        }
+
         setIsAdmin(Boolean(profile?.is_admin));
         setIsGm(Boolean(profile?.is_gm));
 
