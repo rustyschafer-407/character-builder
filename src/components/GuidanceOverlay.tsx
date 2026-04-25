@@ -215,6 +215,7 @@ export default function GuidanceOverlay() {
 
   const cardRef = useRef<HTMLDivElement>(null);
   const firstButtonRef = useRef<HTMLButtonElement>(null);
+  const recalcRafRef = useRef<number | null>(null);
   const [cardPos, setCardPos] = useState<{ top: number; left: number } | null>(null);
   const [targetRect, setTargetRect] = useState<TargetRect | null>(null);
 
@@ -241,17 +242,30 @@ export default function GuidanceOverlay() {
       setCardPos(computeCardPosition(rect, activeStep.placement ?? "bottom", cardH));
     }
 
-    // Initial: scroll if offscreen, then settle-reposition
-    recalc(true);
-    scrollSettleTimer = setTimeout(() => recalc(false), 550);
+    function scheduleRecalc(scrollIntoView = false) {
+      if (recalcRafRef.current !== null) {
+        window.cancelAnimationFrame(recalcRafRef.current);
+      }
+      recalcRafRef.current = window.requestAnimationFrame(() => {
+        recalc(scrollIntoView);
+      });
+    }
 
-    function onScroll() { recalc(false); }
-    function onResize() { recalc(false); }
+    // Initial: scroll if offscreen, then settle-reposition
+    scheduleRecalc(true);
+    scrollSettleTimer = setTimeout(() => scheduleRecalc(false), 550);
+
+    function onScroll() { scheduleRecalc(false); }
+    function onResize() { scheduleRecalc(false); }
 
     window.addEventListener("resize", onResize, { passive: true });
     window.addEventListener("scroll", onScroll, { passive: true, capture: true });
 
     return () => {
+      if (recalcRafRef.current !== null) {
+        window.cancelAnimationFrame(recalcRafRef.current);
+        recalcRafRef.current = null;
+      }
       if (scrollSettleTimer !== null) clearTimeout(scrollSettleTimer);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScroll, { capture: true });
@@ -311,14 +325,17 @@ export default function GuidanceOverlay() {
   const placement = activeStep.placement ?? "bottom";
   const bodyId = `chalk-card-body-${activeStep.id}`;
   const cardHeight = cardRef.current?.offsetHeight ?? 140;
-  const ringPad = 9;
+  const ringPad = 14;
   const ringWidth = Math.max(24, targetRect.width + ringPad * 2);
   const ringHeight = Math.max(24, targetRect.height + ringPad * 2);
+  const spotlightRadius = Math.max(targetRect.width, targetRect.height) * 0.72 + 42;
+  const spotlightCenterX = targetRect.left + targetRect.width / 2;
+  const spotlightCenterY = targetRect.top + targetRect.height / 2;
   const ringPath = makeChalkRectPath({
     width: targetRect.width,
     height: targetRect.height,
     pad: ringPad,
-    wobble: 4,
+    wobble: 5,
   });
   const arrow = cardPos
     ? buildArrowPath({
@@ -331,6 +348,17 @@ export default function GuidanceOverlay() {
 
   return (
     <>
+      <div
+        aria-hidden
+        className="guidance-backdrop"
+        onClick={() => dismissCurrent()}
+        style={{
+          ["--cx" as string]: `${spotlightCenterX}px`,
+          ["--cy" as string]: `${spotlightCenterY}px`,
+          ["--r" as string]: `${spotlightRadius}px`,
+        }}
+      />
+
       {/* Chalk ring around target element */}
       <div
         aria-hidden
@@ -371,13 +399,14 @@ export default function GuidanceOverlay() {
             position: "fixed",
             inset: 0,
             pointerEvents: "none",
-            zIndex: 9991,
+            zIndex: 9999,
           }}
           width="100%"
           height="100%"
           viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
           preserveAspectRatio="none"
         >
+          <path d={arrow.d} className="chalk-arrow-draw" />
           <path d={arrow.d} className="chalk-arrow-soft" />
           <path d={arrow.d} className="chalk-arrow-main" />
           <path d={arrow.head} className="chalk-arrow-soft" />
@@ -399,7 +428,7 @@ export default function GuidanceOverlay() {
             top: cardPos.top,
             left: cardPos.left,
             width: CARD_WIDTH,
-            zIndex: 9992,
+            zIndex: 10000,
           }}
         >
           <p className="guidance-card-title">{activeStep.title}</p>
@@ -411,7 +440,7 @@ export default function GuidanceOverlay() {
               aria-label={hasNextStep ? "Next hint" : "Got it, dismiss hint"}
               onClick={hasNextStep ? advance : dismissCurrent}
             >
-              {hasNextStep ? "Next" : "Got it"}
+              {hasNextStep ? "Show me more" : "Got it"}
             </button>
             <button
               className="guidance-btn guidance-btn-muted"
