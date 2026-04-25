@@ -101,7 +101,7 @@ export default function CharacterAccessPanel({
   }
 
   return (
-    <section style={{ ...panelStyle, display: "grid", gap: 12 }}>
+    <section style={{ ...panelStyle, display: "grid", gap: 12 }} className="character-access-panel mobile-stack">
       {/* ── Header ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
@@ -133,8 +133,8 @@ export default function CharacterAccessPanel({
       ) : null}
 
       {/* ── Unified access list ── */}
-      <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, padding: "8px 12px", background: "rgba(16,30,58,0.55)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+      <div className="character-access-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
+        <div className="character-access-list-header" style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, padding: "8px 12px", background: "rgba(16,30,58,0.55)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 11.5, letterSpacing: "0.04em", textTransform: "uppercase" }}>
           <div>User</div>
           <div>Email</div>
           <div>Permission</div>
@@ -149,6 +149,7 @@ export default function CharacterAccessPanel({
         {explicitRows.map((row) => (
           <div
             key={`direct-${row.user_id}`}
+            className="character-access-row mobile-card"
             style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "12px", borderTop: "1px solid rgba(58,78,127,0.35)", transition: "background 0.12s" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(73,224,255,0.04)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}
@@ -194,6 +195,7 @@ export default function CharacterAccessPanel({
         {inheritedRows.map((row) => (
           <div
             key={`inherited-${row.user_id}`}
+            className="character-access-row character-access-row-inherited mobile-card"
             style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) auto", gap: 8, alignItems: "center", padding: "12px", borderTop: "1px solid rgba(58,78,127,0.35)", opacity: 0.82, transition: "background 0.12s" }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "rgba(255,255,255,0.02)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = ""; }}

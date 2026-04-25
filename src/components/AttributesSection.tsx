@@ -17,10 +17,11 @@ export default function AttributesSection({
   onChange,
 }: Props) {
   return (
-    <section style={panelStyle}>
+    <section style={panelStyle} className="attributes-section mobile-stack">
       <h2 style={sectionTitleStyle}>{label}</h2>
 
       <div
+        className="attributes-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
@@ -28,7 +29,7 @@ export default function AttributesSection({
         }}
       >
         {ATTRS.map((attr) => (
-          <div key={attr} style={statCardStyle}>
+          <div key={attr} className="attribute-card mobile-card" style={statCardStyle}>
             <strong style={{ color: "var(--text-primary)" }}>{attr}</strong>
 
             <div style={{ marginTop: 8 }}>

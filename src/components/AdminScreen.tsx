@@ -745,12 +745,12 @@ export default function AdminScreen({
 
   return (
     <>
-      <section style={{ ...panelStyle, display: "flex", flexDirection: "column", height: "70vh", width: "100%", overflow: "hidden" }}>
+      <section style={{ ...panelStyle, display: "flex", flexDirection: "column", height: "70vh", width: "100%", overflow: "hidden" }} className="admin-screen mobile-stack">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexShrink: 0 }}>
         <h2 style={sectionTitleStyle}>Admin Screen</h2>
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto", flexShrink: 0, paddingBottom: 4 }}>
+        <div className="admin-tabs" style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "nowrap", overflowX: "auto", flexShrink: 0, paddingBottom: 4 }}>
         <button onClick={() => setTab("campaign")} className="button-control" style={{ ...buttonStyle, background: tab === "campaign" ? "var(--cb-accent-soft-strong)" : buttonStyle.background }}>
           Campaign
         </button>
@@ -856,7 +856,7 @@ export default function AdminScreen({
             <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage classes.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
             <EntityListEditor
               title={`Classes (${selectedCampaign.name})`}
               helper="Classes belong to the selected campaign."
@@ -1443,7 +1443,7 @@ export default function AdminScreen({
             <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage races.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
             <EntityListEditor
               title={`Races (${selectedCampaign.name})`}
               helper="Races belong to the selected campaign."
@@ -1629,7 +1629,7 @@ export default function AdminScreen({
             <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage skills.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
             <EntityListEditor
               title={`Skills (${selectedCampaign.name})`}
               helper="Skills belong to the selected campaign."
@@ -1688,7 +1688,7 @@ export default function AdminScreen({
             <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage powers.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
             <EntityListEditor
               title={`Powers (${selectedCampaign.name})`}
               helper="Powers belong to the selected campaign."
@@ -1806,7 +1806,7 @@ export default function AdminScreen({
             <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage items.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
             <EntityListEditor
               title={`Items (${selectedCampaign.name})`}
               helper="Items belong to the selected campaign."
@@ -1898,7 +1898,7 @@ export default function AdminScreen({
             <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage attacks.</p>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
             <EntityListEditor
               title={`Attacks (${selectedCampaign.name})`}
               helper="Attacks belong to the selected campaign."

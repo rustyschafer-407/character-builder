@@ -22,8 +22,8 @@ export default function InventorySection({
   onAddManualItem,
 }: Props) {
   return (
-    <section style={panelStyle}>
-      <div
+    <section style={panelStyle} className="inventory-section mobile-stack">
+      <div className="inventory-section-header"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -37,7 +37,7 @@ export default function InventorySection({
         </button>
       </div>
 
-      <div style={{ display: "grid", gap: 8 }}>
+      <div className="inventory-list" style={{ display: "grid", gap: 8 }}>
         {items.map((item) => {
           const selectedItem = character.inventory.find((i) => i.itemId === item.id);
           const isSelected = Boolean(selectedItem);
@@ -45,6 +45,7 @@ export default function InventorySection({
           return (
             <div
               key={item.id}
+              className="inventory-row mobile-card"
               style={{
                 ...cardStyle,
                 display: "grid",
@@ -96,6 +97,7 @@ export default function InventorySection({
           .map((item, index) => (
             <div
               key={`manual-${index}-${item.name}`}
+              className="inventory-row inventory-row-manual mobile-card"
               style={{
                 ...cardStyle,
                 display: "grid",

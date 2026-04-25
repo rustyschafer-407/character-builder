@@ -282,7 +282,7 @@ export default function AccessManagementPanel({
   }
 
   return (
-    <section style={{ ...panelStyle, marginBottom: 24, display: "grid", gap: 16 }}>
+    <section style={{ ...panelStyle, marginBottom: 24, display: "grid", gap: 16 }} className="access-management-panel mobile-stack">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <h2 style={{ ...sectionTitleStyle, margin: 0 }}>Permissions</h2>
         {errorMessage ? (
@@ -333,7 +333,7 @@ export default function AccessManagementPanel({
         </div>
       ) : null}
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      <div className="access-workflow-tabs" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {workflowOptions.map((option) => {
           const active = activeWorkflow === option.id;
           return (
@@ -383,8 +383,8 @@ export default function AccessManagementPanel({
             </div>
           ) : null}
 
-          <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+          <div className="access-people-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
+            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Name</div>
               <div>Email</div>
               <div>Roles</div>
@@ -400,6 +400,7 @@ export default function AccessManagementPanel({
                 users.map((user) => (
                   <div
                     key={user.id}
+                    className="access-list-row mobile-card"
                     style={{
                       display: "grid",
                       gridTemplateColumns: "1.4fr 1.8fr 1fr auto",
@@ -608,7 +609,7 @@ export default function AccessManagementPanel({
                   </button>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="access-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                     Display Name
                     <input
@@ -948,8 +949,8 @@ export default function AccessManagementPanel({
             </div>
           ) : null}
 
-          <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+          <div className="access-campaign-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
+            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Display Name</div>
               <div>Email</div>
               <div>Role</div>
@@ -970,6 +971,7 @@ export default function AccessManagementPanel({
                   return (
                     <div
                       key={`${row.campaign_id}-${row.user_id}`}
+                      className="access-list-row mobile-card"
                       style={{
                         display: "grid",
                         gridTemplateColumns: "1.2fr 1.4fr 1fr auto",
@@ -1148,7 +1150,7 @@ export default function AccessManagementPanel({
 
           <div style={{ ...panelStyle, padding: 12, display: "grid", gap: 12 }}>
             <div style={{ fontWeight: 700, color: "var(--text-primary)" }}>Add Character Access</div>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 12, alignItems: "end" }}>
+            <div className="access-character-add-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 12, alignItems: "end" }}>
               <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
                 User
                 <select
@@ -1197,8 +1199,8 @@ export default function AccessManagementPanel({
             </div>
           </div>
 
-          <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+          <div className="access-character-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
+            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>User</div>
               <div>Permission</div>
               <div>Actions</div>
@@ -1212,7 +1214,7 @@ export default function AccessManagementPanel({
                     row.role === "viewer" ? ["viewer", "editor"] : characterRoleOptions;
 
                   return (
-                    <div key={`${row.character_id}-${row.user_id}`} style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, alignItems: "center", padding: "12px 12px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
+                    <div key={`${row.character_id}-${row.user_id}`} className="access-list-row mobile-card" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, alignItems: "center", padding: "12px 12px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
                       <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>{getUserLabel(row.user_id)}</div>
                       <select
                         value={row.role}

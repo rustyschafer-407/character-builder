@@ -11,8 +11,8 @@ interface Props {
 
 export default function AttacksSection({ character, label, onAdd, onChange }: Props) {
   return (
-    <section style={panelStyle}>
-      <div
+    <section style={panelStyle} className="attacks-section mobile-stack">
+      <div className="attacks-section-header"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -26,13 +26,14 @@ export default function AttacksSection({ character, label, onAdd, onChange }: Pr
         </button>
       </div>
 
-      <div style={{ display: "grid", gap: 8 }}>
+      <div className="attacks-list" style={{ display: "grid", gap: 8 }}>
         {sortByName(character.attacks).map((a) => {
           const total = getAttributeModifier(character.attributes[a.attribute]) + a.bonus;
 
           return (
             <div
               key={a.id}
+              className="attack-row mobile-card"
               style={{
                 ...cardStyle,
                 display: "grid",

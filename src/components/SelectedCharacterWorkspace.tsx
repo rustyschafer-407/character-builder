@@ -44,6 +44,7 @@ function CollapsibleSection({
 
   return (
     <section
+      className="workspace-collapsible-card"
       style={{
         border: "1px solid var(--cb-border)",
         borderRadius: 10,
@@ -56,7 +57,7 @@ function CollapsibleSection({
         aria-expanded={isExpanded}
         aria-controls={id}
         onClick={() => setIsExpanded((previous) => !previous)}
-        className="button-control"
+        className="button-control workspace-collapsible-trigger"
         style={{
           width: "100%",
           display: "flex",
@@ -343,7 +344,7 @@ export default function SelectedCharacterWorkspace({
   }
 
   return (
-    <div style={{ flex: 1, display: "grid", gap: 24 }}>
+    <div style={{ flex: 1, display: "grid", gap: 24 }} className="selected-workspace mobile-stack">
       <IdentitySection
         character={character}
         campaignName={selectedCampaignName}

@@ -365,6 +365,7 @@ export default function CharacterCreationWizard({
       style={panelStyle}
     >
       <div
+        className="wizard-header"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -385,7 +386,7 @@ export default function CharacterCreationWizard({
       </div>
 
       <div
-        className="wizard-steps"
+        className="wizard-steps wizard-progress"
         style={{
           display: "flex",
           alignItems: "center",
@@ -423,7 +424,7 @@ export default function CharacterCreationWizard({
         Step {step + 1} of {stepTitles.length} — {stepTitles[step]}
       </div>
 
-      <div className={attributesCrackClassName}>
+      <div className={`${attributesCrackClassName} wizard-step-panel`}>
       {step === 0 && (
         <div style={{ display: "grid", gap: 10 }}>
           {/* ── Primary: manual inputs ── */}
@@ -1167,6 +1168,7 @@ export default function CharacterCreationWizard({
       </div>
 
       <div
+        className="wizard-action-bar mobile-action-bar"
         style={{
           display: "flex",
           justifyContent: "space-between",

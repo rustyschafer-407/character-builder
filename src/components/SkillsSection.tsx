@@ -21,10 +21,10 @@ export default function SkillsSection({
   onChange,
 }: Props) {
   return (
-    <section style={panelStyle}>
+    <section style={panelStyle} className="skills-section mobile-stack">
       <h2 style={sectionTitleStyle}>{label}</h2>
 
-      <div style={{ display: "grid", gap: 8 }}>
+      <div className="skills-list" style={{ display: "grid", gap: 8 }}>
         {skills.map((s) => {
           const skill = character.skills.find((x) => x.skillId === s.id);
           if (!skill) return null;
@@ -40,6 +40,7 @@ export default function SkillsSection({
           return (
             <div
               key={s.id}
+              className="skill-row mobile-card"
               style={{
                 ...cardStyle,
                 display: "grid",
