@@ -210,7 +210,16 @@ function buildArrowPath(input: {
 }
 
 export default function GuidanceOverlay() {
-  const { activeStep, hasNextStep, dismissCurrent, dismissPermanently, advance } =
+  const {
+    activeStep,
+    hasNextStep,
+    mode,
+    dismissCurrent,
+    dismissPermanently,
+    advance,
+    startWalkthrough,
+    finishWalkthrough,
+  } =
     useGuidance();
 
   const cardRef = useRef<HTMLDivElement>(null);
@@ -437,18 +446,39 @@ export default function GuidanceOverlay() {
             <button
               ref={firstButtonRef}
               className="guidance-btn guidance-btn-primary"
-              aria-label={hasNextStep ? "Next hint" : "Got it, dismiss hint"}
-              onClick={hasNextStep ? advance : dismissCurrent}
+              aria-label={
+                mode === "walkthrough"
+                  ? hasNextStep
+                    ? "Next tip"
+                    : "Finish walkthrough"
+                  : "Got it, dismiss hint"
+              }
+              onClick={
+                mode === "walkthrough"
+                  ? hasNextStep
+                    ? advance
+                    : finishWalkthrough
+                  : dismissCurrent
+              }
             >
-              {hasNextStep ? "Show me more" : "Got it"}
+              {mode === "walkthrough" ? (hasNextStep ? "Next tip" : "Finish") : "Got it"}
             </button>
             <button
               className="guidance-btn guidance-btn-muted"
               aria-label={`Don't show "${activeStep.title}" again`}
               onClick={dismissPermanently}
             >
-              Don't show again
+              Hide this tip
             </button>
+            {mode === "contextual" && hasNextStep ? (
+              <button
+                className="guidance-btn guidance-btn-ghost"
+                aria-label="Start a full walkthrough"
+                onClick={startWalkthrough}
+              >
+                Walk me through
+              </button>
+            ) : null}
           </div>
         </div>
       )}

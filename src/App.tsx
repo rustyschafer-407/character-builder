@@ -1782,8 +1782,14 @@ export default function App() {
       isAdmin={isAdmin}
       isGm={isGm}
       campaignRoles={campaignRolesByCampaignId}
+      selectedCampaignRole={currentCampaignRole}
+      hasCampaigns={gameData.campaigns.length > 0}
       hasCharacters={characters.length > 0}
-      isReady={authReady}
+      hasCharactersInSelectedCampaign={filteredCharacters.length > 0}
+      hasSelectedCharacter={Boolean(selected)}
+      suppressGuidance={adminOpen || securityOpen || displayOpen || wizardOpen || levelUpOpen}
+      contextKey={`${campaignId}:${selectedId}:${adminOpen ? "1" : "0"}:${securityOpen ? "1" : "0"}:${displayOpen ? "1" : "0"}:${wizardOpen ? "1" : "0"}`}
+      isReady={authReady && cloudLoadComplete}
       userId={currentUserId}
     >
     <div style={pageStyle}>
