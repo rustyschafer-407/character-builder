@@ -708,7 +708,13 @@ export default function App() {
 
   function openNewCampaignAdminScreen() {
     setSecurityOpen(false);
-    createCampaignAndOpenAdmin();
+    const newCampaignId = createCampaignAndOpenAdmin();
+    if (newCampaignId) {
+      setCampaignRolesByCampaignId((prev) => ({
+        ...prev,
+        [newCampaignId]: "editor",
+      }));
+    }
   }
 
   function openAccessManagement() {
@@ -770,6 +776,7 @@ export default function App() {
 
   async function handleAdminSave(nextGameData: GameData) {
     await persistCampaignChanges(gameData, nextGameData);
+    await refreshAccessContextState();
     applyAdminSaveLocally(nextGameData);
   }
 
@@ -1330,10 +1337,10 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (adminOpen && !uiCanEditCurrentCampaign) {
+    if (adminOpen && !uiCanEditCurrentCampaign && !adminAutoFocusCampaignName) {
       cancelAdmin();
     }
-  }, [adminOpen, uiCanEditCurrentCampaign, cancelAdmin]);
+  }, [adminOpen, uiCanEditCurrentCampaign, adminAutoFocusCampaignName, cancelAdmin]);
 
 
 

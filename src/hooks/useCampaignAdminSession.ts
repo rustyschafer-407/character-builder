@@ -80,6 +80,7 @@ export function useCampaignAdminSession({
     setSelectedId(getFirstVisibleCharacterId(characters, newCampaign.id));
     setAdminAutoFocusCampaignName(true);
     setAdminOpen(true);
+    return newCampaign.id;
   }
 
   function cancelAdmin() {
