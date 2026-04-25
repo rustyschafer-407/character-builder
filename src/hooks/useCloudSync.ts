@@ -43,6 +43,7 @@ export function useCloudSync({
   );
   const [characters, setCharacters] = useState<CharacterRecord[]>([]);
   const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
+  const [campaignCreatedByByCampaignId, setCampaignCreatedByByCampaignId] = useState<Record<string, string | null>>({});
   const [cloudStatus, setCloudStatus] = useState(
     cloudEnabled ? "Connecting to cloud..." : "Supabase configuration missing"
   );
@@ -88,6 +89,7 @@ export function useCloudSync({
 
     if (!currentUserId) {
       setCampaignRowIdsByAppId({});
+      setCampaignCreatedByByCampaignId({});
       setGameData(initialCloudGameData);
       setCharacters([]);
       setCampaignId("");
@@ -131,6 +133,7 @@ export function useCloudSync({
         const hydrated = buildCloudHydratedState({ campaignRows, characterRows });
 
         setCampaignRowIdsByAppId(hydrated.campaignRowIdsByAppId);
+        setCampaignCreatedByByCampaignId(hydrated.campaignCreatedByByCampaignId);
         setCampaignRolesByCampaignId(hydrated.campaignRolesByCampaignId);
         setCharacterRolesByCharacterId(hydrated.characterRolesByCharacterId);
         setGameData(hydrated.gameData);
@@ -280,6 +283,7 @@ export function useCloudSync({
     characters,
     setCharacters,
     campaignRowIdsByAppId,
+    campaignCreatedByByCampaignId,
     cloudStatus,
     setCloudStatus,
     cloudLoadComplete,

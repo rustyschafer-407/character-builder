@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
+  getCharacterType,
   getAttributeModifier,
   getClassById,
   getRaceById,
@@ -39,7 +40,7 @@ import {
   updateCurrentUserPassword,
 } from "./lib/authRepository";
 import { getRememberMePreference, hasSupabaseEnv, setRememberMePreference } from "./lib/supabaseClient";
-import { resolveUserEmail, resolveUserName } from "./lib/userDisplay";
+import { getAccessRowDisplayName, getAccessRowEmail, resolveUserEmail, resolveUserName } from "./lib/userDisplay";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
@@ -250,6 +251,7 @@ export default function App() {
   const setCampaignId = setSelectedCampaignId;
   const [raceId, setRaceId] = useState("");
   const [classId, setClassId] = useState("");
+  const [campaignCreatorProfilesByUserId, setCampaignCreatorProfilesByUserId] = useState<Record<string, ProfileRow>>({});
   const [manageableUsers, setManageableUsers] = useState<ProfileRow[]>([]);
   const [campaignAccessRows, setCampaignAccessRows] = useState<CampaignAccessRowWithProfile[]>([]);
   const [characterAccessRows, setCharacterAccessRows] = useState<CharacterAccessRowWithProfile[]>([]);
@@ -275,6 +277,7 @@ export default function App() {
     characters,
     setCharacters,
     campaignRowIdsByAppId,
+    campaignCreatedByByCampaignId,
     cloudStatus,
     setCloudStatus,
     cloudLoadComplete,
@@ -626,6 +629,11 @@ export default function App() {
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
 
   const filteredCharacters = characters.filter((character) => character.campaignId === campaignId);
+  const currentCampaignRole = campaignRolesByCampaignId[campaignId] ?? null;
+  const restrictToPcOnly = !isAdmin && currentCampaignRole === "player";
+  const sidebarCharacters = restrictToPcOnly
+    ? filteredCharacters.filter((character) => getCharacterType(character) === "pc")
+    : filteredCharacters;
   const selectedSkills = selectedCampaign ? sortByName(selectedCampaign.skills) : [];
 
   const selectedPowers = selectedCampaign ? sortByName(selectedCampaign.powers) : [];
@@ -849,6 +857,78 @@ export default function App() {
     const email = resolveUserEmail(profile, userId);
     return `${name} (${email})`;
   }
+
+  const campaignCreatorDetailsByCampaignId = useMemo(() => {
+    const result: Record<string, { userId: string | null; displayName: string; email: string }> = {};
+
+    for (const [campaignKey, creatorId] of Object.entries(campaignCreatedByByCampaignId)) {
+      if (!creatorId) {
+        result[campaignKey] = {
+          userId: null,
+          displayName: "Unknown user",
+          email: "No email on profile",
+        };
+        continue;
+      }
+
+      const profile = campaignCreatorProfilesByUserId[creatorId] ?? null;
+      result[campaignKey] = {
+        userId: creatorId,
+        displayName: getAccessRowDisplayName(profile),
+        email: getAccessRowEmail(profile),
+      };
+    }
+
+    return result;
+  }, [campaignCreatedByByCampaignId, campaignCreatorProfilesByUserId]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadCampaignCreatorProfiles() {
+      const creatorIds = Array.from(
+        new Set(
+          Object.values(campaignCreatedByByCampaignId)
+            .map((value) => value?.trim() ?? "")
+            .filter(Boolean)
+        )
+      );
+
+      if (creatorIds.length === 0) {
+        if (!isCancelled) {
+          setCampaignCreatorProfilesByUserId({});
+        }
+        return;
+      }
+
+      try {
+        const rows = await listLoginPickerProfileSummariesByIds(creatorIds);
+        if (isCancelled) return;
+        setCampaignCreatorProfilesByUserId(
+          Object.fromEntries(rows.map((row) => [row.id, row] as const))
+        );
+      } catch {
+        if (!isCancelled) {
+          setCampaignCreatorProfilesByUserId({});
+        }
+      }
+    }
+
+    void loadCampaignCreatorProfiles();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [campaignCreatedByByCampaignId]);
+
+  useEffect(() => {
+    if (!restrictToPcOnly) return;
+    if (!selected || selected.campaignId !== campaignId) return;
+    if (getCharacterType(selected) !== "npc") return;
+
+    const nextVisiblePc = sidebarCharacters[0]?.id ?? "";
+    setSelectedId(nextVisiblePc);
+  }, [campaignId, restrictToPcOnly, selected, sidebarCharacters]);
 
   const reloadAccessManagementData = useCallback(async () => {
     if (!currentUserId) return;
@@ -1815,6 +1895,7 @@ export default function App() {
         <AdminScreen
           gameData={gameData}
           activeCampaignId={campaignId}
+          campaignCreatorDetailsByCampaignId={campaignCreatorDetailsByCampaignId}
           autoFocusCampaignName={adminAutoFocusCampaignName}
           saveRequestVersion={adminSaveRequestVersion}
           onCampaignContextChange={handleCampaignChange}
@@ -1824,7 +1905,7 @@ export default function App() {
       ) : !securityOpen ? (
         <div className="app-body" style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
           <Sidebar
-            characters={filteredCharacters}
+            characters={sidebarCharacters}
             selectedId={selectedId}
             onSelect={setSelectedId}
             onCreate={() => {
@@ -1837,6 +1918,7 @@ export default function App() {
             canDeleteCharacter={uiCanEditCharacterById}
             getCampaignName={getCampaignName}
             getClassName={getClassName}
+            restrictToPcOnly={restrictToPcOnly}
           />
 
           {wizardOpen && creationDraft ? (

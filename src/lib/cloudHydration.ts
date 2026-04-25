@@ -92,6 +92,12 @@ export function buildCloudHydratedState(input: {
       .map((row) => [resolveCloudCampaignId(row), row.campaign_role] as const)
   ) as Record<string, "player" | "editor">
 
+  const campaignCreatedByByCampaignId = Object.fromEntries(
+    input.campaignRows
+      .map((row) => [resolveCloudCampaignId(row), row.created_by ?? null] as const)
+      .filter(([id]) => Boolean(id))
+  ) as Record<string, string | null>
+
   const characterRolesByCharacterId = Object.fromEntries(
     input.characterRows
       .filter((row) => row.character_role)
@@ -119,6 +125,7 @@ export function buildCloudHydratedState(input: {
     characters,
     campaignRowIdsByAppId,
     campaignRolesByCampaignId,
+    campaignCreatedByByCampaignId,
     characterRolesByCharacterId,
   }
 }

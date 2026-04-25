@@ -34,6 +34,7 @@ interface Props {
   canDeleteCharacter: (id: string) => boolean;
   getCampaignName: (campaignId: string) => string;
   getClassName: (classId: string) => string;
+  restrictToPcOnly?: boolean;
 }
 
 export default function Sidebar({
@@ -46,6 +47,7 @@ export default function Sidebar({
   canDeleteCharacter,
   getCampaignName,
   getClassName,
+  restrictToPcOnly = false,
 }: Props) {
   const [typeFilter, setTypeFilter] = useState<CharacterListTypeFilter>(() => readCharacterTypeFilter());
   const [hoveredDeleteId, setHoveredDeleteId] = useState<string | null>(null);
@@ -61,6 +63,9 @@ export default function Sidebar({
 
   const visibleCharacters = characters
     .filter((character) => {
+      if (restrictToPcOnly) {
+        return getCharacterType(character) === "pc";
+      }
       if (typeFilter === "all") return true;
       return getCharacterType(character) === typeFilter;
     })
@@ -130,21 +135,23 @@ export default function Sidebar({
         </div>
       </div>
 
-      <div
-        role="group"
-        aria-label="Character type filter"
-        style={{ display: "flex", gap: 6, marginTop: 10 }}
-      >
-        <button className="button-control" type="button" onClick={() => setTypeFilter("all")} style={segmentButtonStyle("all")}>
-          All
-        </button>
-        <button className="button-control" type="button" onClick={() => setTypeFilter("pc")} style={segmentButtonStyle("pc")}>
-          PCs
-        </button>
-        <button className="button-control" type="button" onClick={() => setTypeFilter("npc")} style={segmentButtonStyle("npc")}>
-          NPCs
-        </button>
-      </div>
+      {!restrictToPcOnly ? (
+        <div
+          role="group"
+          aria-label="Character type filter"
+          style={{ display: "flex", gap: 6, marginTop: 10 }}
+        >
+          <button className="button-control" type="button" onClick={() => setTypeFilter("all")} style={segmentButtonStyle("all")}>
+            All
+          </button>
+          <button className="button-control" type="button" onClick={() => setTypeFilter("pc")} style={segmentButtonStyle("pc")}>
+            PCs
+          </button>
+          <button className="button-control" type="button" onClick={() => setTypeFilter("npc")} style={segmentButtonStyle("npc")}>
+            NPCs
+          </button>
+        </div>
+      ) : null}
 
       <div style={{ marginTop: 18, display: "grid", gap: 6 }}>
         {visibleCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
@@ -218,25 +225,29 @@ export default function Sidebar({
                 </div>
               </button>
 
-              <span
-                style={{
-                  fontSize: 10,
-                  letterSpacing: "0.06em",
-                  fontWeight: 700,
-                  textTransform: "uppercase",
-                  minWidth: 44,
-                  textAlign: "center",
-                  padding: "3px 8px",
-                  borderRadius: 999,
-                  border: isNpc ? "1px solid rgba(255, 188, 83, 0.34)" : "1px solid rgba(73, 224, 255, 0.28)",
-                  color: isNpc ? "#e8c78c" : "#98ddec",
-                  background: isNpc ? "rgba(239, 170, 87, 0.12)" : "rgba(73, 224, 255, 0.1)",
-                  opacity: 0.82,
-                  justifySelf: "center",
-                }}
-              >
-                {characterType.toUpperCase()}
-              </span>
+              {!restrictToPcOnly ? (
+                <span
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.06em",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    minWidth: 44,
+                    textAlign: "center",
+                    padding: "3px 8px",
+                    borderRadius: 999,
+                    border: isNpc ? "1px solid rgba(255, 188, 83, 0.34)" : "1px solid rgba(73, 224, 255, 0.28)",
+                    color: isNpc ? "#e8c78c" : "#98ddec",
+                    background: isNpc ? "rgba(239, 170, 87, 0.12)" : "rgba(73, 224, 255, 0.1)",
+                    opacity: 0.82,
+                    justifySelf: "center",
+                  }}
+                >
+                  {characterType.toUpperCase()}
+                </span>
+              ) : (
+                <span />
+              )}
 
               <button
                 onClick={() => onDelete(c.id)}

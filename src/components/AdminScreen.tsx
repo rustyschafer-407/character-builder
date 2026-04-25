@@ -30,6 +30,7 @@ import { syncCampaignDerivedAttackTemplates } from "../lib/derivedAttacks";
 interface Props {
   gameData: GameData;
   activeCampaignId: string;
+  campaignCreatorDetailsByCampaignId?: Record<string, { userId: string | null; displayName: string; email: string }>;
   autoFocusCampaignName?: boolean;
   saveRequestVersion: number;
   onCampaignContextChange: (campaignId: string) => void;
@@ -232,6 +233,7 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
 export default function AdminScreen({
   gameData,
   activeCampaignId,
+  campaignCreatorDetailsByCampaignId = {},
   autoFocusCampaignName = false,
   saveRequestVersion,
   onCampaignContextChange,
@@ -251,6 +253,9 @@ export default function AdminScreen({
 
   const selectedCampaign =
     workingData.campaigns.find((campaign) => campaign.id === activeCampaignId) ?? null;
+  const selectedCampaignCreator = selectedCampaign
+    ? campaignCreatorDetailsByCampaignId[selectedCampaign.id] ?? null
+    : null;
   const selectedClass = selectedCampaign?.classes.find((cls) => cls.id === selectedClassId) ?? null;
   const selectedRace = selectedCampaign?.races?.find((race) => race.id === selectedRaceId) ?? null;
   const selectedSkill = selectedCampaign?.skills.find((skill) => skill.id === selectedSkillId) ?? null;
@@ -818,6 +823,18 @@ export default function AdminScreen({
                       className="form-control" style={inputStyle}
                     />
                   </label>
+                </div>
+
+                <div style={{ marginTop: 12, display: "grid", gap: 4 }}>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: "0.04em" }}>
+                    CAMPAIGN CREATOR
+                  </div>
+                  <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+                    {selectedCampaignCreator?.displayName ?? "Unknown user"}
+                  </div>
+                  <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                    {selectedCampaignCreator?.email ?? "No email on profile"}
+                  </div>
                 </div>
               </section>
             </div>
