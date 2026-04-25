@@ -800,12 +800,10 @@ export default function App() {
   const signedInEmail = currentUserProfile?.email?.trim() || "";
   const uiCanEditCurrentCampaign = Boolean(
     isAdmin ||
-      isGm ||
       campaignRolesByCampaignId[campaignId] === "editor"
   );
   const uiCanCreateCharacterInCurrentCampaign = Boolean(
     isAdmin ||
-      isGm ||
       campaignRolesByCampaignId[campaignId] === "player" ||
       campaignRolesByCampaignId[campaignId] === "editor"
   );
@@ -823,7 +821,6 @@ export default function App() {
     if (!character) return false;
 
     const campaignRole = campaignRolesByCampaignId[character.campaignId];
-    if (isGm && campaignRole) return true;
     if (campaignRole === "editor") return true;
 
     const directRole = characterRolesByCharacterId[characterId];

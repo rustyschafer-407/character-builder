@@ -375,7 +375,7 @@ export async function listAccessibleCampaignRows() {
 
   return campaigns
     .filter((campaign) => {
-      if (context.profile?.is_admin || context.profile?.is_gm) return true
+      if (context.profile?.is_admin) return true
       if (context.campaignRolesByCampaignId[campaign.id]) return true
       return campaign.created_by === context.profile?.id
     })
@@ -383,7 +383,6 @@ export async function listAccessibleCampaignRows() {
       const role = context.campaignRolesByCampaignId[campaign.id] ?? null
       const canEdit = Boolean(
         context.profile?.is_admin ||
-          context.profile?.is_gm ||
           role === "editor"
       )
       return {
@@ -414,7 +413,7 @@ export async function listAccessibleCharacterRows() {
 
   return characters
     .filter((character) => {
-      if (context.profile?.is_admin || context.profile?.is_gm) return true
+      if (context.profile?.is_admin) return true
       if (context.campaignRolesByCampaignId[character.campaign_id]) return true
       if (context.characterRolesByCharacterId[character.id]) return true
       return character.created_by === context.profile?.id
@@ -423,10 +422,8 @@ export async function listAccessibleCharacterRows() {
       const campaignRole = context.campaignRolesByCampaignId[character.campaign_id]
       const directRole = context.characterRolesByCharacterId[character.id] ?? null
       const createdByCurrentUser = character.created_by === context.profile?.id
-      const gmHasCampaignMembership = Boolean(context.profile?.is_gm && campaignRole)
       const canEdit = Boolean(
         context.profile?.is_admin ||
-          gmHasCampaignMembership ||
           campaignRole === "editor" ||
           directRole === "editor" ||
           createdByCurrentUser
