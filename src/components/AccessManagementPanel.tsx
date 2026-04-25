@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CampaignAccessRole,
   CampaignAccessRow,
@@ -19,7 +19,6 @@ interface AccessManagementPanelProps {
   users: ProfileRow[];
   campaignAccessRows: CampaignAccessRow[];
   characterAccessRows: CharacterAccessRow[];
-  campaignUserCandidateIds: string[];
   characterUserCandidateIds: string[];
   getUserLabel: (userId: string) => string;
   onSaveUserRoles: (input: { userId: string; isAdmin: boolean; isGm: boolean }) => Promise<void>;
@@ -31,8 +30,23 @@ interface AccessManagementPanelProps {
     isAdmin: boolean;
     isGm: boolean;
   }) => Promise<{ ok: boolean; message: string }>;
-  onAssignCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
-  onAssignCampaignAccessByEmail: (input: { email: string; role: CampaignAccessRole }) => Promise<{ deferred: boolean; message: string }>;
+  onCreateCampaignInvite: (input: { email?: string; role: CampaignAccessRole }) => Promise<{ ok: boolean; message: string; inviteUrl: string }>;
+  onListCampaignInvites: () => Promise<{
+    ok: boolean;
+    message: string;
+    invites: Array<{
+      id: string;
+      token: string;
+      campaign_id: string;
+      email: string | null;
+      role: CampaignAccessRole;
+      expires_at: string;
+      used_at: string | null;
+      created_at: string;
+      inviteUrl: string;
+    }>;
+  }>;
+  onRevokeCampaignInvite: (input: { inviteId: string }) => Promise<{ ok: boolean; message: string }>;
   onUpdateCampaignAccess: (input: { userId: string; role: CampaignAccessRole }) => Promise<void>;
   onRemoveCampaignAccess: (userId: string) => Promise<void>;
   onAssignCharacterAccess: (input: { userId: string; role: CharacterAccessRole }) => Promise<void>;
@@ -51,14 +65,14 @@ export default function AccessManagementPanel({
   users,
   campaignAccessRows,
   characterAccessRows,
-  campaignUserCandidateIds,
   characterUserCandidateIds,
   getUserLabel,
   onSaveUserRoles,
   onDeleteUser,
   onCreatePlayer,
-  onAssignCampaignAccess,
-  onAssignCampaignAccessByEmail,
+  onCreateCampaignInvite,
+  onListCampaignInvites,
+  onRevokeCampaignInvite,
   onUpdateCampaignAccess,
   onRemoveCampaignAccess,
   onAssignCharacterAccess,
@@ -87,12 +101,26 @@ export default function AccessManagementPanel({
 
   const [showCampaignAddPanel, setShowCampaignAddPanel] = useState(false);
   const [campaignSearchOrEmail, setCampaignSearchOrEmail] = useState("");
+  const [campaignInviteLink, setCampaignInviteLink] = useState("");
+  const [campaignInvites, setCampaignInvites] = useState<
+    Array<{
+      id: string;
+      token: string;
+      campaign_id: string;
+      email: string | null;
+      role: CampaignAccessRole;
+      expires_at: string;
+      used_at: string | null;
+      created_at: string;
+      inviteUrl: string;
+    }>
+  >([]);
+  const [campaignInvitesLoading, setCampaignInvitesLoading] = useState(false);
   const [campaignMemberResult, setCampaignMemberResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [campaignRoleModalUserId, setCampaignRoleModalUserId] = useState("");
   const [campaignRoleModalValue, setCampaignRoleModalValue] = useState<CampaignAccessRole>("player");
   const [campaignRemoveModalUserId, setCampaignRemoveModalUserId] = useState("");
 
-  const [campaignAssignUserId, setCampaignAssignUserId] = useState("");
   const [campaignAssignRole, setCampaignAssignRole] = useState<CampaignAccessRole>("player");
 
   const [characterAssignUserId, setCharacterAssignUserId] = useState("");
@@ -133,25 +161,40 @@ export default function AccessManagementPanel({
     () => campaignAccessRows.filter((row) => row.role === "editor").length,
     [campaignAccessRows]
   );
-  const assignedCampaignUserIds = useMemo(
-    () => new Set(campaignAccessRows.map((row) => row.user_id)),
-    [campaignAccessRows]
-  );
-  const filteredCampaignCandidateIds = useMemo(() => {
-    const query = campaignSearchOrEmail.trim().toLowerCase();
-    return campaignUserCandidateIds.filter((userId) => {
-      if (assignedCampaignUserIds.has(userId)) {
-        return false;
+  function resetCampaignInviteForm() {
+    setCampaignSearchOrEmail("");
+    setCampaignAssignRole("player");
+    setCampaignInviteLink("");
+  }
+
+  function campaignInviteStatus(invite: { expires_at: string; used_at: string | null }) {
+    if (invite.used_at) return "Used" as const;
+    const expiresMs = Date.parse(invite.expires_at);
+    if (!Number.isFinite(expiresMs) || expiresMs <= Date.now()) return "Expired" as const;
+    return "Active" as const;
+  }
+
+  function campaignInviteExpiresInText(expiresAt: string) {
+    const expiresMs = Date.parse(expiresAt);
+    if (!Number.isFinite(expiresMs)) return "Invite expiration unavailable";
+
+    const daysRemaining = Math.max(0, Math.ceil((expiresMs - Date.now()) / (24 * 60 * 60 * 1000)));
+    return `Invite expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`;
+  }
+
+  const reloadCampaignInvites = useCallback(async () => {
+    setCampaignInvitesLoading(true);
+    try {
+      const result = await onListCampaignInvites();
+      if (!result.ok) {
+        setCampaignMemberResult({ type: "error", message: result.message });
+        return;
       }
-      if (!query) {
-        return true;
-      }
-      const profile = usersById.get(userId);
-      const displayName = profile?.display_name?.toLowerCase() ?? "";
-      const email = profile?.email?.toLowerCase() ?? "";
-      return displayName.includes(query) || email.includes(query) || userId.toLowerCase().includes(query);
-    });
-  }, [campaignUserCandidateIds, campaignSearchOrEmail, assignedCampaignUserIds, usersById]);
+      setCampaignInvites(result.invites);
+    } finally {
+      setCampaignInvitesLoading(false);
+    }
+  }, [onListCampaignInvites]);
 
   useEffect(() => {
     if (workflowOptions.length === 0) {
@@ -172,6 +215,14 @@ export default function AccessManagementPanel({
     }, 2400);
     return () => window.clearTimeout(timeoutId);
   }, [setPasswordToast]);
+
+  useEffect(() => {
+    if (!showCampaignAddPanel) {
+      return;
+    }
+
+    void reloadCampaignInvites();
+  }, [showCampaignAddPanel, reloadCampaignInvites]);
 
   async function runAction(action: () => Promise<void>) {
     onClearError();
@@ -844,9 +895,17 @@ export default function AccessManagementPanel({
               <button
                 className="button-control" style={buttonStyle}
                 disabled={busy}
-                onClick={() => setShowCampaignAddPanel((current) => !current)}
+                onClick={() => {
+                  setShowCampaignAddPanel((current) => {
+                    const next = !current;
+                    if (!next) {
+                      resetCampaignInviteForm();
+                    }
+                    return next;
+                  });
+                }}
               >
-                {showCampaignAddPanel ? "Close" : "Add Player"}
+                {showCampaignAddPanel ? "Close" : "Invite Link"}
               </button>
             </div>
           </div>
@@ -885,6 +944,7 @@ export default function AccessManagementPanel({
               onClick={() => {
                 if (busy) return;
                 setShowCampaignAddPanel(false);
+                resetCampaignInviteForm();
               }}
             >
               <div
@@ -892,15 +952,13 @@ export default function AccessManagementPanel({
                 onClick={(event) => event.stopPropagation()}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-                  <strong>Add Player</strong>
+                  <strong>Invite Link</strong>
                   <button
                     className="button-control" style={buttonStyle}
                     disabled={busy}
                     onClick={() => {
                       setShowCampaignAddPanel(false);
-                      setCampaignSearchOrEmail("");
-                      setCampaignAssignUserId("");
-                      setCampaignAssignRole("player");
+                      resetCampaignInviteForm();
                     }}
                   >
                     Close
@@ -908,36 +966,16 @@ export default function AccessManagementPanel({
                 </div>
 
                 <label style={{ fontWeight: 600, color: "var(--cb-muted-label)" }}>
-                  User email
+                  Email (optional)
                   <input
-                    type="text"
+                    type="email"
                     value={campaignSearchOrEmail}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setCampaignSearchOrEmail(value);
-                      const normalized = value.trim().toLowerCase();
-                      const matchedUserId = filteredCampaignCandidateIds.find((userId) => {
-                        const profile = usersById.get(userId);
-                        const email = profile?.email?.toLowerCase() ?? "";
-                        return email === normalized;
-                      });
-                      setCampaignAssignUserId(matchedUserId ?? "");
-                    }}
-                    placeholder="Search by name or type an email"
-                    list="campaign-user-candidate-list"
+                    onChange={(e) => setCampaignSearchOrEmail(e.target.value)}
+                    placeholder="name@example.com"
                     className="form-control" style={inputStyle}
                     disabled={busy}
                   />
                 </label>
-
-                <datalist id="campaign-user-candidate-list">
-                  {filteredCampaignCandidateIds.map((userId) => {
-                    const profile = usersById.get(userId);
-                    const email = profile?.email?.trim();
-                    if (!email) return null;
-                    return <option key={userId} value={email} label={getUserLabel(userId)} />;
-                  })}
-                </datalist>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
                   <label style={{ fontWeight: 600, color: "var(--cb-muted-label)", maxWidth: 280 }}>
@@ -961,51 +999,192 @@ export default function AccessManagementPanel({
                 </div>
 
                 <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                  {campaignAssignUserId
-                    ? "Matched existing user. Access will be applied now."
-                    : "User will get access after they sign in."}
+                  Add an email to lock this invite to one person, or leave it blank for an open invite.
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
                   <button
-                    className="button-control" style={primaryButtonStyle}
+                    className="button-control" style={buttonStyle}
                     disabled={busy || !campaignSearchOrEmail.trim()}
                     onClick={() => {
-                      const inputValue = campaignSearchOrEmail.trim();
-                      if (!inputValue) {
-                        setCampaignMemberResult({ type: "error", message: "Type a name or email." });
+                      const email = campaignSearchOrEmail.trim().toLowerCase();
+                      if (!email) {
+                        setCampaignMemberResult({ type: "error", message: "Enter an email address." });
                         return;
                       }
 
                       void runAction(async () => {
-                        const normalized = inputValue.toLowerCase();
-                        const matchedUserId = campaignAssignUserId ||
-                          filteredCampaignCandidateIds.find((userId) => {
-                            const profile = usersById.get(userId);
-                            const email = profile?.email?.toLowerCase() ?? "";
-                            return email === normalized;
-                          }) || "";
-
-                        if (matchedUserId) {
-                          await onAssignCampaignAccess({ userId: matchedUserId, role: campaignAssignRole });
-                          setCampaignMemberResult({ type: "success", message: "Player added to campaign" });
-                        } else {
-                          const result = await onAssignCampaignAccessByEmail({ email: inputValue, role: campaignAssignRole });
-                          setCampaignMemberResult({
-                            type: "success",
-                            message: result.message,
-                          });
+                        const result = await onCreateCampaignInvite({ email, role: campaignAssignRole });
+                        if (!result.ok) {
+                          setCampaignMemberResult({ type: "error", message: result.message });
+                          return;
                         }
 
-                        setShowCampaignAddPanel(false);
-                        setCampaignSearchOrEmail("");
-                        setCampaignAssignUserId("");
-                        setCampaignAssignRole("player");
+                        setCampaignInviteLink(result.inviteUrl);
+                        await reloadCampaignInvites();
+                        setCampaignMemberResult({ type: "success", message: "Invite link ready." });
                       });
                     }}
                   >
-                    Add Player
+                    Generate Link for Email
                   </button>
+                  <button
+                    className="button-control" style={primaryButtonStyle}
+                    disabled={busy}
+                    onClick={() => {
+                      void runAction(async () => {
+                        const result = await onCreateCampaignInvite({ role: campaignAssignRole });
+                        if (!result.ok) {
+                          setCampaignMemberResult({ type: "error", message: result.message });
+                          return;
+                        }
+
+                        setCampaignInviteLink(result.inviteUrl);
+                        await reloadCampaignInvites();
+                        setCampaignMemberResult({ type: "success", message: "Open invite link ready." });
+                      });
+                    }}
+                  >
+                    Generate Open Invite
+                  </button>
+                </div>
+
+                {campaignInviteLink ? (
+                  <div style={{ display: "grid", gap: 8, border: "1px solid var(--cb-success-soft-border)", background: "var(--cb-success-soft)", borderRadius: 10, padding: 12 }}>
+                    <label style={{ fontWeight: 600, color: "var(--cb-success-text)" }}>
+                      Invite Link
+                      <input
+                        type="text"
+                        readOnly
+                        value={campaignInviteLink}
+                        className="form-control"
+                        style={{ ...inputStyle, marginTop: 6 }}
+                      />
+                    </label>
+                    <div style={{ color: "var(--cb-success-text)", fontSize: 12, fontWeight: 600 }}>
+                      {campaignInviteExpiresInText(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString())}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        className="button-control"
+                        style={primaryButtonStyle}
+                        onClick={() => {
+                          void (async () => {
+                            try {
+                              await navigator.clipboard.writeText(campaignInviteLink);
+                              setCampaignMemberResult({ type: "success", message: "Invite link copied." });
+                            } catch {
+                              setCampaignMemberResult({ type: "error", message: "Could not copy. Select the link and copy it manually." });
+                            }
+                          })();
+                        }}
+                      >
+                        Copy Link
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1.4fr 0.9fr 1fr auto", gap: 8, padding: "10px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+                    <div>Email</div>
+                    <div>Role</div>
+                    <div>Status</div>
+                    <div>Actions</div>
+                  </div>
+                  <div style={{ display: "grid" }}>
+                    {campaignInvitesLoading ? (
+                      <div style={{ padding: 12, color: "var(--text-secondary)", fontSize: 13 }}>Loading invites...</div>
+                    ) : campaignInvites.length === 0 ? (
+                      <div style={{ padding: 12, color: "var(--text-secondary)", fontSize: 13 }}>No invites yet.</div>
+                    ) : (
+                      campaignInvites.map((invite) => {
+                        const status = campaignInviteStatus(invite);
+                        const statusColor =
+                          status === "Active"
+                            ? "var(--cb-success-text)"
+                            : status === "Used"
+                              ? "#d7e8ff"
+                              : "var(--cb-danger-text)";
+                        const statusText =
+                          status === "Active"
+                            ? campaignInviteExpiresInText(invite.expires_at)
+                            : status === "Used"
+                              ? "Already used"
+                              : "Invite has expired";
+
+                        return (
+                          <div
+                            key={invite.id}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "1.4fr 0.9fr 1fr auto",
+                              gap: 8,
+                              alignItems: "center",
+                              padding: "10px 12px",
+                              borderTop: "1px solid rgba(58, 78, 127, 0.35)",
+                            }}
+                          >
+                            <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+                              {invite.email || "Open invite"}
+                            </div>
+                            <div style={{ color: "var(--text-secondary)", fontWeight: 600 }}>
+                              {campaignRoleLabel(invite.role)}
+                            </div>
+                            <div style={{ display: "grid", gap: 2 }}>
+                              <div style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>{status}</div>
+                              <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>{statusText}</div>
+                            </div>
+                            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+                              <button
+                                className="button-control"
+                                style={buttonStyle}
+                                disabled={busy}
+                                onClick={() => {
+                                  void (async () => {
+                                    try {
+                                      await navigator.clipboard.writeText(invite.inviteUrl);
+                                      setCampaignMemberResult({ type: "success", message: "Invite link copied." });
+                                    } catch {
+                                      setCampaignMemberResult({ type: "error", message: "Could not copy. Select the link and copy it manually." });
+                                    }
+                                  })();
+                                }}
+                              >
+                                Copy
+                              </button>
+                              <button
+                                className="button-control"
+                                style={buttonStyle}
+                                disabled={busy}
+                                onClick={() => {
+                                  if (!window.confirm("Revoke this invite link?")) {
+                                    return;
+                                  }
+
+                                  void runAction(async () => {
+                                    const result = await onRevokeCampaignInvite({ inviteId: invite.id });
+                                    if (!result.ok) {
+                                      setCampaignMemberResult({ type: "error", message: result.message });
+                                      return;
+                                    }
+
+                                    await reloadCampaignInvites();
+                                    if (campaignInviteLink === invite.inviteUrl) {
+                                      setCampaignInviteLink("");
+                                    }
+                                    setCampaignMemberResult({ type: "success", message: "Invite revoked." });
+                                  });
+                                }}
+                              >
+                                Revoke
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

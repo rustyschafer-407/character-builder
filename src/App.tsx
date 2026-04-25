@@ -18,7 +18,6 @@ import {
   deleteCharacterAccessRow,
   getAccessContext,
   ensureProfileExists,
-  getProfileByEmail,
   deleteUserAccount,
   updateUserRoles,
   claimCampaignEmailAccessInvites,
@@ -26,7 +25,6 @@ import {
   listCharacterAccessRows,
   listManageableProfiles,
   upsertCampaignAccessRow,
-  upsertCampaignAccessInviteByEmail,
   upsertCharacterAccessRow,
 } from "./lib/cloudRepository";
 import {
@@ -165,7 +163,29 @@ function makeDraftFromCampaignClassAndRace(
   return draft;
 }
 
+interface CampaignInviteSummary {
+  id: string;
+  token: string;
+  campaign_id: string;
+  email: string | null;
+  role: "player" | "editor";
+  expires_at: string;
+  used_at: string | null;
+  created_at: string;
+  inviteUrl: string;
+}
+
 export default function App() {
+  const currentPathname = typeof window === "undefined" ? "/" : window.location.pathname;
+  const returnToFromQuery = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("returnTo")?.trim() ?? "";
+  }, []);
+  const inviteTokenFromQuery = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("token")?.trim() ?? "";
+  }, []);
+  const inviteRouteActive = currentPathname === "/invite";
   const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
   const [displayOpen, setDisplayOpen] = useState(false);
   const cloudEnabled = hasSupabaseEnv();
@@ -209,6 +229,8 @@ export default function App() {
   const [campaignAccessRows, setCampaignAccessRows] = useState<CampaignAccessRow[]>([]);
   const [characterAccessRows, setCharacterAccessRows] = useState<CharacterAccessRow[]>([]);
   const [accessManagementError, setAccessManagementError] = useState("");
+  const [inviteAcceptStatus, setInviteAcceptStatus] = useState<"idle" | "accepting" | "success" | "error">("idle");
+  const [inviteAcceptError, setInviteAcceptError] = useState("");
 
   useEffect(() => {
     applyDisplayPreferences(displayPreferences);
@@ -660,9 +682,6 @@ export default function App() {
   const uiCanEditSelectedCharacter = Boolean(selected && uiCanEditCharacterById(selected.id));
   const directCharacterAccessCount = Object.keys(characterRolesByCharacterId).length;
   const userById = new Map(manageableUsers.map((user) => [user.id, user] as const));
-  const campaignUserCandidateIds = uiCanManageCampaignAccess
-    ? manageableUsers.map((user) => user.id)
-    : [];
   const characterUserCandidateIds = uiCanManageCharacterAccess
     ? Array.from(
         new Set(
@@ -743,6 +762,104 @@ export default function App() {
       isCancelled = true;
     };
   }, [currentUserId, reloadAccessManagementData]);
+
+  useEffect(() => {
+    if (!authReady || currentUserId || !inviteRouteActive || typeof window === "undefined") {
+      return;
+    }
+
+    const safeToken = inviteTokenFromQuery ? `?token=${encodeURIComponent(inviteTokenFromQuery)}` : "";
+    const returnTo = `/invite${safeToken}`;
+    window.location.replace(`/?returnTo=${encodeURIComponent(returnTo)}`);
+  }, [authReady, currentUserId, inviteRouteActive, inviteTokenFromQuery]);
+
+  useEffect(() => {
+    if (!authReady || !currentUserId || currentPathname !== "/" || !returnToFromQuery || typeof window === "undefined") {
+      return;
+    }
+
+    if (!returnToFromQuery.startsWith("/invite")) {
+      return;
+    }
+
+    window.location.replace(returnToFromQuery);
+  }, [authReady, currentPathname, currentUserId, returnToFromQuery]);
+
+  useEffect(() => {
+    if (!inviteRouteActive || !authReady || !currentUserId) {
+      return;
+    }
+
+    if (!inviteTokenFromQuery) {
+      setInviteAcceptStatus("error");
+      setInviteAcceptError("Invalid token.");
+      return;
+    }
+
+    if (inviteAcceptStatus !== "idle") {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function acceptInvite() {
+      setInviteAcceptStatus("accepting");
+      setInviteAcceptError("");
+
+      try {
+        const session = await getCurrentSession();
+        const accessToken = session?.access_token;
+        if (!accessToken) {
+          throw new Error("You must be signed in to accept an invite.");
+        }
+
+        const response = await fetch("/api/campaign-accept-invite", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ token: inviteTokenFromQuery }),
+        });
+
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string; errorCode?: string }
+          | null;
+
+        if (!response.ok) {
+          const code = payload?.errorCode;
+          if (code === "expired") {
+            throw new Error("This invite has expired");
+          }
+          if (code === "invalid_token") {
+            throw new Error("Invalid token.");
+          }
+          if (code === "email_mismatch") {
+            throw new Error("This invite is for a different email");
+          }
+          if (code === "used") {
+            throw new Error("This invite has already been used");
+          }
+          throw new Error(payload?.error || "Failed to accept invite.");
+        }
+
+        if (cancelled) return;
+        setInviteAcceptStatus("success");
+        window.location.replace("/");
+      } catch (error) {
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : "Failed to accept invite.";
+        setInviteAcceptStatus("error");
+        setInviteAcceptError(message);
+      }
+    }
+
+    void acceptInvite();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, currentUserId, inviteAcceptStatus, inviteRouteActive, inviteTokenFromQuery]);
 
   async function runAccessMutation(action: () => Promise<void>) {
     setAccessManagementError("");
@@ -861,47 +978,130 @@ export default function App() {
     });
   }
 
-  async function handleAssignCampaignAccessByEmail(input: { email: string; role: "player" | "editor" }) {
+  async function handleCreateCampaignInvite(input: { email?: string; role: "player" | "editor" }) {
     if (!currentCampaignRowId) {
-      return { deferred: false as const, message: "Campaign is not selected." };
+      return { ok: false as const, message: "Campaign is not selected.", inviteUrl: "" };
     }
 
-    let deferred = false;
-    await runAccessMutation(async () => {
-      const normalizedEmail = input.email.trim().toLowerCase();
-      if (!normalizedEmail) {
-        throw new Error("Enter an email address.");
-      }
+    const session = await getCurrentSession();
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      return { ok: false as const, message: "You must be signed in to create an invite.", inviteUrl: "" };
+    }
 
-      const profile = await getProfileByEmail(normalizedEmail);
-      if (profile) {
-        await upsertCampaignAccessRow({
-          campaignRowId: currentCampaignRowId,
-          userId: profile.id,
+    try {
+      const response = await fetch("/api/campaign-create-invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          campaignId: currentCampaignRowId,
+          email: input.email?.trim() || null,
           role: input.role,
-        });
-        return;
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; inviteUrl?: string }
+        | null;
+
+      if (!response.ok || !payload?.inviteUrl) {
+        return {
+          ok: false as const,
+          message: payload?.error || "Failed to generate invite link.",
+          inviteUrl: "",
+        };
       }
 
-      deferred = true;
-      await upsertCampaignAccessInviteByEmail({
-        campaignRowId: currentCampaignRowId,
-        email: normalizedEmail,
-        role: input.role,
-      });
-    });
-
-    if (deferred) {
       return {
-        deferred: true as const,
-        message: "User will get access after they sign in.",
+        ok: true as const,
+        message: "Invite link created.",
+        inviteUrl: payload.inviteUrl,
       };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to generate invite link.";
+      return { ok: false as const, message, inviteUrl: "" };
+    }
+  }
+
+  async function handleListCampaignInvites() {
+    if (!currentCampaignRowId) {
+      return { ok: false as const, message: "Campaign is not selected.", invites: [] as CampaignInviteSummary[] };
     }
 
-    return {
-      deferred: false as const,
-      message: "Campaign member added.",
-    };
+    const session = await getCurrentSession();
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      return { ok: false as const, message: "You must be signed in to view invites.", invites: [] as CampaignInviteSummary[] };
+    }
+
+    try {
+      const response = await fetch(`/api/campaign-list-invites?campaignId=${encodeURIComponent(currentCampaignRowId)}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { error?: string; invites?: CampaignInviteSummary[] }
+        | null;
+
+      if (!response.ok) {
+        return {
+          ok: false as const,
+          message: payload?.error || "Failed to load invites.",
+          invites: [] as CampaignInviteSummary[],
+        };
+      }
+
+      return {
+        ok: true as const,
+        message: "Invites loaded.",
+        invites: payload?.invites ?? [],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to load invites.";
+      return { ok: false as const, message, invites: [] as CampaignInviteSummary[] };
+    }
+  }
+
+  async function handleRevokeCampaignInvite(input: { inviteId: string }) {
+    const session = await getCurrentSession();
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      return { ok: false as const, message: "You must be signed in to revoke invites." };
+    }
+
+    try {
+      const response = await fetch("/api/campaign-revoke-invite", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ inviteId: input.inviteId }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+
+      if (!response.ok) {
+        return {
+          ok: false as const,
+          message: payload?.error || "Failed to revoke invite.",
+        };
+      }
+
+      return {
+        ok: true as const,
+        message: "Invite revoked.",
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to revoke invite.";
+      return { ok: false as const, message };
+    }
   }
 
   async function handleUpdateCampaignAccess(input: { userId: string; role: "player" | "editor" }) {
@@ -986,6 +1186,11 @@ export default function App() {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
+          {inviteRouteActive ? (
+            <div style={{ marginBottom: 12, color: "var(--cb-text-muted)", fontSize: 13, fontWeight: 600 }}>
+              Sign in to accept your campaign invite.
+            </div>
+          ) : null}
           {useEmailFallback ? (
             <>
               <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Email Sign In</h2>
@@ -1101,6 +1306,31 @@ export default function App() {
               </div>
             </>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (inviteRouteActive) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...panelStyle, maxWidth: 560 }}>
+          <h2 style={{ marginTop: 0, color: "var(--cb-text)" }}>Campaign Invite</h2>
+          {inviteAcceptStatus === "accepting" || inviteAcceptStatus === "idle" ? (
+            <p style={{ ...mutedTextStyle, marginBottom: 0 }}>Accepting invite...</p>
+          ) : null}
+          {inviteAcceptStatus === "error" ? (
+            <>
+              <p style={{ marginBottom: 12, color: "var(--cb-danger-text)", fontWeight: 700 }}>{inviteAcceptError}</p>
+              <button
+                onClick={() => window.location.replace("/")}
+                className="button-control"
+                style={buttonStyle}
+              >
+                Go To App
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     );
@@ -1311,14 +1541,14 @@ export default function App() {
           users={manageableUsers}
           campaignAccessRows={campaignAccessRows}
           characterAccessRows={characterAccessRows}
-          campaignUserCandidateIds={campaignUserCandidateIds}
           characterUserCandidateIds={characterUserCandidateIds}
           getUserLabel={getUserLabel}
           onSaveUserRoles={handleSaveUserRoles}
           onDeleteUser={handleDeleteUser}
           onCreatePlayer={handleCreatePlayer}
-          onAssignCampaignAccess={handleAssignCampaignAccess}
-          onAssignCampaignAccessByEmail={handleAssignCampaignAccessByEmail}
+          onCreateCampaignInvite={handleCreateCampaignInvite}
+          onListCampaignInvites={handleListCampaignInvites}
+          onRevokeCampaignInvite={handleRevokeCampaignInvite}
           onUpdateCampaignAccess={handleUpdateCampaignAccess}
           onRemoveCampaignAccess={handleRemoveCampaignAccess}
           onAssignCharacterAccess={handleAssignCharacterAccess}

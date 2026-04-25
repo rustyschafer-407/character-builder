@@ -6,7 +6,7 @@ export type AuthListener = (event: AuthChangeEvent, session: Session | null) => 
 
 export async function signInWithGoogle() {
   const supabase = getSupabaseClient()
-  const redirectTo = typeof window === "undefined" ? undefined : window.location.origin
+  const redirectTo = typeof window === "undefined" ? undefined : window.location.href
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
