@@ -167,6 +167,7 @@ function makeDraftFromCampaignClassAndRace(
 
 export default function App() {
   const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
+  const [displayOpen, setDisplayOpen] = useState(false);
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
   const [authRememberMe, setAuthRememberMe] = useState(() => getRememberMePreference());
@@ -519,6 +520,12 @@ export default function App() {
     setClassId,
     setSelectedId,
   });
+
+  useEffect(() => {
+    if (adminOpen || securityOpen) {
+      setDisplayOpen(false);
+    }
+  }, [adminOpen, securityOpen]);
 
   function openAdminScreen() {
     setSecurityOpen(false);
@@ -1153,15 +1160,6 @@ export default function App() {
         </h1>
 
         <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
-          <DisplaySettings
-            theme={displayPreferences.theme}
-            textSize={displayPreferences.textSize}
-            density={displayPreferences.density}
-            onThemeChange={(theme) => setDisplayPreferences((prev) => ({ ...prev, theme }))}
-            onTextSizeChange={(textSize) => setDisplayPreferences((prev) => ({ ...prev, textSize }))}
-            onDensityChange={(density) => setDisplayPreferences((prev) => ({ ...prev, density }))}
-          />
-
           {adminOpen ? (
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={cancelAdmin} className="button-control" style={buttonStyle}>
@@ -1191,6 +1189,9 @@ export default function App() {
                   Access
                 </button>
               ) : null}
+              <button onClick={() => setDisplayOpen(true)} className="button-control" style={buttonStyle}>
+                Display
+              </button>
               <button onClick={() => void handleSignOut()} className="button-control" style={buttonStyle}>
                 Sign Out
               </button>
@@ -1198,6 +1199,51 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {displayOpen ? (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "var(--cb-modal-overlay)",
+            display: "grid",
+            placeItems: "center",
+            padding: 16,
+            zIndex: 90,
+          }}
+          onClick={() => setDisplayOpen(false)}
+        >
+          <div
+            style={{
+              ...panelStyle,
+              width: "min(560px, 96vw)",
+              border: "1px solid var(--cb-border-strong)",
+              display: "grid",
+              gap: 12,
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div>
+                <h2 style={{ ...mutedTextStyle, margin: 0, fontSize: 12, letterSpacing: "0.04em", fontWeight: 700 }}>DISPLAY</h2>
+                <div style={{ color: "var(--cb-text)", fontSize: 24, fontWeight: 800 }}>Accessibility & Theme</div>
+              </div>
+              <button onClick={() => setDisplayOpen(false)} className="button-control" style={buttonStyle}>
+                Close
+              </button>
+            </div>
+
+            <DisplaySettings
+              theme={displayPreferences.theme}
+              textSize={displayPreferences.textSize}
+              density={displayPreferences.density}
+              onThemeChange={(theme) => setDisplayPreferences((prev) => ({ ...prev, theme }))}
+              onTextSizeChange={(textSize) => setDisplayPreferences((prev) => ({ ...prev, textSize }))}
+              onDensityChange={(density) => setDisplayPreferences((prev) => ({ ...prev, density }))}
+            />
+          </div>
+        </div>
+      ) : null}
 
       {!securityOpen ? (
         <div
