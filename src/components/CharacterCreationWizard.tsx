@@ -32,6 +32,7 @@ import {
 } from "../lib/creationChoiceRules";
 import { getAttributeModifier } from "../lib/character";
 import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
+import type { QuickstartConcept, QuickstartLocks } from "../lib/characterQuickstart";
 import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, selectStyle, statCardStyle } from "./uiStyles";
 import "./CharacterCreationWizard.css";
 
@@ -86,6 +87,24 @@ interface Props {
   onNext: () => void;
   onCancel: () => void;
   onFinish: () => void;
+  quickstartPanelOpen: boolean;
+  quickstartMode: "surprise" | "guided" | "concepts";
+  quickstartLocks: QuickstartLocks;
+  quickstartConcepts: QuickstartConcept[];
+  quickstartWarnings: string[];
+  quickstartActive: boolean;
+  onOpenQuickstart: () => void;
+  onCloseQuickstart: () => void;
+  onQuickstartModeChange: (mode: "surprise" | "guided" | "concepts") => void;
+  onQuickstartLocksChange: (locks: QuickstartLocks) => void;
+  onQuickstartGenerate: () => void;
+  onQuickstartChooseConcept: (index: number) => void;
+  onQuickstartRerollConcepts: () => void;
+  onQuickstartRerollEverything: () => void;
+  onQuickstartRerollName: () => void;
+  onQuickstartRerollAttributes: () => void;
+  onQuickstartRerollSkills: () => void;
+  onQuickstartEditManually: () => void;
 }
 
 const ATTRS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
@@ -168,6 +187,24 @@ export default function CharacterCreationWizard({
   onNext,
   onCancel,
   onFinish,
+  quickstartPanelOpen,
+  quickstartMode,
+  quickstartLocks,
+  quickstartConcepts,
+  quickstartWarnings,
+  quickstartActive,
+  onOpenQuickstart,
+  onCloseQuickstart,
+  onQuickstartModeChange,
+  onQuickstartLocksChange,
+  onQuickstartGenerate,
+  onQuickstartChooseConcept,
+  onQuickstartRerollConcepts,
+  onQuickstartRerollEverything,
+  onQuickstartRerollName,
+  onQuickstartRerollAttributes,
+  onQuickstartRerollSkills,
+  onQuickstartEditManually,
 }: Props) {
   const [rollEffect, setRollEffect] = useState<RollEffectType | null>(null);
   const glowSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -181,6 +218,8 @@ export default function CharacterCreationWizard({
   const raceModifiersText = formatRaceAttributeModifiers(selectedRace);
   const attributeBonusTotals = getAttributeBonusTotals(selectedClass, selectedRace);
   const selectedSaveProfCount = ATTRS.filter((attr) => draft.saveProf[attr]).length;
+  const hasRaceOptions = racesForCampaign.length > 0;
+  const hasClassOptions = classesForCampaign.length > 0;
 
   useEffect(() => {
     if (!rollEffect) return;
@@ -247,6 +286,22 @@ export default function CharacterCreationWizard({
 
     void playSound();
   }, [rollEffect]);
+
+  useEffect(() => {
+    if (!quickstartPanelOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseQuickstart();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onCloseQuickstart, quickstartPanelOpen]);
 
   function handleRollAttributesClick() {
     hasUserInteractedRef.current = true;
@@ -362,6 +417,28 @@ export default function CharacterCreationWizard({
       <div className={attributesCrackClassName}>
       {step === 0 && (
         <div style={{ display: "grid", gap: 14 }}>
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 10,
+              border: "1px solid var(--border-soft)",
+              background: "rgba(10, 20, 39, 0.78)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <strong style={{ color: "var(--text-primary)" }}>Character Quickstart</strong>
+              <div style={{ color: "var(--text-secondary)", fontSize: 13, marginTop: 4 }}>
+                Generate a playable character in seconds, then review before saving.
+              </div>
+            </div>
+            <button onClick={onOpenQuickstart} style={buttonStyle}>Generate Character</button>
+          </div>
+
           <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             Character Name
             <input
@@ -404,13 +481,29 @@ export default function CharacterCreationWizard({
 
       {step === 1 && (
         <div style={{ display: "grid", gap: 14 }}>
+          {racesForCampaign.length === 0 && (
+            <div
+              style={{
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid rgba(255, 188, 83, 0.55)",
+                background: "rgba(255, 188, 83, 0.12)",
+                color: "#ffe8b2",
+                fontSize: 14,
+              }}
+            >
+              This campaign has no species/race list. Quickstart will omit species and continue.
+            </div>
+          )}
           <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             Race
             <select
               value={draft.raceId}
               onChange={(e) => onRaceChange(e.target.value)}
               style={selectStyle}
+              disabled={racesForCampaign.length === 0}
             >
+              {racesForCampaign.length === 0 && <option value="">No species available</option>}
               {racesForCampaign.map((race) => (
                 <option key={race.id} value={race.id}>
                   {race.name}
@@ -445,13 +538,29 @@ export default function CharacterCreationWizard({
 
       {step === 2 && (
         <div style={{ display: "grid", gap: 14 }}>
+          {classesForCampaign.length === 0 && (
+            <div
+              style={{
+                padding: 10,
+                borderRadius: 8,
+                border: "1px solid rgba(255, 188, 83, 0.55)",
+                background: "rgba(255, 188, 83, 0.12)",
+                color: "#ffe8b2",
+                fontSize: 14,
+              }}
+            >
+              This campaign has no class list. Quickstart can still create a basic adventurer concept.
+            </div>
+          )}
           <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
             {labels.className}
             <select
               value={draft.classId}
               onChange={(e) => onClassChange(e.target.value)}
               style={selectStyle}
+              disabled={classesForCampaign.length === 0}
             >
+              {classesForCampaign.length === 0 && <option value="">No classes available</option>}
               {classesForCampaign.map((cls) => (
                 <option key={cls.id} value={cls.id}>
                   {cls.name}
@@ -905,6 +1014,22 @@ export default function CharacterCreationWizard({
 
       {step === 8 && (
         <div style={{ display: "grid", gap: 14 }}>
+          {quickstartActive && (
+            <div
+              style={{
+                padding: 12,
+                borderRadius: 8,
+                border: "1px solid var(--accent-primary)",
+                background: "rgba(73, 224, 255, 0.12)",
+                color: "var(--text-primary)",
+              }}
+            >
+              <strong>Quickstart Review</strong>
+              <div style={{ marginTop: 4, color: "var(--text-secondary)", fontSize: 13 }}>
+                Check this generated character before keeping it, reroll sections, or switch to manual editing.
+              </div>
+            </div>
+          )}
           <div style={{ color: "#b9cdf0" }}>
             <strong>Name:</strong> {draft.identity.name}
           </div>
@@ -915,7 +1040,13 @@ export default function CharacterCreationWizard({
             <strong>Race:</strong> {selectedRace?.name}
           </div>
           <div style={{ color: "#b9cdf0" }}>
-            <strong>{labels.className}:</strong> {selectedClass?.name}
+            <strong>{labels.className}:</strong> {selectedClass?.name || "Adventurer (no class data)"}
+          </div>
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>Background:</strong> {draft.identity.background || "None"}
+          </div>
+          <div style={{ color: "#b9cdf0" }}>
+            <strong>Ancestry:</strong> {draft.identity.ancestry || "None"}
           </div>
           <div style={{ color: "#b9cdf0" }}>
             <strong>{labels.attributes}:</strong>{" "}
@@ -952,6 +1083,16 @@ export default function CharacterCreationWizard({
               Starting HP uses d{selectedClass.hpRule.hitDie} + CON modifier.
             </div>
           )}
+          {quickstartActive && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button onClick={onFinish} style={buttonStyle}>Keep Character</button>
+              <button onClick={onQuickstartRerollEverything} style={buttonStyle}>Reroll Everything</button>
+              <button onClick={onQuickstartRerollName} style={buttonStyle}>Reroll Name</button>
+              <button onClick={onQuickstartRerollAttributes} style={buttonStyle}>Reroll Attributes</button>
+              <button onClick={onQuickstartRerollSkills} style={buttonStyle}>Reroll Skills</button>
+              <button onClick={onQuickstartEditManually} style={buttonStyle}>Edit Manually</button>
+            </div>
+          )}
         </div>
       )}
       </div>
@@ -973,10 +1114,251 @@ export default function CharacterCreationWizard({
           </button>
         ) : (
           <button onClick={onFinish} style={buttonStyle}>
-            Finish Character
+            {quickstartActive ? "Keep Character" : "Finish Character"}
           </button>
         )}
       </div>
+
+      {quickstartPanelOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(2, 6, 16, 0.68)",
+            zIndex: 60,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="quickstart-title"
+        >
+          <div
+            style={{
+              width: "min(980px, 100%)",
+              maxHeight: "85vh",
+              overflow: "auto",
+              borderRadius: 12,
+              border: "1px solid var(--border-soft)",
+              background: "linear-gradient(165deg, var(--surface-1), var(--surface-0))",
+              padding: 16,
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+              <h3 id="quickstart-title" style={{ margin: 0, color: "var(--text-primary)" }}>Character Quickstart</h3>
+              <button onClick={onCloseQuickstart} style={buttonStyle}>Close</button>
+            </div>
+
+            <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+              Not saved yet. Quickstart only fills the draft and sends you to review.
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+              <button
+                onClick={() => onQuickstartModeChange("surprise")}
+                style={{
+                  ...buttonStyle,
+                  border: quickstartMode === "surprise" ? "1px solid var(--accent-primary)" : buttonStyle.border,
+                  background: quickstartMode === "surprise" ? "rgba(73, 224, 255, 0.16)" : buttonStyle.background,
+                }}
+              >
+                Surprise Me
+              </button>
+              <button
+                onClick={() => onQuickstartModeChange("guided")}
+                style={{
+                  ...buttonStyle,
+                  border: quickstartMode === "guided" ? "1px solid var(--accent-primary)" : buttonStyle.border,
+                  background: quickstartMode === "guided" ? "rgba(73, 224, 255, 0.16)" : buttonStyle.background,
+                }}
+              >
+                Guided Random
+              </button>
+              <button
+                onClick={() => onQuickstartModeChange("concepts")}
+                style={{
+                  ...buttonStyle,
+                  border: quickstartMode === "concepts" ? "1px solid var(--accent-primary)" : buttonStyle.border,
+                  background: quickstartMode === "concepts" ? "rgba(73, 224, 255, 0.16)" : buttonStyle.background,
+                }}
+              >
+                Roll 3 Concepts
+              </button>
+            </div>
+
+            {quickstartMode === "guided" && (
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                  Lock key choices and randomize the rest.
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                    Race / Species
+                    <select
+                      value={quickstartLocks.raceId ?? ""}
+                      onChange={(e) =>
+                        onQuickstartLocksChange({
+                          ...quickstartLocks,
+                          raceId: e.target.value || undefined,
+                        })
+                      }
+                      style={selectStyle}
+                      disabled={!hasRaceOptions}
+                    >
+                      <option value="">Random</option>
+                      {racesForCampaign.map((race) => (
+                        <option key={race.id} value={race.id}>{race.name}</option>
+                      ))}
+                    </select>
+                    {!hasRaceOptions && (
+                      <div style={{ marginTop: 4, color: "var(--text-secondary)", fontSize: 12 }}>
+                        No species list found. Generation will omit species.
+                      </div>
+                    )}
+                  </label>
+
+                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                    {labels.className}
+                    <select
+                      value={quickstartLocks.classId ?? ""}
+                      onChange={(e) =>
+                        onQuickstartLocksChange({
+                          ...quickstartLocks,
+                          classId: e.target.value || undefined,
+                        })
+                      }
+                      style={selectStyle}
+                      disabled={!hasClassOptions}
+                    >
+                      <option value="">Random</option>
+                      {classesForCampaign.map((cls) => (
+                        <option key={cls.id} value={cls.id}>{cls.name}</option>
+                      ))}
+                    </select>
+                    {!hasClassOptions && (
+                      <div style={{ marginTop: 4, color: "var(--text-secondary)", fontSize: 12 }}>
+                        No class list found. Generation will create a basic concept.
+                      </div>
+                    )}
+                  </label>
+
+                  <label style={{ fontWeight: 600, color: "#b9cdf0" }}>
+                    Background / Archetype
+                    <input
+                      value={quickstartLocks.background ?? ""}
+                      onChange={(e) =>
+                        onQuickstartLocksChange({
+                          ...quickstartLocks,
+                          background: e.target.value || undefined,
+                        })
+                      }
+                      style={inputStyle}
+                      placeholder="Random if blank"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {quickstartMode === "concepts" && quickstartConcepts.length > 0 && (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 10 }}>
+                {quickstartConcepts.map((concept, index) => (
+                  <div
+                    key={`${concept.id}-${index}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Use concept ${index + 1}: ${concept.name}`}
+                    onClick={() => onQuickstartChooseConcept(index)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onQuickstartChooseConcept(index);
+                      }
+                    }}
+                    style={{
+                      border: "1px solid var(--border-soft)",
+                      borderRadius: 10,
+                      padding: 12,
+                      background: "rgba(9, 20, 38, 0.82)",
+                      display: "grid",
+                      gap: 8,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>{concept.name}</div>
+                    <div style={{ color: "#b9cdf0", fontSize: 13 }}><strong>Race:</strong> {concept.raceName || "None"}</div>
+                    <div style={{ color: "#b9cdf0", fontSize: 13 }}><strong>{labels.className}:</strong> {concept.className}</div>
+                    <div style={{ color: "#b9cdf0", fontSize: 13 }}><strong>Background:</strong> {concept.background}</div>
+                    <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>{concept.summary}</div>
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onQuickstartChooseConcept(index);
+                      }}
+                      style={buttonStyle}
+                    >
+                      Use This Concept
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {quickstartMode === "concepts" && quickstartConcepts.length === 0 && (
+              <div
+                style={{
+                  padding: 10,
+                  borderRadius: 8,
+                  border: "1px solid var(--border-soft)",
+                  background: "rgba(9, 20, 38, 0.82)",
+                  color: "var(--text-secondary)",
+                  fontSize: 14,
+                }}
+              >
+                No concepts generated yet. Select Generate 3 Concepts to create options.
+              </div>
+            )}
+
+            {quickstartWarnings.length > 0 && (
+              <div style={{ display: "grid", gap: 6 }}>
+                {quickstartWarnings.map((warning, index) => (
+                  <div
+                    key={`${warning}-${index}`}
+                    style={{
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255, 188, 83, 0.55)",
+                      background: "rgba(255, 188, 83, 0.12)",
+                      color: "#ffe8b2",
+                      fontSize: 13,
+                    }}
+                  >
+                    {warning}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 8, justifyContent: "space-between", flexWrap: "wrap" }}>
+              <div style={{ color: "var(--text-secondary)", fontSize: 13, alignSelf: "center" }}>
+                Generated characters always go through review before being saved.
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {quickstartMode === "concepts" && (
+                  <button onClick={onQuickstartRerollConcepts} style={buttonStyle}>Reroll 3 Concepts</button>
+                )}
+                <button onClick={onQuickstartGenerate} style={buttonStyle}>
+                  {quickstartMode === "concepts" ? "Generate 3 Concepts" : "Generate & Review"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {rollEffect && (
         <div className="wizard-roll-feedback" aria-live="polite">

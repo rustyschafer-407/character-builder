@@ -35,9 +35,16 @@ import {
   getPointBuySpentFromTotals,
   makePointBuyBaseAttributes,
 } from "../lib/pointBuy";
+import {
+  generateQuickstartConcepts,
+  generateQuickstartDraft,
+  type QuickstartConcept,
+  type QuickstartLocks,
+} from "../lib/characterQuickstart";
 
 type AttributeGenerationMethod = "pointBuy" | "randomRoll" | "manual";
 type ClassChoiceRule = ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemChoiceRule;
+type QuickstartMode = "surprise" | "guided" | "concepts";
 
 function getDraftHpForCon(hitDie: number, conScore: number) {
   const nextMax = Math.max(1, hitDie + getAttributeModifier(conScore));
@@ -104,6 +111,12 @@ export function useCharacterCreation({
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
   const [creationDraft, setCreationDraft] = useState<CharacterCreationDraft | null>(null);
+  const [quickstartPanelOpen, setQuickstartPanelOpen] = useState(false);
+  const [quickstartMode, setQuickstartMode] = useState<QuickstartMode>("surprise");
+  const [quickstartLocks, setQuickstartLocks] = useState<QuickstartLocks>({});
+  const [quickstartConcepts, setQuickstartConcepts] = useState<QuickstartConcept[]>([]);
+  const [quickstartWarnings, setQuickstartWarnings] = useState<string[]>([]);
+  const [quickstartActive, setQuickstartActive] = useState(false);
 
   const wizardCampaign: CampaignDefinition | null = useMemo(
     () =>
@@ -224,6 +237,12 @@ export function useCharacterCreation({
 
     setCreationDraft(draft);
     setWizardStep(0);
+    setQuickstartActive(false);
+    setQuickstartPanelOpen(false);
+    setQuickstartMode("surprise");
+    setQuickstartLocks({});
+    setQuickstartConcepts([]);
+    setQuickstartWarnings([]);
     setWizardOpen(true);
   }
 
@@ -231,6 +250,12 @@ export function useCharacterCreation({
     setWizardOpen(false);
     setWizardStep(0);
     setCreationDraft(null);
+    setQuickstartActive(false);
+    setQuickstartPanelOpen(false);
+    setQuickstartMode("surprise");
+    setQuickstartLocks({});
+    setQuickstartConcepts([]);
+    setQuickstartWarnings([]);
   }
 
   function finishWizard() {
@@ -247,10 +272,12 @@ export function useCharacterCreation({
     }
 
     if (wizardStep === 1) {
+      if (wizardRacesForCampaign.length === 0) return true;
       return Boolean(creationDraft.raceId);
     }
 
     if (wizardStep === 2) {
+      if (wizardClassesForCampaign.length === 0) return true;
       return Boolean(creationDraft.classId);
     }
 
@@ -653,6 +680,145 @@ export function useCharacterCreation({
     });
   }
 
+  function openQuickstartPanel() {
+    if (!creationDraft) return;
+    setQuickstartPanelOpen(true);
+    setQuickstartWarnings([]);
+    setQuickstartConcepts([]);
+    setQuickstartLocks({
+      raceId: creationDraft.raceId,
+      classId: creationDraft.classId,
+      background: creationDraft.identity.background,
+      ancestry: creationDraft.identity.ancestry,
+    });
+  }
+
+  function closeQuickstartPanel() {
+    setQuickstartPanelOpen(false);
+  }
+
+  function updateQuickstartLocks(next: QuickstartLocks) {
+    setQuickstartLocks(next);
+  }
+
+  function applyGeneratedDraft(nextDraft: CharacterCreationDraft) {
+    setCreationDraft(nextDraft);
+    setQuickstartActive(true);
+    setQuickstartPanelOpen(false);
+    setWizardStep(8);
+  }
+
+  function generateFromQuickstartMode() {
+    if (!creationDraft || !wizardCampaign) return;
+
+    const baseLocks: QuickstartLocks = quickstartMode === "guided" ? quickstartLocks : {};
+
+    if (quickstartMode === "concepts") {
+      const concepts = generateQuickstartConcepts(wizardCampaign, baseLocks, 3);
+      setQuickstartConcepts(concepts);
+      setQuickstartWarnings([]);
+      return;
+    }
+
+    const result = generateQuickstartDraft(wizardCampaign, baseLocks);
+    setQuickstartWarnings(result.warnings);
+    if (!result.draft) {
+      return;
+    }
+    applyGeneratedDraft(result.draft);
+  }
+
+  function chooseQuickstartConcept(index: number) {
+    const concept = quickstartConcepts[index];
+    if (!concept) return;
+    applyGeneratedDraft(concept.draft);
+  }
+
+  function rerollConcepts() {
+    if (!wizardCampaign) return;
+    const concepts = generateQuickstartConcepts(wizardCampaign, quickstartLocks, 3);
+    setQuickstartConcepts(concepts);
+  }
+
+  function rerollEverything() {
+    if (!creationDraft || !wizardCampaign) return;
+    const locks: QuickstartLocks = {
+      raceId: creationDraft.raceId || undefined,
+      classId: creationDraft.classId || undefined,
+      background: creationDraft.identity.background,
+      ancestry: creationDraft.identity.ancestry,
+    };
+    const result = generateQuickstartDraft(wizardCampaign, locks);
+    setQuickstartWarnings(result.warnings);
+    if (result.draft) {
+      setCreationDraft(result.draft);
+      setQuickstartActive(true);
+    }
+  }
+
+  function rerollName() {
+    if (!creationDraft || !wizardCampaign) return;
+    const locks: QuickstartLocks = {
+      raceId: creationDraft.raceId || undefined,
+      classId: creationDraft.classId || undefined,
+      background: creationDraft.identity.background,
+      ancestry: creationDraft.identity.ancestry,
+    };
+    const result = generateQuickstartDraft(wizardCampaign, locks);
+    if (!result.draft) return;
+    setCreationDraft({
+      ...creationDraft,
+      identity: {
+        ...creationDraft.identity,
+        name: result.draft.identity.name,
+      },
+    });
+  }
+
+  function rerollAttributes() {
+    if (!creationDraft || !wizardCampaign) return;
+    const locks: QuickstartLocks = {
+      raceId: creationDraft.raceId || undefined,
+      classId: creationDraft.classId || undefined,
+      background: creationDraft.identity.background,
+      ancestry: creationDraft.identity.ancestry,
+      name: creationDraft.identity.name,
+    };
+    const result = generateQuickstartDraft(wizardCampaign, locks);
+    if (!result.draft) return;
+    setCreationDraft({
+      ...creationDraft,
+      attributes: result.draft.attributes,
+      saveProf: result.draft.saveProf,
+      attributeGeneration: result.draft.attributeGeneration,
+      hp: result.draft.hp,
+    });
+  }
+
+  function rerollSkills() {
+    if (!creationDraft || !wizardCampaign) return;
+    const locks: QuickstartLocks = {
+      raceId: creationDraft.raceId || undefined,
+      classId: creationDraft.classId || undefined,
+      background: creationDraft.identity.background,
+      ancestry: creationDraft.identity.ancestry,
+      name: creationDraft.identity.name,
+    };
+    const result = generateQuickstartDraft(wizardCampaign, locks);
+    if (!result.draft) return;
+    const nextSkills = result.draft.skills;
+    setCreationDraft({
+      ...creationDraft,
+      skills: nextSkills,
+    });
+  }
+
+  function editGeneratedCharacterManually() {
+    setQuickstartActive(false);
+    setQuickstartPanelOpen(false);
+    setWizardStep(0);
+  }
+
   return {
     wizardOpen,
     wizardStep,
@@ -670,6 +836,12 @@ export function useCharacterCreation({
     wizardItemChoiceRules,
     wizardPointBuyTotal,
     wizardPointBuyRemaining,
+    quickstartPanelOpen,
+    quickstartMode,
+    quickstartLocks,
+    quickstartConcepts,
+    quickstartWarnings,
+    quickstartActive,
     openWizard,
     closeWizard,
     finishWizard,
@@ -686,5 +858,17 @@ export function useCharacterCreation({
     toggleWizardSaveProf,
     handleWizardRollAttributes,
     setWizardName,
+    openQuickstartPanel,
+    closeQuickstartPanel,
+    setQuickstartMode,
+    updateQuickstartLocks,
+    generateFromQuickstartMode,
+    chooseQuickstartConcept,
+    rerollConcepts,
+    rerollEverything,
+    rerollName,
+    rerollAttributes,
+    rerollSkills,
+    editGeneratedCharacterManually,
   };
 }

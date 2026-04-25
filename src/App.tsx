@@ -601,6 +601,12 @@ export default function App() {
     wizardItemChoiceRules,
     wizardPointBuyTotal,
     wizardPointBuyRemaining,
+    quickstartPanelOpen,
+    quickstartMode,
+    quickstartLocks,
+    quickstartConcepts,
+    quickstartWarnings,
+    quickstartActive,
     openWizard,
     closeWizard,
     finishWizard,
@@ -617,6 +623,18 @@ export default function App() {
     toggleWizardSaveProf,
     handleWizardRollAttributes,
     setWizardName,
+    openQuickstartPanel,
+    closeQuickstartPanel,
+    setQuickstartMode,
+    updateQuickstartLocks,
+    generateFromQuickstartMode,
+    chooseQuickstartConcept,
+    rerollConcepts,
+    rerollEverything,
+    rerollName,
+    rerollAttributes,
+    rerollSkills,
+    editGeneratedCharacterManually,
   } = useCharacterCreation({
     gameData,
     campaignId,
@@ -1501,6 +1519,24 @@ export default function App() {
                 onNext={nextWizardStep}
                 onCancel={closeWizard}
                 onFinish={finishWizard}
+                quickstartPanelOpen={quickstartPanelOpen}
+                quickstartMode={quickstartMode}
+                quickstartLocks={quickstartLocks}
+                quickstartConcepts={quickstartConcepts}
+                quickstartWarnings={quickstartWarnings}
+                quickstartActive={quickstartActive}
+                onOpenQuickstart={openQuickstartPanel}
+                onCloseQuickstart={closeQuickstartPanel}
+                onQuickstartModeChange={setQuickstartMode}
+                onQuickstartLocksChange={updateQuickstartLocks}
+                onQuickstartGenerate={generateFromQuickstartMode}
+                onQuickstartChooseConcept={chooseQuickstartConcept}
+                onQuickstartRerollConcepts={rerollConcepts}
+                onQuickstartRerollEverything={rerollEverything}
+                onQuickstartRerollName={rerollName}
+                onQuickstartRerollAttributes={rerollAttributes}
+                onQuickstartRerollSkills={rerollSkills}
+                onQuickstartEditManually={editGeneratedCharacterManually}
               />
             </div>
           ) : !selected || !selectedCampaign ? (
