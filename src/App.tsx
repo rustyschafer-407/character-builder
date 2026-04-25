@@ -1,32 +1,22 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createGameData, gameData as seedGameData } from "./data/gameData";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
-  generateId,
   getAttributeModifier,
   getClassById,
-  getClassesForCampaignAndRace,
   getRaceById,
-  getRacesForCampaign,
   makeBaseAttributes,
   sortByName,
-  touchCharacter,
 } from "./lib/character";
 import { makePointBuyBaseAttributes } from "./lib/pointBuy";
-import {
-  getFirstVisibleCharacterId,
-} from "./lib/campaigns";
 import { DEFAULT_EXPORTER_ID, exportCharacter } from "./lib/exporters";
 import {
   type CampaignAccessRow,
   type ProfileRow,
   type CharacterAccessRow,
-  deleteCampaignById,
   deleteCampaignAccessRow,
   deleteCharacterAccessRow,
-  deleteCharacterRow,
   getAccessContext,
-  getCurrentProfile,
   ensureProfileExists,
   getProfileByEmail,
   deleteUserAccount,
@@ -35,13 +25,9 @@ import {
   listCampaignAccessRows,
   listCharacterAccessRows,
   listManageableProfiles,
-  listAccessibleCampaignRows,
-  listAccessibleCharacterRows,
   upsertCampaignAccessRow,
   upsertCampaignAccessInviteByEmail,
   upsertCharacterAccessRow,
-  upsertCampaignBySlug,
-  upsertCharacterRow,
 } from "./lib/cloudRepository";
 import {
   getCurrentSession,
@@ -56,7 +42,6 @@ import { resolveUserEmail, resolveUserName } from "./lib/userDisplay";
 import type { CharacterRecord } from "./types/character";
 import type {
   AttributeKey,
-  CampaignDefinition,
   GameData,
 } from "./types/gameData";
 
@@ -68,8 +53,11 @@ import AdminScreen from "./components/AdminScreen";
 import AccessManagementPanel from "./components/AccessManagementPanel";
 import SelectedCharacterWorkspace from "./components/SelectedCharacterWorkspace";
 import { useCharacterCreation } from "./hooks/useCharacterCreation";
+import { useCampaignState } from "./hooks/useCampaignState";
 import { useCampaignAdminSession } from "./hooks/useCampaignAdminSession";
+import { useCharacterState } from "./hooks/useCharacterState";
 import { useCharacterEditor } from "./hooks/useCharacterEditor";
+import { useCloudSync } from "./hooks/useCloudSync";
 import { useLevelUpWorkflow } from "./hooks/useLevelUpWorkflow";
 import { useSelectedCharacterWorkspaceCallbacks } from "./hooks/useSelectedCharacterWorkspaceCallbacks";
 import { buttonStyle, inputStyle, mutedTextStyle, pageStyle, panelStyle, primaryButtonStyle } from "./components/uiStyles";
@@ -170,72 +158,6 @@ function makeDraftFromCampaignClassAndRace(
   return draft;
 }
 
-function makeDefaultSheet(): CharacterRecord["sheet"] {
-  return {
-    speed: "",
-    acBase: 10,
-    acBonus: 0,
-    acUseDex: true,
-    initMisc: 0,
-    saveProf: {
-      STR: false,
-      DEX: false,
-      CON: false,
-      INT: false,
-      WIS: false,
-      CHA: false,
-    },
-    saveBonus: {
-      STR: 0,
-      DEX: 0,
-      CON: 0,
-      INT: 0,
-      WIS: 0,
-      CHA: 0,
-    },
-  };
-}
-
-function resolveCloudCampaignId(row: {
-  slug: string;
-  data: Partial<CampaignDefinition> | null | undefined;
-}) {
-  const slug = typeof row.slug === "string" ? row.slug.trim() : "";
-  if (slug) {
-    return slug;
-  }
-
-  const dataId =
-    row.data && typeof row.data.id === "string" ? row.data.id.trim() : "";
-  return dataId;
-}
-
-function normalizeCloudCampaignRow(row: {
-  slug: string;
-  name: string;
-  data: CampaignDefinition;
-}) {
-  if (!row.data || typeof row.data !== "object") {
-    return null;
-  }
-
-  const campaignId = resolveCloudCampaignId(row);
-  if (!campaignId) {
-    return null;
-  }
-
-  const normalizedName =
-    typeof row.data.name === "string" && row.data.name.trim().length > 0
-      ? row.data.name
-      : row.name || campaignId;
-
-  return {
-    ...row.data,
-    id: campaignId,
-    name: normalizedName,
-  } as CampaignDefinition;
-}
-
 export default function App() {
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
@@ -253,21 +175,54 @@ export default function App() {
   const [securityOpen, setSecurityOpen] = useState(false);
   const [campaignRolesByCampaignId, setCampaignRolesByCampaignId] = useState<Record<string, "player" | "editor">>({});
   const [characterRolesByCharacterId, setCharacterRolesByCharacterId] = useState<Record<string, "viewer" | "editor">>({});
-  const [gameData, setGameData] = useState<GameData>(() => seedGameData);
-  const [characters, setCharacters] = useState<CharacterRecord[]>([]);
-  const [selectedId, setSelectedId] = useState("");
-  const [campaignId, setCampaignId] = useState(() => seedGameData.campaigns[0]?.id ?? "");
+  const {
+    selectedCharacterId,
+    setSelectedCharacterId,
+    commitCreatedCharacter,
+    updateCharacter,
+  } = useCharacterState();
+  const {
+    selectedCampaignId,
+    setSelectedCampaignId,
+    handleCampaignChange: applyCampaignChange,
+  } = useCampaignState({
+    cloudEnabled,
+    initialCampaignId: seedGameData.campaigns[0]?.id ?? "",
+  });
+
+  const selectedId = selectedCharacterId;
+  const setSelectedId = setSelectedCharacterId;
+  const campaignId = selectedCampaignId;
+  const setCampaignId = setSelectedCampaignId;
   const [raceId, setRaceId] = useState("");
   const [classId, setClassId] = useState("");
-  const [cloudStatus, setCloudStatus] = useState(
-    cloudEnabled ? "Connecting to cloud..." : "Supabase configuration missing"
-  );
-  const [campaignRowIdsByAppId, setCampaignRowIdsByAppId] = useState<Record<string, string>>({});
   const [manageableUsers, setManageableUsers] = useState<ProfileRow[]>([]);
   const [campaignAccessRows, setCampaignAccessRows] = useState<CampaignAccessRow[]>([]);
   const [characterAccessRows, setCharacterAccessRows] = useState<CharacterAccessRow[]>([]);
   const [accessManagementError, setAccessManagementError] = useState("");
-  const cloudInitDoneRef = useRef(false);
+
+  const {
+    gameData,
+    setGameData,
+    characters,
+    setCharacters,
+    campaignRowIdsByAppId,
+    cloudStatus,
+    setCloudStatus,
+    cloudLoadComplete,
+    persistCampaignChanges,
+    persistCharacterUpsert,
+    persistCharacterDelete,
+  } = useCloudSync({
+    cloudEnabled,
+    currentUserId,
+    setIsAdmin,
+    setIsGm,
+    setCampaignRolesByCampaignId,
+    setCharacterRolesByCharacterId,
+    setCampaignId,
+    setSelectedId,
+  });
 
   useEffect(() => {
     if (!cloudEnabled) {
@@ -309,7 +264,6 @@ export default function App() {
       const user = getSessionUser(session);
       setCurrentUserId(user?.id ?? null);
       setAuthError("");
-      cloudInitDoneRef.current = false;
 
       if (!user) {
         setCurrentUserProfile(null);
@@ -339,173 +293,6 @@ export default function App() {
       unsubscribe();
     };
   }, [cloudEnabled]);
-
-  useEffect(() => {
-    if (!cloudEnabled || !currentUserId || cloudInitDoneRef.current) return;
-
-    let isCancelled = false;
-    async function initializeCloud() {
-      try {
-        setCloudStatus("Loading campaigns and characters...");
-
-        const profile = await getCurrentProfile();
-        setIsAdmin(Boolean(profile?.is_admin));
-        setIsGm(Boolean(profile?.is_gm));
-
-        const campaignRows = await listAccessibleCampaignRows();
-
-        if (isCancelled) return;
-
-        const normalizedCloudCampaigns = campaignRows
-          .map((row) => normalizeCloudCampaignRow(row))
-          .filter((row): row is CampaignDefinition => row !== null);
-
-        const nextCampaignMap = Object.fromEntries(
-          campaignRows
-            .map((row) => [resolveCloudCampaignId(row), row.id] as const)
-            .filter(([id]) => Boolean(id))
-        );
-        setCampaignRowIdsByAppId(nextCampaignMap);
-
-        setCampaignRolesByCampaignId(
-          Object.fromEntries(
-            campaignRows
-              .filter((row) => row.campaign_role)
-              .map((row) => [row.id, row.campaign_role] as const)
-          ) as Record<string, "player" | "editor">
-        );
-
-        if (normalizedCloudCampaigns.length > 0) {
-          const nextGameData = createGameData({
-            campaigns: normalizedCloudCampaigns,
-          });
-
-          setGameData(nextGameData);
-          setCampaignId((current) =>
-            nextGameData.campaigns.some((campaign) => campaign.id === current)
-              ? current
-              : nextGameData.campaigns[0]?.id ?? ""
-          );
-
-          const characterRows = await listAccessibleCharacterRows();
-          if (isCancelled) return;
-
-          setCharacterRolesByCharacterId(
-            Object.fromEntries(
-              characterRows
-                .filter((row) => row.character_role)
-                .map((row) => [row.id, row.character_role] as const)
-            ) as Record<string, "viewer" | "editor">
-          );
-
-          const nextCharacters = characterRows
-            .map((row) => row.data)
-            .map((character) =>
-              character.sheet
-                ? character
-                : {
-                    ...character,
-                    sheet: makeDefaultSheet(),
-                  }
-            );
-
-          setCharacters(nextCharacters);
-          setSelectedId((current) =>
-            nextCharacters.some((character) => character.id === current) ? current : ""
-          );
-        }
-
-        setCloudStatus("Authenticated cloud access active");
-      } catch (error) {
-        console.error("Failed to initialize cloud sync", error);
-        if (!isCancelled) {
-          setCloudStatus("Cloud unavailable");
-        }
-      } finally {
-        if (!isCancelled) {
-          cloudInitDoneRef.current = true;
-        }
-      }
-    }
-
-    void initializeCloud();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [cloudEnabled, currentUserId]); // intentionally run after auth session is present
-
-  async function persistCampaignChanges(previousGameData: GameData, nextGameData: GameData) {
-    if (!cloudEnabled || !currentUserId) return;
-
-    try {
-      const previousById = new Map(previousGameData.campaigns.map((campaign) => [campaign.id, campaign]));
-      const nextById = new Map(nextGameData.campaigns.map((campaign) => [campaign.id, campaign]));
-      const nextCampaignMap = { ...campaignRowIdsByAppId };
-
-      for (const [appCampaignId, campaign] of nextById) {
-        const previous = previousById.get(appCampaignId);
-        const isChanged = !previous || JSON.stringify(previous) !== JSON.stringify(campaign);
-        if (!isChanged) continue;
-
-        const row = await upsertCampaignBySlug({
-          slug: campaign.id,
-          name: campaign.name,
-          campaign,
-        });
-        nextCampaignMap[campaign.id] = row.id;
-      }
-
-      for (const [appCampaignId] of previousById) {
-        if (!nextById.has(appCampaignId)) {
-          const rowId = nextCampaignMap[appCampaignId];
-          if (rowId) {
-            await deleteCampaignById(rowId);
-            delete nextCampaignMap[appCampaignId];
-          }
-        }
-      }
-
-      setCampaignRowIdsByAppId(nextCampaignMap);
-      setCloudStatus("Authenticated cloud access active");
-    } catch (error) {
-      console.error("Failed to persist campaign changes", error);
-      setCloudStatus("Campaign save failed (see console)");
-    }
-  }
-
-  async function persistCharacterUpsert(character: CharacterRecord) {
-    if (!cloudEnabled || !currentUserId) return;
-
-    const campaignRowId = campaignRowIdsByAppId[character.campaignId];
-    if (!campaignRowId) {
-      setCloudStatus("Character save blocked: campaign not yet persisted");
-      return;
-    }
-
-    try {
-      await upsertCharacterRow({
-        campaignId: campaignRowId,
-        character,
-      });
-      setCloudStatus("Authenticated cloud access active");
-    } catch (error) {
-      console.error("Failed to persist character", error);
-      setCloudStatus("Character save failed (see console)");
-    }
-  }
-
-  async function persistCharacterDelete(characterId: string) {
-    if (!cloudEnabled || !currentUserId) return;
-
-    try {
-      await deleteCharacterRow(characterId);
-      setCloudStatus("Authenticated cloud access active");
-    } catch (error) {
-      console.error("Failed to delete character", error);
-      setCloudStatus("Character delete failed (see console)");
-    }
-  }
 
   async function handleEmailCodeRequest() {
     setAuthLoading(true);
@@ -565,62 +352,15 @@ export default function App() {
   }
 
   function handleCampaignChange(nextCampaignId: string) {
-    setCampaignId(nextCampaignId);
-    const nextRaceId = getRacesForCampaign(gameData, nextCampaignId)[0]?.id ?? "";
-    setRaceId(nextRaceId);
-    const nextClassId = getClassesForCampaignAndRace(gameData, nextCampaignId, nextRaceId)[0]?.id ?? "";
-    setClassId(nextClassId);
-
-    const currentlyVisible = characters.some(
-      (character) =>
-        character.id === selectedId && character.campaignId === nextCampaignId
-    );
-
-    if (selectedId && !currentlyVisible) {
-      setSelectedId(getFirstVisibleCharacterId(characters, nextCampaignId));
-    }
-  }
-
-  function commitCreatedCharacter(draft: CharacterCreationDraft) {
-    const character: CharacterRecord = {
-      id: generateId(),
-      identity: draft.identity,
-      campaignId: draft.campaignId,
-      raceId: draft.raceId,
-      classId: draft.classId,
-      level: draft.level,
-      proficiencyBonus: draft.proficiencyBonus,
-      attributes: draft.attributes,
-      attributeGeneration: draft.attributeGeneration,
-      hp: draft.hp,
-      sheet: {
-        speed: "",
-        acBase: 10,
-        acBonus: 0,
-        acUseDex: true,
-        initMisc: 0,
-        saveProf: { ...draft.saveProf },
-        saveBonus: {
-          STR: 0,
-          DEX: 0,
-          CON: 0,
-          INT: 0,
-          WIS: 0,
-          CHA: 0,
-        },
-      },
-      skills: draft.skills,
-      powers: draft.powers,
-      inventory: draft.inventory,
-      attacks: draft.attacks,
-      levelProgression: draft.levelProgression,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setCharacters((prev) => [...prev, character]);
-    setSelectedId(character.id);
-    void persistCharacterUpsert(character);
+    applyCampaignChange({
+      nextCampaignId,
+      gameData,
+      characters,
+      selectedCharacterId,
+      setSelectedCharacterId,
+      setRaceId,
+      setClassId,
+    });
   }
 
   const {
@@ -683,7 +423,13 @@ export default function App() {
     makeDraftFromCampaignClassAndRace,
     makeBaseAttributes,
     applyClassAttributeModifiers,
-    onFinishDraft: commitCreatedCharacter,
+    onFinishDraft: (draft) => {
+      commitCreatedCharacter({
+        draft,
+        setCharacters,
+        onPersistUpsert: persistCharacterUpsert,
+      });
+    },
   });
 
   const selected = useMemo(
@@ -733,13 +479,13 @@ export default function App() {
     return (getClassById(gameData, id)?.name ?? id) || "Unassigned";
   }
 
-  function updateCharacter(updated: CharacterRecord) {
-    const touched = touchCharacter(updated);
-    setCharacters((prev) =>
-      prev.map((c) => (c.id === touched.id ? touched : c))
-    );
-    void persistCharacterUpsert(touched);
-  }
+  const updateCharacterRecord = (updated: CharacterRecord) => {
+    updateCharacter({
+      updated,
+      setCharacters,
+      onPersistUpsert: persistCharacterUpsert,
+    });
+  };
 
   const {
     adminOpen,
@@ -798,7 +544,7 @@ export default function App() {
     selected,
     selectedCampaign,
     selectedClass,
-    onApplyUpdatedCharacter: updateCharacter,
+    onApplyUpdatedCharacter: updateCharacterRecord,
   });
 
   const {
@@ -816,7 +562,7 @@ export default function App() {
     selectedId,
     campaignId,
     selectedCampaign,
-    updateCharacter,
+    updateCharacter: updateCharacterRecord,
     setCharacters,
     setSelectedId,
     onDeleteCharacter: (id) => {
@@ -831,7 +577,7 @@ export default function App() {
 
   const selectedWorkspaceCallbacks = useSelectedCharacterWorkspaceCallbacks({
     selected,
-    updateCharacter,
+    updateCharacter: updateCharacterRecord,
     updateAttributeWithRules,
     updateSkillWithRules,
     togglePowerWithRules,
@@ -856,29 +602,31 @@ export default function App() {
   }
 
   const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
-  const hasAnyCampaignAccess = Object.keys(campaignRolesByCampaignId).length > 0;
-  const canCreateCampaign = isAdmin || isGm;
+  const hasAnyCampaignAccess = gameData.campaigns.length > 0;
+  // UI-only permission hints: these values only control visibility/affordances.
+  // Server-side authorization for save/delete/sync is enforced by Supabase RLS.
+  const uiCanCreateCampaign = isAdmin || isGm;
   const signedInDisplayName = currentUserProfile?.display_name?.trim() || "";
   const signedInEmail = currentUserProfile?.email?.trim() || "";
-  const canEditCurrentCampaign = Boolean(
+  const uiCanEditCurrentCampaign = Boolean(
     isAdmin ||
       isGm ||
       campaignRolesByCampaignId[campaignId] === "editor"
   );
-  const canCreateCharacterInCurrentCampaign = Boolean(
+  const uiCanCreateCharacterInCurrentCampaign = Boolean(
     isAdmin ||
       isGm ||
       campaignRolesByCampaignId[campaignId] === "player" ||
       campaignRolesByCampaignId[campaignId] === "editor"
   );
-  const canManageUsers = isAdmin;
-  const canManageCampaignAccess = Boolean(
+  const uiCanManageUsers = isAdmin;
+  const uiCanManageCampaignAccess = Boolean(
     currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[campaignId] === "editor")
   );
-  const canManageCharacterAccess = Boolean(
+  const uiCanManageCharacterAccess = Boolean(
     selected && currentCampaignRowId && (isAdmin || campaignRolesByCampaignId[selected.campaignId] === "editor")
   );
-  const canEditCharacterById = (characterId: string) => {
+  const uiCanEditCharacterById = (characterId: string) => {
     if (isAdmin) return true;
     const character = characters.find((item) => item.id === characterId);
     if (!character) return false;
@@ -889,13 +637,13 @@ export default function App() {
     const directRole = characterRolesByCharacterId[characterId];
     return directRole === "editor";
   };
-  const canEditSelectedCharacter = Boolean(selected && canEditCharacterById(selected.id));
+  const uiCanEditSelectedCharacter = Boolean(selected && uiCanEditCharacterById(selected.id));
   const directCharacterAccessCount = Object.keys(characterRolesByCharacterId).length;
   const userById = new Map(manageableUsers.map((user) => [user.id, user] as const));
-  const campaignUserCandidateIds = canManageCampaignAccess
+  const campaignUserCandidateIds = uiCanManageCampaignAccess
     ? manageableUsers.map((user) => user.id)
     : [];
-  const characterUserCandidateIds = canManageCharacterAccess
+  const characterUserCandidateIds = uiCanManageCharacterAccess
     ? Array.from(
         new Set(
           isAdmin
@@ -919,12 +667,12 @@ export default function App() {
   const reloadAccessManagementData = useCallback(async () => {
     if (!currentUserId) return;
 
-    if (canManageUsers || canManageCampaignAccess) {
+    if (uiCanManageUsers || uiCanManageCampaignAccess) {
       try {
         const users = await listManageableProfiles();
         setManageableUsers(users);
       } catch (error) {
-        if (canManageUsers) {
+        if (uiCanManageUsers) {
           throw error;
         }
         // Some environments restrict profile lookups for non-admins.
@@ -934,23 +682,23 @@ export default function App() {
       setManageableUsers([]);
     }
 
-    if (currentCampaignRowId && (canManageCampaignAccess || canManageCharacterAccess)) {
+    if (currentCampaignRowId && (uiCanManageCampaignAccess || uiCanManageCharacterAccess)) {
       const campaignRows = await listCampaignAccessRows(currentCampaignRowId);
       setCampaignAccessRows(campaignRows);
     } else {
       setCampaignAccessRows([]);
     }
 
-    if (canManageCharacterAccess && selected) {
+    if (uiCanManageCharacterAccess && selected) {
       const rows = await listCharacterAccessRows(selected.id);
       setCharacterAccessRows(rows);
     } else {
       setCharacterAccessRows([]);
     }
   }, [
-    canManageUsers,
-    canManageCampaignAccess,
-    canManageCharacterAccess,
+    uiCanManageUsers,
+    uiCanManageCampaignAccess,
+    uiCanManageCharacterAccess,
     currentCampaignRowId,
     currentUserId,
     selected,
@@ -1177,18 +925,18 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (adminOpen && !canEditCurrentCampaign) {
+    if (adminOpen && !uiCanEditCurrentCampaign) {
       cancelAdmin();
     }
-  }, [adminOpen, canEditCurrentCampaign, cancelAdmin]);
+  }, [adminOpen, uiCanEditCurrentCampaign, cancelAdmin]);
 
 
 
   useEffect(() => {
-    if (securityOpen && !canManageUsers && !canManageCampaignAccess && !canManageCharacterAccess) {
+    if (securityOpen && !uiCanManageUsers && !uiCanManageCampaignAccess && !uiCanManageCharacterAccess) {
       setSecurityOpen(false);
     }
-  }, [securityOpen, canManageUsers, canManageCampaignAccess, canManageCharacterAccess]);
+  }, [securityOpen, uiCanManageUsers, uiCanManageCampaignAccess, uiCanManageCharacterAccess]);
 
   if (!cloudEnabled) {
     return (
@@ -1333,7 +1081,7 @@ export default function App() {
   }
 
   // Show friendly no-access state for signed-in players with no campaign access
-  if (currentUserId && currentUserProfile && !isAdmin && !isGm && !hasAnyCampaignAccess) {
+  if (cloudLoadComplete && currentUserId && currentUserProfile && !isAdmin && !isGm && !hasAnyCampaignAccess) {
     return (
       <div style={pageStyle}>
         <div style={{ ...panelStyle, maxWidth: 520 }}>
@@ -1398,17 +1146,17 @@ export default function App() {
           </div>
         ) : (
           <div style={{ display: "flex", gap: 8 }}>
-            {canCreateCampaign ? (
+            {uiCanCreateCampaign ? (
               <button onClick={openNewCampaignAdminScreen} style={primaryButtonStyle}>
                 New Campaign
               </button>
             ) : null}
-            {canEditCurrentCampaign ? (
+            {uiCanEditCurrentCampaign ? (
               <button onClick={openAdminScreen} style={buttonStyle}>
                 Edit Campaign
               </button>
             ) : null}
-            {(canManageUsers || canManageCampaignAccess || canManageCharacterAccess) ? (
+            {(uiCanManageUsers || uiCanManageCampaignAccess || uiCanManageCharacterAccess) ? (
               <button onClick={openAccessManagement} style={buttonStyle}>
                 Access
               </button>
@@ -1478,9 +1226,9 @@ export default function App() {
 
       {securityOpen ? (
         <AccessManagementPanel
-          canManageUsers={canManageUsers}
-          canManageCampaignAccess={canManageCampaignAccess}
-          canManageCharacterAccess={canManageCharacterAccess}
+          canManageUsers={uiCanManageUsers}
+          canManageCampaignAccess={uiCanManageCampaignAccess}
+          canManageCharacterAccess={uiCanManageCharacterAccess}
           campaignName={currentCampaignContextLabel}
           characterName={selected?.identity.name?.trim() || null}
           users={manageableUsers}
@@ -1521,13 +1269,13 @@ export default function App() {
             selectedId={selectedId}
             onSelect={setSelectedId}
             onCreate={() => {
-              if (canCreateCharacterInCurrentCampaign) {
+              if (uiCanCreateCharacterInCurrentCampaign) {
                 openWizard();
               }
             }}
             onDelete={deleteCharacter}
-            canCreate={canCreateCharacterInCurrentCampaign}
-            canDeleteCharacter={canEditCharacterById}
+            canCreate={uiCanCreateCharacterInCurrentCampaign}
+            canDeleteCharacter={uiCanEditCharacterById}
             getCampaignName={getCampaignName}
             getClassName={getClassName}
           />
@@ -1612,7 +1360,7 @@ export default function App() {
           ) : (
             <SelectedCharacterWorkspace
               character={selected}
-              readOnly={!canEditSelectedCharacter}
+              readOnly={!uiCanEditSelectedCharacter}
               selectedCampaignName={selectedCampaign.name}
               selectedRaceName={selectedRace?.name ?? "Unassigned"}
               selectedClassName={selectedClass?.name ?? "Unassigned"}
@@ -1621,7 +1369,7 @@ export default function App() {
               selectedPowers={selectedPowers}
               selectedItems={selectedItems}
               roll20ModPayload={roll20Commands.modPayload}
-              levelUpOpen={levelUpOpen && Boolean(selectedClass) && canEditSelectedCharacter}
+              levelUpOpen={levelUpOpen && Boolean(selectedClass) && uiCanEditSelectedCharacter}
               levelUpApplyPending={levelUpApplyPending}
               levelUpSkillSelections={levelUpSkillSelections}
               levelUpPowerSelections={levelUpPowerSelections}
@@ -1635,7 +1383,7 @@ export default function App() {
               availableLevelUpSkills={availableLevelUpSkills}
               availableLevelUpPowers={availableLevelUpPowers}
               onOpenLevelUpWizard={() => {
-                if (canEditSelectedCharacter) {
+                if (uiCanEditSelectedCharacter) {
                   openLevelUpWizard();
                 }
               }}
@@ -1643,11 +1391,11 @@ export default function App() {
               onToggleLevelUpPower={toggleLevelUpPower}
               onCloseLevelUpWizard={closeLevelUpWizard}
               onApplyLevelUp={() => {
-                if (canEditSelectedCharacter) {
+                if (uiCanEditSelectedCharacter) {
                   applyLevelUp();
                 }
               }}
-              canManageCharacterAccess={canManageCharacterAccess}
+              canManageCharacterAccess={uiCanManageCharacterAccess}
               characterAccessUsers={manageableUsers}
               campaignAccessRows={campaignAccessRows}
               characterAccessRows={characterAccessRows}

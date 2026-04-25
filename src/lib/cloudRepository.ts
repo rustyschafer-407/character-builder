@@ -236,17 +236,6 @@ export async function getAccessContext() {
   } as AccessContext
 }
 
-export async function listCampaignRows() {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from("campaigns")
-    .select("id, slug, name, data, created_by, created_at, updated_at")
-    .order("created_at", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []) as CampaignRow[]
-}
-
 export async function getCampaignBySlug(slug: string) {
   const supabase = getSupabaseClient()
   const { data, error } = await supabase
@@ -300,17 +289,6 @@ export async function listCharacterRows(campaignId: string) {
   return (data ?? []) as CharacterRow[]
 }
 
-export async function listAllCharacterRows() {
-  const supabase = getSupabaseClient()
-  const { data, error } = await supabase
-    .from("characters")
-    .select("id, campaign_id, name, data, created_by, created_at, updated_at")
-    .order("created_at", { ascending: true })
-
-  if (error) throw error
-  return (data ?? []) as CharacterRow[]
-}
-
 export async function upsertCharacterRow(input: {
   campaignId: string
   character: CharacterRecord
@@ -341,24 +319,37 @@ export async function deleteCharacterRow(characterId: string) {
 }
 
 export async function listAccessibleCampaignRows() {
-  const [campaigns, context] = await Promise.all([
-    listCampaignRows(),
+  const supabase = getSupabaseClient()
+  const [{ data, error }, context] = await Promise.all([
+    supabase
+      .from("campaigns")
+      .select("id, slug, name, data, created_by, created_at, updated_at")
+      .order("created_at", { ascending: true }),
     getAccessContext(),
   ])
 
-  return campaigns.map((campaign) => {
-    const role = context.profile?.is_admin ? "editor" : context.campaignRolesByCampaignId[campaign.id] ?? null
-    const canEdit = Boolean(
-      context.profile?.is_admin ||
-        context.profile?.is_gm ||
-        role === "editor"
-    )
-    return {
-      ...campaign,
-      campaign_role: role,
-      can_edit: canEdit,
-    } as AccessibleCampaignRow
-  })
+  if (error) throw error
+  const campaigns = (data ?? []) as CampaignRow[]
+
+  return campaigns
+    .filter((campaign) => {
+      if (context.profile?.is_admin || context.profile?.is_gm) return true
+      if (context.campaignRolesByCampaignId[campaign.id]) return true
+      return campaign.created_by === context.profile?.id
+    })
+    .map((campaign) => {
+      const role = context.campaignRolesByCampaignId[campaign.id] ?? null
+      const canEdit = Boolean(
+        context.profile?.is_admin ||
+          context.profile?.is_gm ||
+          role === "editor"
+      )
+      return {
+        ...campaign,
+        campaign_role: role,
+        can_edit: canEdit,
+      } as AccessibleCampaignRow
+    })
 }
 
 export async function listEditableCampaignRows() {
@@ -367,27 +358,41 @@ export async function listEditableCampaignRows() {
 }
 
 export async function listAccessibleCharacterRows() {
-  const [characters, context] = await Promise.all([
-    listAllCharacterRows(),
+  const supabase = getSupabaseClient()
+  const [{ data, error }, context] = await Promise.all([
+    supabase
+      .from("characters")
+      .select("id, campaign_id, name, data, created_by, created_at, updated_at")
+      .order("created_at", { ascending: true }),
     getAccessContext(),
   ])
 
-  return characters.map((character) => {
-    const campaignRole = context.campaignRolesByCampaignId[character.campaign_id]
-    const directRole = context.characterRolesByCharacterId[character.id] ?? null
-    const createdByCurrentUser = character.created_by === context.profile?.id
-    const canEdit = Boolean(
-      context.profile?.is_admin ||
-        campaignRole === "editor" ||
-        directRole === "editor" ||
-        createdByCurrentUser
-    )
-    return {
-      ...character,
-      character_role: context.profile?.is_admin ? "editor" : directRole,
-      can_edit: canEdit,
-    } as AccessibleCharacterRow
-  })
+  if (error) throw error
+  const characters = (data ?? []) as CharacterRow[]
+
+  return characters
+    .filter((character) => {
+      if (context.profile?.is_admin || context.profile?.is_gm) return true
+      if (context.campaignRolesByCampaignId[character.campaign_id]) return true
+      if (context.characterRolesByCharacterId[character.id]) return true
+      return character.created_by === context.profile?.id
+    })
+    .map((character) => {
+      const campaignRole = context.campaignRolesByCampaignId[character.campaign_id]
+      const directRole = context.characterRolesByCharacterId[character.id] ?? null
+      const createdByCurrentUser = character.created_by === context.profile?.id
+      const canEdit = Boolean(
+        context.profile?.is_admin ||
+          campaignRole === "editor" ||
+          directRole === "editor" ||
+          createdByCurrentUser
+      )
+      return {
+        ...character,
+        character_role: directRole,
+        can_edit: canEdit,
+      } as AccessibleCharacterRow
+    })
 }
 
 export async function listEditableCharacterRows() {
