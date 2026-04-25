@@ -222,8 +222,26 @@ export async function getAccessContext() {
     listCharacterAccessRowsForCurrentUser(),
   ])
 
+  const campaignIds = campaignAccess.map((row) => row.campaign_id)
+  let slugByCampaignId: Record<string, string> = {}
+  if (campaignIds.length > 0) {
+    const supabase = getSupabaseClient()
+    const { data: campaignRows } = await supabase
+      .from("campaigns")
+      .select("id, slug")
+      .in("id", campaignIds)
+    if (campaignRows) {
+      slugByCampaignId = Object.fromEntries(
+        (campaignRows as { id: string; slug: string }[]).map((r) => [r.id, r.slug])
+      )
+    }
+  }
+
   const campaignRolesByCampaignId = Object.fromEntries(
-    campaignAccess.map((row) => [row.campaign_id, row.role] as const)
+    campaignAccess.map((row) => [
+      slugByCampaignId[row.campaign_id] ?? row.campaign_id,
+      row.role,
+    ] as const)
   )
   const characterRolesByCharacterId = Object.fromEntries(
     characterAccess.map((row) => [row.character_id, row.role] as const)
