@@ -431,6 +431,7 @@ export function applySafeCharacterDefaults(character: CharacterRecord): Characte
 
   return {
     ...character,
+    characterType: character.characterType === "npc" ? "npc" : "pc",
     level,
     hp: {
       max: Number.isFinite(character.hp?.max) ? Number(character.hp.max) : 0,

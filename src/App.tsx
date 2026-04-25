@@ -145,6 +145,7 @@ function makeDraftFromCampaignClassAndRace(
   const base = createCharacterFromCampaignAndClass(campaign, cls, name, race);
 
   const draft: CharacterCreationDraft = {
+    characterType: base.characterType ?? "pc",
     identity: base.identity,
     campaignId: base.campaignId,
     raceId: base.raceId ?? raceId,
@@ -567,6 +568,7 @@ export default function App() {
     toggleWizardSaveProf,
     handleWizardRollAttributes,
     setWizardName,
+    setWizardCharacterType,
     openQuickstartPanel,
     closeQuickstartPanel,
     setQuickstartMode,
@@ -1805,6 +1807,7 @@ export default function App() {
                   }
                 }
                 onNameChange={setWizardName}
+                onCharacterTypeChange={setWizardCharacterType}
                 onCampaignChange={handleWizardCampaignChange}
                 onRaceChange={handleWizardRaceChange}
                 onClassChange={handleWizardClassChange}

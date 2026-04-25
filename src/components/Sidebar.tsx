@@ -1,10 +1,28 @@
+import { useEffect, useState } from "react";
+import { getCharacterType } from "../lib/character";
 import type { CharacterRecord } from "../types/character";
 import {
+  buttonStyle,
   dangerButtonStyle,
   mutedTextStyle,
   panelStyle,
   primaryButtonStyle,
 } from "./uiStyles";
+
+type CharacterListTypeFilter = "all" | "pc" | "npc";
+
+const characterTypeFilterStorageKey = "character-builder.characterListTypeFilter";
+
+function readCharacterTypeFilter(): CharacterListTypeFilter {
+  if (typeof window === "undefined") return "all";
+  try {
+    const rawValue = (window.localStorage.getItem(characterTypeFilterStorageKey) ?? "").toLowerCase();
+    if (rawValue === "pc" || rawValue === "npc") return rawValue;
+    return "all";
+  } catch {
+    return "all";
+  }
+}
 
 interface Props {
   characters: CharacterRecord[];
@@ -29,10 +47,39 @@ export default function Sidebar({
   getCampaignName,
   getClassName,
 }: Props) {
-  const sortedCharacters = [...characters].sort((a, b) => {
+  const [typeFilter, setTypeFilter] = useState<CharacterListTypeFilter>(() => readCharacterTypeFilter());
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(characterTypeFilterStorageKey, typeFilter);
+    } catch {
+      // Ignore storage write errors so filtering still works for this session.
+    }
+  }, [typeFilter]);
+
+  const visibleCharacters = characters
+    .filter((character) => {
+      if (typeFilter === "all") return true;
+      return getCharacterType(character) === typeFilter;
+    })
+    .sort((a, b) => {
     const aName = a.identity.name?.trim() || "Unnamed Character";
     const bName = b.identity.name?.trim() || "Unnamed Character";
     return aName.localeCompare(bName, undefined, { sensitivity: "base" });
+  });
+
+  const segmentButtonStyle = (segment: CharacterListTypeFilter) => ({
+    ...buttonStyle,
+    flex: 1,
+    justifyContent: "center" as const,
+    padding: "6px 10px",
+    fontSize: 12,
+    fontWeight: 700,
+    minHeight: 32,
+    borderColor: typeFilter === segment ? "var(--accent-primary)" : "var(--cb-border)",
+    color: typeFilter === segment ? "var(--text-primary)" : "var(--text-secondary)",
+    background: typeFilter === segment ? "var(--cb-accent-soft)" : "var(--cb-button-bg)",
   });
 
   return (
@@ -77,13 +124,31 @@ export default function Sidebar({
         </div>
       </div>
 
-      <div style={{ marginTop: 24, display: "grid", gap: 8 }}>
-        {sortedCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
+      <div
+        role="group"
+        aria-label="Character type filter"
+        style={{ display: "flex", gap: 6, marginTop: 10 }}
+      >
+        <button className="button-control" type="button" onClick={() => setTypeFilter("all")} style={segmentButtonStyle("all")}>
+          All
+        </button>
+        <button className="button-control" type="button" onClick={() => setTypeFilter("pc")} style={segmentButtonStyle("pc")}>
+          PCs
+        </button>
+        <button className="button-control" type="button" onClick={() => setTypeFilter("npc")} style={segmentButtonStyle("npc")}>
+          NPCs
+        </button>
+      </div>
 
-        {sortedCharacters.map((c) => {
+      <div style={{ marginTop: 24, display: "grid", gap: 8 }}>
+        {visibleCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
+
+        {visibleCharacters.map((c) => {
           const isSelected = c.id === selectedId;
           const displayName = c.identity.name?.trim() || "Unnamed Character";
           const canDelete = canDeleteCharacter(c.id);
+          const characterType = getCharacterType(c);
+          const isNpc = characterType === "npc";
 
           return (
             <div key={c.id} style={{ display: "flex", gap: 6 }}>
@@ -100,7 +165,24 @@ export default function Sidebar({
                   cursor: "pointer",
                 }}
               >
-                <strong style={{ display: "block", color: "var(--text-primary)" }}>{displayName}</strong>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <strong style={{ display: "block", color: "var(--text-primary)" }}>{displayName}</strong>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      letterSpacing: "0.06em",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      padding: "2px 6px",
+                      borderRadius: 999,
+                      border: "1px solid var(--cb-border)",
+                      color: isNpc ? "var(--cb-warning-text)" : "var(--cb-success-text)",
+                      background: isNpc ? "var(--cb-warning-soft)" : "var(--cb-success-soft)",
+                    }}
+                  >
+                    {characterType.toUpperCase()}
+                  </span>
+                </div>
                 <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
                   {getCampaignName(c.campaignId)} • {getClassName(c.classId)}
                 </div>

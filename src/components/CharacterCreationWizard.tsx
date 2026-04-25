@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type {
+  CharacterType,
   CharacterAttack,
   CharacterAttributeGeneration,
   CharacterHp,
@@ -37,6 +38,7 @@ import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, selectStyle, st
 import "./CharacterCreationWizard.css";
 
 export interface CharacterCreationDraft {
+  characterType?: CharacterType;
   identity: CharacterIdentity;
   campaignId: string;
   raceId: string;
@@ -73,6 +75,7 @@ interface Props {
   pointBuyRemaining: number;
   labels: CampaignLabels;
   onNameChange: (name: string) => void;
+  onCharacterTypeChange: (characterType: CharacterType) => void;
   onCampaignChange: (campaignId: string) => void;
   onRaceChange: (raceId: string) => void;
   onClassChange: (classId: string) => void;
@@ -173,6 +176,7 @@ export default function CharacterCreationWizard({
   pointBuyRemaining,
   labels,
   onNameChange,
+  onCharacterTypeChange,
   onCampaignChange,
   onRaceChange,
   onClassChange,
@@ -428,6 +432,18 @@ export default function CharacterCreationWizard({
               placeholder="Name your character"
               className="form-control" style={inputStyle}
             />
+          </label>
+
+          <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
+            Character Type
+            <select
+              value={draft.characterType ?? "pc"}
+              onChange={(e) => onCharacterTypeChange(e.target.value as CharacterType)}
+              className="form-control" style={selectStyle}
+            >
+              <option value="pc">PC</option>
+              <option value="npc">NPC</option>
+            </select>
           </label>
 
           <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
@@ -1077,6 +1093,9 @@ export default function CharacterCreationWizard({
           )}
           <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Name:</strong> {draft.identity.name}
+          </div>
+          <div style={{ color: "var(--cb-muted-label)" }}>
+            <strong>Character Type:</strong> {(draft.characterType ?? "pc").toUpperCase()}
           </div>
           <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>Campaign:</strong> {selectedCampaign?.name}

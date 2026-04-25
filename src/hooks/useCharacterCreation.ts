@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { CharacterType } from "../types/character";
 import type {
   AttributeKey,
   CampaignDefinition,
@@ -680,6 +681,14 @@ export function useCharacterCreation({
     });
   }
 
+  function setWizardCharacterType(characterType: CharacterType) {
+    if (!creationDraft) return;
+    setCreationDraft({
+      ...creationDraft,
+      characterType,
+    });
+  }
+
   function openQuickstartPanel() {
     if (!creationDraft) return;
     setQuickstartPanelOpen(true);
@@ -858,6 +867,7 @@ export function useCharacterCreation({
     toggleWizardSaveProf,
     handleWizardRollAttributes,
     setWizardName,
+    setWizardCharacterType,
     openQuickstartPanel,
     closeQuickstartPanel,
     setQuickstartMode,

@@ -132,6 +132,7 @@ interface SelectedCharacterWorkspaceProps {
   onCloseLevelUpWizard: () => void;
   onApplyLevelUp: () => void;
   onNameChange: (name: string) => void;
+  onCharacterTypeChange: (characterType: "pc" | "npc") => void;
   onAttributeChange: (k: AttributeKey, v: number) => void;
   onSpeedChange: (value: string) => void;
   onAcBaseChange: (value: number) => void;
@@ -196,6 +197,7 @@ export default function SelectedCharacterWorkspace({
   onCloseLevelUpWizard,
   onApplyLevelUp,
   onNameChange,
+  onCharacterTypeChange,
   onAttributeChange,
   onSpeedChange,
   onAcBaseChange,
@@ -335,6 +337,7 @@ export default function SelectedCharacterWorkspace({
         roll20ModPayload={roll20ModPayload}
         readOnly={readOnly}
         onNameChange={onNameChange}
+        onCharacterTypeChange={onCharacterTypeChange}
         onOpenLevelUpWizard={onOpenLevelUpWizard}
       />
 

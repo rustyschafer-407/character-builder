@@ -6,6 +6,7 @@ import type {
   CharacterItem,
   CharacterPowerSelection,
   CharacterRecord,
+  CharacterType,
   CharacterSkillSelection,
 } from "../types/character";
 import type {
@@ -20,6 +21,10 @@ import { findCampaign, findClassInCampaign, findRaceInCampaign, resolveCampaignA
 
 export function generateId() {
   return crypto.randomUUID();
+}
+
+export function getCharacterType(character: Pick<CharacterRecord, "characterType">): CharacterType {
+  return character.characterType === "npc" ? "npc" : "pc";
 }
 
 export function getAttributeModifier(score: number) {
@@ -263,6 +268,7 @@ export function createCharacterFromCampaignAndClass(
 
   return {
     id: generateId(),
+    characterType: "pc",
     identity: makeIdentity(name),
     campaignId: campaign.id,
     raceId: race?.id,

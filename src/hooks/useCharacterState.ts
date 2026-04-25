@@ -23,6 +23,7 @@ export function useCharacterState() {
     const { draft, setCharacters, onPersistUpsert } = input;
     const character: CharacterRecord = {
       id: generateId(),
+      characterType: draft.characterType ?? "pc",
       identity: draft.identity,
       campaignId: draft.campaignId,
       raceId: draft.raceId,

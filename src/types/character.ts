@@ -1,5 +1,7 @@
 import type { AttributeKey } from "./gameData";
 
+export type CharacterType = "pc" | "npc";
+
 export interface CharacterIdentity {
   name: string;
   playerName?: string;
@@ -82,6 +84,7 @@ export interface CharacterLevelProgressionState {
 
 export interface CharacterRecord {
   id: string;
+  characterType?: CharacterType;
   identity: CharacterIdentity;
   campaignId: string;
   raceId?: string;

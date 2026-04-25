@@ -13,6 +13,7 @@ interface Props {
   roll20ModPayload: string;
   readOnly?: boolean;
   onNameChange: (name: string) => void;
+  onCharacterTypeChange: (characterType: "pc" | "npc") => void;
   onOpenLevelUpWizard: () => void;
 }
 
@@ -27,6 +28,7 @@ export default function IdentitySection({
   roll20ModPayload,
   readOnly = false,
   onNameChange,
+  onCharacterTypeChange,
   onOpenLevelUpWizard,
 }: Props) {
   const [editingName, setEditingName] = useState(false);
@@ -138,6 +140,20 @@ export default function IdentitySection({
           <div style={{ color: "var(--cb-muted-label)" }}>
             <strong>{hpLabel}:</strong> {character.hp.current}/{character.hp.max}
           </div>
+
+          <label style={labelTextStyle}>
+            Character Type
+            <select
+              className="form-control"
+              style={inputStyle}
+              value={character.characterType ?? "pc"}
+              onChange={(event) => onCharacterTypeChange(event.target.value as "pc" | "npc")}
+              disabled={readOnly}
+            >
+              <option value="pc">PC</option>
+              <option value="npc">NPC</option>
+            </select>
+          </label>
         </div>
 
         {/* Right: action buttons */}

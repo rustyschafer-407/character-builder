@@ -2,6 +2,7 @@ import { createGameData } from "../data/gameData"
 import type { CharacterRecord } from "../types/character"
 import type { CampaignDefinition, GameData } from "../types/gameData"
 import type { AccessibleCampaignRow, AccessibleCharacterRow } from "./cloudRepository"
+import { applySafeCharacterDefaults } from "./domain"
 
 export function makeDefaultSheet(): CharacterRecord["sheet"] {
   return {
@@ -103,12 +104,14 @@ export function buildCloudHydratedState(input: {
     .map((row) => row.data)
     .filter((character) => accessibleCampaignIds.has(character.campaignId))
     .map((character) =>
-      character.sheet
-        ? character
-        : {
-            ...character,
-            sheet: makeDefaultSheet(),
-          }
+      applySafeCharacterDefaults(
+        character.sheet
+          ? character
+          : {
+              ...character,
+              sheet: makeDefaultSheet(),
+            }
+      )
     )
 
   return {

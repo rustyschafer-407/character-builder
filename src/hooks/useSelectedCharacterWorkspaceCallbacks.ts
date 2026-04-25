@@ -49,6 +49,15 @@ export function useSelectedCharacterWorkspaceCallbacks({
     });
   }
 
+  function onCharacterTypeChange(characterType: "pc" | "npc") {
+    if (!selected) return;
+
+    updateCharacter({
+      ...selected,
+      characterType,
+    });
+  }
+
   function onAttributeChange(key: AttributeKey, value: number) {
     if (!selected) return;
     updateAttributeWithRules(selected, key, value);
@@ -193,6 +202,7 @@ export function useSelectedCharacterWorkspaceCallbacks({
 
   return {
     onNameChange,
+    onCharacterTypeChange,
     onAttributeChange,
     onSpeedChange,
     onAcBaseChange,
