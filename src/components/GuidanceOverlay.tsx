@@ -79,15 +79,72 @@ function computeCardPosition(
   return { top, left };
 }
 
-/** Arrow character whose tip points toward the target */
-function arrowTip(placement: GuidancePlacement): string {
+function buildArrowPath(input: {
+  placement: GuidancePlacement;
+  targetRect: TargetRect;
+  cardPos: { top: number; left: number };
+  cardHeight: number;
+}) {
+  const { placement, targetRect, cardPos, cardHeight } = input;
+  const cardRight = cardPos.left + CARD_WIDTH;
+  const cardBottom = cardPos.top + cardHeight;
+  const targetCenterX = targetRect.left + targetRect.width / 2;
+  const targetCenterY = targetRect.top + targetRect.height / 2;
+
+  let sx = cardPos.left + CARD_WIDTH / 2;
+  let sy = cardPos.top;
+  let ex = targetCenterX;
+  let ey = targetCenterY;
+  let cdx = 0;
+  let cdy = 0;
+
   switch (placement) {
-    case "top":    return "↓";
-    case "bottom": return "↑";
-    case "left":   return "→";
+    case "top":
+      sx = cardPos.left + CARD_WIDTH / 2;
+      sy = cardBottom - 4;
+      ex = targetCenterX;
+      ey = targetRect.top - 3;
+      cdy = 12;
+      break;
+    case "bottom":
+      sx = cardPos.left + CARD_WIDTH / 2;
+      sy = cardPos.top + 4;
+      ex = targetCenterX;
+      ey = targetRect.top + targetRect.height + 3;
+      cdy = -12;
+      break;
+    case "left":
+      sx = cardRight - 4;
+      sy = cardPos.top + cardHeight / 2;
+      ex = targetRect.left - 3;
+      ey = targetCenterY;
+      cdx = 12;
+      break;
     case "right":
-    default:       return "←";
+    default:
+      sx = cardPos.left + 4;
+      sy = cardPos.top + cardHeight / 2;
+      ex = targetRect.left + targetRect.width + 3;
+      ey = targetCenterY;
+      cdx = -12;
+      break;
   }
+
+  const cx = (sx + ex) / 2 + cdx;
+  const cy = (sy + ey) / 2 + cdy;
+  const d = `M ${sx.toFixed(2)} ${sy.toFixed(2)} Q ${cx.toFixed(2)} ${cy.toFixed(2)} ${ex.toFixed(2)} ${ey.toFixed(2)}`;
+
+  // Build a tiny hand-drawn arrow head aligned to the end tangent.
+  const angle = Math.atan2(ey - cy, ex - cx);
+  const headLength = 10;
+  const spread = 0.5;
+  const hx1 = ex - headLength * Math.cos(angle - spread);
+  const hy1 = ey - headLength * Math.sin(angle - spread);
+  const hx2 = ex - headLength * Math.cos(angle + spread);
+  const hy2 = ey - headLength * Math.sin(angle + spread);
+  const head = `M ${hx1.toFixed(2)} ${hy1.toFixed(2)} L ${ex.toFixed(2)} ${ey.toFixed(2)} L ${hx2.toFixed(2)} ${hy2.toFixed(2)}`;
+
+  return { d, head };
 }
 
 export default function GuidanceOverlay() {
@@ -191,51 +248,54 @@ export default function GuidanceOverlay() {
 
   const placement = activeStep.placement ?? "bottom";
   const bodyId = `chalk-card-body-${activeStep.id}`;
+  const cardHeight = cardRef.current?.offsetHeight ?? 140;
+  const arrow = cardPos
+    ? buildArrowPath({
+        placement,
+        targetRect,
+        cardPos,
+        cardHeight,
+      })
+    : null;
 
   return (
     <>
       {/* Chalk ring around target element */}
       <div
         aria-hidden
-        className="chalk-ring"
+        className="chalk-target-ring"
         style={{
           position: "fixed",
           top: targetRect.top - 6,
           left: targetRect.left - 6,
           width: targetRect.width + 12,
           height: targetRect.height + 12,
-          borderRadius: 8,
           pointerEvents: "none",
           zIndex: 9990,
         }}
       />
 
       {/* Directional arrow between card and target */}
-      {cardPos && (
-        <div
+      {cardPos && arrow ? (
+        <svg
           aria-hidden
           className="chalk-arrow"
           style={{
             position: "fixed",
-            top: cardPos.top,
-            left: cardPos.left,
-            width: CARD_WIDTH,
-            textAlign: "center",
+            inset: 0,
             pointerEvents: "none",
             zIndex: 9991,
-            fontSize: 22,
-            lineHeight: 1,
-            transform:
-              placement === "bottom"
-                ? "translateY(-22px)"
-                : placement === "top"
-                ? `translateY(${(cardRef.current?.offsetHeight ?? 140) + 4}px)`
-                : "none",
           }}
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${window.innerWidth} ${window.innerHeight}`}
+          preserveAspectRatio="none"
         >
-          {arrowTip(placement)}
-        </div>
-      )}
+          <path d={arrow.d} className="chalk-arrow-soft" />
+          <path d={arrow.d} className="chalk-arrow-main" />
+          <path d={arrow.head} className="chalk-arrow-main" />
+        </svg>
+      ) : null}
 
       {/* Note card — non-modal dialog; does not trap focus */}
       {cardPos && (
