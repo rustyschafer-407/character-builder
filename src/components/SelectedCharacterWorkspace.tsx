@@ -225,18 +225,71 @@ export default function SelectedCharacterWorkspace({
   characterAccessErrorMessage,
   onClearCharacterAccessError,
 }: SelectedCharacterWorkspaceProps) {
-  const attributeSummary = ["STR", "DEX", "CON"]
-    .map((key) => `${key} ${character.attributes[key as AttributeKey]}`)
+  const summarizeValues = (values: string[], maxVisible = 4) => {
+    const cleaned = values
+      .map((value) => value.trim())
+      .filter((value, index, collection) => Boolean(value) && collection.indexOf(value) === index);
+
+    if (cleaned.length === 0) {
+      return "None";
+    }
+
+    if (cleaned.length <= maxVisible) {
+      return cleaned.join(", ");
+    }
+
+    return `${cleaned.slice(0, maxVisible).join(", ")}, ...`;
+  };
+
+  const attributeSummary = (["STR", "DEX", "CON", "INT", "WIS", "CHA"] as AttributeKey[])
+    .map((key) => `${key} ${character.attributes[key]}`)
     .join(", ");
 
-  const configuredSkillsCount = character.skills.filter(
-    (skill) => skill.proficient || skill.bonus !== 0
-  ).length;
+  const skillsSummary = summarizeValues(
+    character.skills
+      .filter((skill) => skill.proficient || skill.bonus !== 0)
+      .map((skill) => selectedSkills.find((candidate) => candidate.id === skill.skillId)?.name || skill.skillId)
+  );
 
-  const powersCount = character.powers.length;
-  const inventoryCount = character.inventory.length;
-  const attacksCount = character.attacks.length;
-  const accessSummary = `${characterAccessRows.length} direct, ${campaignAccessRows.length} inherited`;
+  const powersSummary = summarizeValues(
+    character.powers.map((power) => {
+      const directName = power.name?.trim();
+      if (directName) {
+        return directName;
+      }
+
+      if (power.powerId) {
+        return selectedPowers.find((candidate) => candidate.id === power.powerId)?.name || power.powerId;
+      }
+
+      return "";
+    })
+  );
+
+  const inventorySummary = summarizeValues(
+    character.inventory.map((item) => {
+      const name = item.name?.trim();
+      if (!name) {
+        return "";
+      }
+
+      return item.quantity > 1 ? `${name} x${item.quantity}` : name;
+    })
+  );
+
+  const attacksSummary = summarizeValues(
+    character.attacks.map((attack) => attack.name?.trim() || attack.id)
+  );
+
+  const accessSummary = summarizeValues(
+    Array.from(
+      new Set([
+        ...characterAccessRows.map((row) => row.user_id),
+        ...campaignAccessRows.map((row) => row.user_id),
+      ])
+    ).map((userId) => getUserLabel(userId)),
+    5
+  );
   const coreSummary = `AC ${character.sheet.acBase + character.sheet.acBonus}, Init ${
     character.sheet.initMisc
   }, Speed ${character.sheet.speed || "-"}`;
@@ -368,7 +421,7 @@ export default function SelectedCharacterWorkspace({
         <CollapsibleSection
           id="skills-section"
           title={labels.skills}
-          summary={`${configuredSkillsCount} configured`}
+          summary={skillsSummary}
         >
           <fieldset
             disabled={readOnly}
@@ -386,7 +439,7 @@ export default function SelectedCharacterWorkspace({
         <CollapsibleSection
           id="powers-section"
           title={labels.powers}
-          summary={`${powersCount} powers`}
+          summary={powersSummary}
         >
           <fieldset
             disabled={readOnly}
@@ -405,7 +458,7 @@ export default function SelectedCharacterWorkspace({
         <CollapsibleSection
           id="inventory-section"
           title={labels.inventory}
-          summary={`${inventoryCount} items`}
+          summary={inventorySummary}
         >
           <fieldset
             disabled={readOnly}
@@ -426,7 +479,7 @@ export default function SelectedCharacterWorkspace({
         <CollapsibleSection
           id="attacks-section"
           title={labels.attacks}
-          summary={`${attacksCount} attacks`}
+          summary={attacksSummary}
         >
           <fieldset
             disabled={readOnly}
