@@ -181,9 +181,9 @@ export default function Sidebar({
                 gap: 12,
                 padding: "12px 14px",
                 borderRadius: 10,
-                border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--border-soft)",
-                background: isSelected ? "rgba(73, 224, 255, 0.08)" : "rgba(11, 22, 42, 0.72)",
-                boxShadow: isSelected ? "inset 0 0 0 1px rgba(73, 224, 255, 0.16)" : "none",
+                border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--cb-border)",
+                background: isSelected ? "var(--cb-accent-soft)" : "var(--cb-surface-raised)",
+                boxShadow: isSelected ? "inset 0 0 0 1px var(--cb-accent-soft-strong)" : "none",
                 transition: "background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
               }}
             >

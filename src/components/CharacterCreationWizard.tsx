@@ -442,9 +442,9 @@ export default function CharacterCreationWizard({
             />
           </label>
 
-          <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
-            Character Type
-            {canChooseCharacterType ? (
+          {canChooseCharacterType ? (
+            <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
+              Character Type
               <select
                 value={draft.characterType ?? "pc"}
                 onChange={(e) => onCharacterTypeChange(e.target.value as CharacterType)}
@@ -453,10 +453,8 @@ export default function CharacterCreationWizard({
                 <option value="pc">PC</option>
                 <option value="npc">NPC</option>
               </select>
-            ) : (
-              <div className="form-control" style={{ ...selectStyle, opacity: 0.7, cursor: "default" }}>PC</div>
-            )}
-          </label>
+            </label>
+          ) : null}
 
           <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
             Campaign

@@ -911,6 +911,23 @@ export default function App() {
   const uiCanEditSelectedCharacter = selected ? uiCanEditCharacterById(selected.id) : false;
   const directCharacterAccessCount = Object.keys(characterRolesByCharacterId).length;
   const userById = new Map(manageableUsers.map((user) => [user.id, user] as const));
+  const accessProfileById = useMemo(() => {
+    const map = new Map<string, ProfileRow>();
+    for (const row of campaignAccessRows) {
+      if (row.profile?.id) {
+        map.set(row.profile.id, row.profile as ProfileRow);
+      }
+    }
+    for (const row of characterAccessRows) {
+      if (row.profile?.id) {
+        map.set(row.profile.id, row.profile as ProfileRow);
+      }
+    }
+    if (currentUserProfile?.id) {
+      map.set(currentUserProfile.id, currentUserProfile);
+    }
+    return map;
+  }, [campaignAccessRows, characterAccessRows, currentUserProfile]);
   
   // Build candidate list for character access assignment
   const characterUserCandidateIds = uiCanManageCharacterAccess
@@ -931,7 +948,7 @@ export default function App() {
   const signedInEmail = currentUserProfile?.email?.trim() || "";
 
   function getUserLabel(userId: string) {
-    const profile = userById.get(userId) ?? null;
+    const profile = userById.get(userId) ?? accessProfileById.get(userId) ?? null;
     const name = profile ? resolveUserName(profile, userId) : "Unknown user";
     const email = profile ? resolveUserEmail(profile, userId) : "No email on profile";
     // Only show raw UUID in dev if profile truly missing, never as normal UI
@@ -1084,6 +1101,20 @@ export default function App() {
       }
     }
 
+    const mergedUsersById = new Map<string, ProfileRow>();
+    for (const user of users) {
+      mergedUsersById.set(user.id, user);
+    }
+    for (const row of [...campaignRows, ...characterRows]) {
+      if (row.profile?.id && !mergedUsersById.has(row.profile.id)) {
+        mergedUsersById.set(row.profile.id, row.profile as ProfileRow);
+      }
+    }
+    if (currentUserProfile?.id && !mergedUsersById.has(currentUserProfile.id)) {
+      mergedUsersById.set(currentUserProfile.id, currentUserProfile);
+    }
+    users = Array.from(mergedUsersById.values());
+
     if (import.meta.env.DEV && isGm && !isAdmin) {
       const combinedUserIds = Array.from(
         new Set([
@@ -1120,6 +1151,7 @@ export default function App() {
     uiCanManageCharacterAccess,
     currentCampaignRowId,
     currentUserId,
+    currentUserProfile,
     isAdmin,
     isGm,
     campaignId,
