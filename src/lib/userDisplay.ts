@@ -73,13 +73,19 @@ export function resolveUserEmail(user: UserLike | null | undefined, fallback: st
 /**
  * Get display name from an enriched access row profile.
  * Ensures a human-readable name is always returned (never a UUID).
+ * Logs warnings in development when profile data is missing.
  */
 export function getAccessRowDisplayName(profile: { 
   display_name: string | null; 
   email: string | null; 
   id?: string 
 } | null): string {
-  if (!profile) return "Unknown user";
+  if (!profile) {
+    if (import.meta.env.DEV) {
+      console.warn("[getAccessRowDisplayName] No profile provided", { profile });
+    }
+    return "Unknown user";
+  }
   
   const displayName = asNonEmptyString(profile.display_name);
   if (displayName) return displayName;
@@ -91,21 +97,35 @@ export function getAccessRowDisplayName(profile: {
     return email;
   }
   
+  if (import.meta.env.DEV) {
+    console.warn("[getAccessRowDisplayName] No displayName or email found in profile", { profile });
+  }
+  
   return "Unknown user";
 }
 
 /**
  * Get email from an enriched access row profile.
  * Ensures a human-readable email is always returned (never a UUID).
+ * Logs warnings in development when profile data is missing.
  */
 export function getAccessRowEmail(profile: { 
   email: string | null;
   id?: string 
 } | null): string {
-  if (!profile) return "No email on profile";
+  if (!profile) {
+    if (import.meta.env.DEV) {
+      console.warn("[getAccessRowEmail] No profile provided", { profile });
+    }
+    return "No email on profile";
+  }
   
   const email = asNonEmptyString(profile.email);
   if (email) return email;
+  
+  if (import.meta.env.DEV) {
+    console.warn("[getAccessRowEmail] No email found in profile", { profile });
+  }
   
   return "No email on profile";
 }

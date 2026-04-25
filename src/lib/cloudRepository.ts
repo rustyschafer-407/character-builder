@@ -547,28 +547,80 @@ export async function claimCampaignEmailAccessInvites() {
 
 export async function listCampaignAccessRows(campaignRowId: string) {
   const supabase = getSupabaseClient()
+  
+  // Fetch access rows without embedded select (to ensure we get the rows even if FK join fails)
   const { data, error } = await supabase
     .from("campaign_user_access")
-    .select("campaign_id, user_id, role, granted_by, created_at, updated_at, profile:user_id(id, email, display_name, is_admin, is_gm)")
+    .select("campaign_id, user_id, role, granted_by, created_at, updated_at")
     .eq("campaign_id", campaignRowId)
     .order("created_at", { ascending: true })
 
   if (error) throw error
   
-  // Transform flat response to nested structure
-  const rows = (data ?? []).map((row: any) => ({
+  const accessRows = data ?? []
+  if (accessRows.length === 0) return []
+  
+  // Collect distinct user IDs and fetch their profiles separately
+  const userIds = Array.from(new Set(accessRows.map((row: any) => row.user_id)))
+  const profiles = await fetchProfilesByIds(userIds)
+  const profilesById = new Map(profiles.map((p) => [p.id, p]))
+  
+  // Merge profiles onto access rows
+  const enrichedRows = accessRows.map((row: any) => ({
     campaign_id: row.campaign_id,
     user_id: row.user_id,
     role: row.role,
     granted_by: row.granted_by,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    profile: Array.isArray(row.profile) && row.profile.length > 0 
-      ? row.profile[0] 
-      : { id: row.user_id, email: null, display_name: null, is_admin: false, is_gm: false }
+    profile: profilesById.get(row.user_id) ?? { 
+      id: row.user_id, 
+      email: null, 
+      display_name: null, 
+      is_admin: false, 
+      is_gm: false 
+    }
   }))
   
-  return rows as CampaignAccessRowWithProfile[]
+  return enrichedRows as CampaignAccessRowWithProfile[]
+}
+
+/**
+ * Fetch profiles by user IDs using a fallback approach.
+ * Tries direct query first, then falls back gracefully if RLS blocks it.
+ */
+async function fetchProfilesByIds(userIds: string[]): Promise<ProfileRow[]> {
+  if (userIds.length === 0) return []
+  
+  const supabase = getSupabaseClient()
+  
+  // Try direct query (simplest and most reliable approach)
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
+    .in("id", userIds)
+  
+  if (!error && data) {
+    return data as ProfileRow[]
+  }
+  
+  // Log the error for debugging
+  console.warn("[fetchProfilesByIds] Profile query failed", { 
+    error: error?.message, 
+    userIdsCount: userIds.length,
+    userIds: userIds.length <= 10 ? userIds : userIds.slice(0, 10) 
+  })
+  
+  // Return empty profiles for each ID (will fall back to display helpers)
+  return userIds.map((id) => ({
+    id,
+    email: null,
+    display_name: null,
+    is_admin: false,
+    is_gm: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }))
 }
 
 export async function upsertCampaignAccessRow(input: {
@@ -648,28 +700,42 @@ export async function deleteCampaignAccessRow(input: {
 
 export async function listCharacterAccessRows(characterId: string) {
   const supabase = getSupabaseClient()
+  
+  // Fetch access rows without embedded select (to ensure we get the rows even if FK join fails)
   const { data, error } = await supabase
     .from("character_user_access")
-    .select("character_id, user_id, role, granted_by, created_at, updated_at, profile:user_id(id, email, display_name, is_admin, is_gm)")
+    .select("character_id, user_id, role, granted_by, created_at, updated_at")
     .eq("character_id", characterId)
     .order("created_at", { ascending: true })
 
   if (error) throw error
   
-  // Transform flat response to nested structure
-  const rows = (data ?? []).map((row: any) => ({
+  const accessRows = data ?? []
+  if (accessRows.length === 0) return []
+  
+  // Collect distinct user IDs and fetch their profiles separately
+  const userIds = Array.from(new Set(accessRows.map((row: any) => row.user_id)))
+  const profiles = await fetchProfilesByIds(userIds)
+  const profilesById = new Map(profiles.map((p) => [p.id, p]))
+  
+  // Merge profiles onto access rows
+  const enrichedRows = accessRows.map((row: any) => ({
     character_id: row.character_id,
     user_id: row.user_id,
     role: row.role,
     granted_by: row.granted_by,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    profile: Array.isArray(row.profile) && row.profile.length > 0 
-      ? row.profile[0] 
-      : { id: row.user_id, email: null, display_name: null, is_admin: false, is_gm: false }
+    profile: profilesById.get(row.user_id) ?? { 
+      id: row.user_id, 
+      email: null, 
+      display_name: null, 
+      is_admin: false, 
+      is_gm: false 
+    }
   }))
   
-  return rows as CharacterAccessRowWithProfile[]
+  return enrichedRows as CharacterAccessRowWithProfile[]
 }
 
 export async function upsertCharacterAccessRow(input: {
