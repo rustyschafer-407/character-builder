@@ -864,8 +864,8 @@ export default function App() {
       campaignRows = await listCampaignAccessRows(currentCampaignRowId);
     }
 
-    if (uiCanManageCharacterAccess && selected) {
-      characterRows = await listCharacterAccessRows(selected.id);
+    if (uiCanManageCharacterAccess && selected && currentCampaignRowId) {
+      characterRows = await listCharacterAccessRows(selected.id, currentCampaignRowId);
     }
 
     if (uiCanManageUsers || uiCanManageCampaignAccess) {
@@ -898,6 +898,33 @@ export default function App() {
       }
     }
 
+    if (import.meta.env.DEV && isGm && !isAdmin) {
+      const combinedUserIds = Array.from(
+        new Set([
+          ...campaignRows.map((row) => row.user_id),
+          ...characterRows.map((row) => row.user_id),
+        ])
+      );
+      const resolvedProfiles = Array.from(
+        new Map(
+          [...campaignRows, ...characterRows].map((row) => [row.user_id, row.profile] as const)
+        ).values()
+      );
+      console.info("[gm-access-debug] reloadAccessManagementData", {
+        current_auth_user_id: currentUserId,
+        is_admin: isAdmin,
+        is_gm: isGm,
+        campaign_role: campaignRolesByCampaignId[campaignId] ?? null,
+        selected_campaign_id: currentCampaignRowId,
+        selected_character_id: selected?.id ?? null,
+        raw_character_user_access_rows: characterRows,
+        raw_campaign_user_access_rows: campaignRows,
+        collected_user_ids: combinedUserIds,
+        profile_query_result: resolvedProfiles,
+        final_merged_character_access_rows: characterRows,
+      });
+    }
+
     setManageableUsers(users);
     setCampaignAccessRows(campaignRows);
     setCharacterAccessRows(characterRows);
@@ -907,6 +934,10 @@ export default function App() {
     uiCanManageCharacterAccess,
     currentCampaignRowId,
     currentUserId,
+    isAdmin,
+    isGm,
+    campaignId,
+    campaignRolesByCampaignId,
     selected,
   ])
 

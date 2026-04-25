@@ -22,6 +22,7 @@ import type {
   CharacterAccessRole,
   CharacterAccessRowWithProfile,
 } from "../lib/cloudRepository";
+import { getAccessRowDisplayName, getAccessRowEmail } from "../lib/userDisplay";
 
 interface CollapsibleSectionProps {
   id: string;
@@ -285,15 +286,28 @@ export default function SelectedCharacterWorkspace({
     character.attacks.map((attack) => attack.name?.trim() || attack.id)
   );
 
+  const accessSummaryRows = [
+    ...characterAccessRows.map((row) => ({
+      key: `direct:${row.user_id}`,
+      label: `${getAccessRowDisplayName(row.profile)} (${getAccessRowEmail(row.profile)})`,
+    })),
+    ...campaignAccessRows.map((row) => ({
+      key: `campaign:${row.user_id}`,
+      label: `${getAccessRowDisplayName(row.profile)} (${getAccessRowEmail(row.profile)})`,
+    })),
+  ];
+
   const accessSummary = summarizeValues(
-    Array.from(
-      new Set([
-        ...characterAccessRows.map((row) => row.user_id),
-        ...campaignAccessRows.map((row) => row.user_id),
-      ])
-    ).map((userId) => getUserLabel(userId)),
+    Array.from(new Map(accessSummaryRows.map((row) => [row.key, row.label])).values()),
     5
   );
+
+  if (import.meta.env.DEV && canManageCharacterAccess) {
+    console.info("[gm-access-debug] collapsed access summary rows", {
+      summary_rows: accessSummaryRows,
+      summary_value: accessSummary,
+    });
+  }
   const coreSummary = `AC ${character.sheet.acBase + character.sheet.acBonus}, Init ${
     character.sheet.initMisc
   }, Speed ${character.sheet.speed || "-"}`;

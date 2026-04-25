@@ -562,8 +562,12 @@ export async function listCampaignAccessRows(campaignRowId: string) {
   
   // Collect distinct user IDs and fetch their profiles separately
   const userIds = Array.from(new Set(accessRows.map((row: any) => row.user_id)))
-  const profiles = await fetchProfilesByIds(userIds)
-  const profilesById = new Map(profiles.map((p) => [p.id, p]))
+  const resolution = await fetchProfilesByIds({
+    userIds,
+    sourceTable: "campaign_user_access",
+    targetCampaignId: campaignRowId,
+  })
+  const profilesById = new Map(resolution.profiles.map((p) => [p.id, p]))
   
   // Merge profiles onto access rows
   const enrichedRows = accessRows.map((row: any) => ({
@@ -573,7 +577,7 @@ export async function listCampaignAccessRows(campaignRowId: string) {
     granted_by: row.granted_by,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    profile: profilesById.get(row.user_id) ?? { 
+    profile: profilesById.get(row.user_id) ?? {
       id: row.user_id, 
       email: null, 
       display_name: null, 
@@ -581,16 +585,50 @@ export async function listCampaignAccessRows(campaignRowId: string) {
       is_gm: false 
     }
   }))
+
+  if (import.meta.env.DEV) {
+    for (const row of enrichedRows) {
+      const normalProfileQueryReturned = resolution.directResolvedIds.has(row.user_id)
+      const rpcReturned = resolution.rpcResolvedIds.has(row.user_id)
+      if (!normalProfileQueryReturned && !rpcReturned) {
+        console.warn("[access-profile-resolution] unresolved access profile", {
+          user_id: row.user_id,
+          source_table: "campaign_user_access",
+          row_source: "campaign",
+          normal_profile_query_returned: normalProfileQueryReturned,
+          rpc_returned: rpcReturned,
+          campaign_id: row.campaign_id,
+          character_id: null,
+        })
+      }
+    }
+  }
   
   return enrichedRows as CampaignAccessRowWithProfile[]
 }
 
 /**
- * Fetch profiles by user IDs using a fallback approach.
- * Tries direct query first, then falls back gracefully if RLS blocks it.
+ * Fetch profiles by user IDs using a campaign/character-aware fallback.
+ * This handles the GM case where direct profile queries can return partial rows due to RLS.
  */
-async function fetchProfilesByIds(userIds: string[]): Promise<ProfileRow[]> {
-  if (userIds.length === 0) return []
+async function fetchProfilesByIds(input: {
+  userIds: string[]
+  sourceTable: "campaign_user_access" | "character_user_access"
+  targetCampaignId: string
+  targetCharacterId?: string | null
+}): Promise<{
+  profiles: ProfileRow[]
+  directResolvedIds: Set<string>
+  rpcResolvedIds: Set<string>
+}> {
+  const uniqueIds = Array.from(new Set(input.userIds.map((id) => id.trim()).filter(Boolean)))
+  if (uniqueIds.length === 0) {
+    return {
+      profiles: [],
+      directResolvedIds: new Set<string>(),
+      rpcResolvedIds: new Set<string>(),
+    }
+  }
   
   const supabase = getSupabaseClient()
   
@@ -598,29 +636,95 @@ async function fetchProfilesByIds(userIds: string[]): Promise<ProfileRow[]> {
   const { data, error } = await supabase
     .from("profiles")
     .select("id, email, display_name, is_admin, is_gm, created_at, updated_at")
-    .in("id", userIds)
-  
-  if (!error && data) {
-    return data as ProfileRow[]
+    .in("id", uniqueIds)
+
+  const directRows = !error && data ? (data as ProfileRow[]) : []
+  const directResolvedIds = new Set(directRows.map((row) => row.id))
+  const missingIds = uniqueIds.filter((id) => !directResolvedIds.has(id))
+
+  const rpcResolvedIds = new Set<string>()
+  const resolvedById = new Map<string, ProfileRow>()
+  for (const row of directRows) {
+    resolvedById.set(row.id, row)
   }
-  
-  // Log the error for debugging
-  console.warn("[fetchProfilesByIds] Profile query failed", { 
-    error: error?.message, 
-    userIdsCount: userIds.length,
-    userIds: userIds.length <= 10 ? userIds : userIds.slice(0, 10) 
-  })
-  
-  // Return empty profiles for each ID (will fall back to display helpers)
-  return userIds.map((id) => ({
-    id,
-    email: null,
-    display_name: null,
-    is_admin: false,
-    is_gm: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }))
+
+  if (missingIds.length > 0) {
+    const { data: rpcRows, error: rpcError } = await supabase.rpc(
+      "get_visible_access_profiles" as never,
+      {
+        target_campaign_id: input.targetCampaignId,
+        target_character_id: input.targetCharacterId ?? null,
+      } as never
+    )
+
+    const rpcRowsTyped = (rpcRows ?? []) as {
+        id: string
+        email: string | null
+        display_name: string | null
+        is_admin: boolean
+        is_gm: boolean
+      }[]
+
+    if (!rpcError && rpcRowsTyped.length > 0) {
+      for (const row of rpcRowsTyped) {
+        if (!missingIds.includes(row.id)) continue
+        rpcResolvedIds.add(row.id)
+        resolvedById.set(row.id, {
+          id: row.id,
+          email: row.email,
+          display_name: row.display_name,
+          is_admin: row.is_admin,
+          is_gm: row.is_gm,
+          created_at: "",
+          updated_at: "",
+        })
+      }
+    }
+
+    if (import.meta.env.DEV) {
+      console.info("[access-profile-resolution] profile fetch diagnostics", {
+        source_table: input.sourceTable,
+        target_campaign_id: input.targetCampaignId,
+        target_character_id: input.targetCharacterId ?? null,
+        requested_user_ids: uniqueIds,
+        direct_query_count: directRows.length,
+        missing_after_direct_query: missingIds,
+        rpc_count: rpcRowsTyped.length,
+        profile_query_error: error?.message ?? null,
+        profile_rpc_error: rpcError?.message ?? null,
+      })
+    }
+  }
+
+  // Keep placeholders for unresolved users so UI can safely show Unknown user/No email on profile.
+  for (const id of uniqueIds) {
+    if (!resolvedById.has(id)) {
+      resolvedById.set(id, {
+        id,
+        email: null,
+        display_name: null,
+        is_admin: false,
+        is_gm: false,
+        created_at: "",
+        updated_at: "",
+      })
+    }
+  }
+
+  if (import.meta.env.DEV && error) {
+    console.warn("[access-profile-resolution] direct profile query failed", {
+      source_table: input.sourceTable,
+      error: error.message,
+      user_ids_count: uniqueIds.length,
+      user_ids_preview: uniqueIds.slice(0, 10),
+    })
+  }
+
+  return {
+    profiles: Array.from(resolvedById.values()),
+    directResolvedIds,
+    rpcResolvedIds,
+  }
 }
 
 export async function upsertCampaignAccessRow(input: {
@@ -698,9 +802,9 @@ export async function deleteCampaignAccessRow(input: {
   })
 }
 
-export async function listCharacterAccessRows(characterId: string) {
+export async function listCharacterAccessRows(characterId: string, campaignRowId: string) {
   const supabase = getSupabaseClient()
-  
+
   // Fetch access rows without embedded select (to ensure we get the rows even if FK join fails)
   const { data, error } = await supabase
     .from("character_user_access")
@@ -709,14 +813,19 @@ export async function listCharacterAccessRows(characterId: string) {
     .order("created_at", { ascending: true })
 
   if (error) throw error
-  
+
   const accessRows = data ?? []
   if (accessRows.length === 0) return []
-  
+
   // Collect distinct user IDs and fetch their profiles separately
   const userIds = Array.from(new Set(accessRows.map((row: any) => row.user_id)))
-  const profiles = await fetchProfilesByIds(userIds)
-  const profilesById = new Map(profiles.map((p) => [p.id, p]))
+  const resolution = await fetchProfilesByIds({
+    userIds,
+    sourceTable: "character_user_access",
+    targetCampaignId: campaignRowId,
+    targetCharacterId: characterId,
+  })
+  const profilesById = new Map(resolution.profiles.map((p) => [p.id, p]))
   
   // Merge profiles onto access rows
   const enrichedRows = accessRows.map((row: any) => ({
@@ -734,6 +843,24 @@ export async function listCharacterAccessRows(characterId: string) {
       is_gm: false 
     }
   }))
+
+  if (import.meta.env.DEV) {
+    for (const row of enrichedRows) {
+      const normalProfileQueryReturned = resolution.directResolvedIds.has(row.user_id)
+      const rpcReturned = resolution.rpcResolvedIds.has(row.user_id)
+      if (!normalProfileQueryReturned && !rpcReturned) {
+        console.warn("[access-profile-resolution] unresolved access profile", {
+          user_id: row.user_id,
+          source_table: "character_user_access",
+          row_source: "direct",
+          normal_profile_query_returned: normalProfileQueryReturned,
+          rpc_returned: rpcReturned,
+          campaign_id: campaignRowId,
+          character_id: row.character_id,
+        })
+      }
+    }
+  }
   
   return enrichedRows as CharacterAccessRowWithProfile[]
 }
