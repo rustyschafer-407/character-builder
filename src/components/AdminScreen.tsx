@@ -30,6 +30,7 @@ import {
   applyCampaignImport,
   buildCampaignImportPreview,
 } from "../utils/campaignImport";
+import { CAMPAIGN_IMPORT_AI_PROMPT } from "../utils/campaignImportPrompt";
 import type {
   DuplicateHandlingMode,
   ImportPreview,
@@ -265,6 +266,7 @@ export default function AdminScreen({
   const [campaignImportMode, setCampaignImportMode] = useState<DuplicateHandlingMode>("skip");
   const [campaignImportError, setCampaignImportError] = useState<string>("");
   const [campaignImportResult, setCampaignImportResult] = useState<ImportResult | null>(null);
+  const [campaignImportPromptCopied, setCampaignImportPromptCopied] = useState(false);
   const lastHandledSaveVersion = useRef(saveRequestVersion);
 
   const selectedCampaign =
@@ -386,6 +388,36 @@ export default function AdminScreen({
   function closeCampaignImportModal() {
     setCampaignImportOpen(false);
     resetCampaignImportState();
+    setCampaignImportPromptCopied(false);
+  }
+
+  async function copyCampaignImportPrompt() {
+    const text = CAMPAIGN_IMPORT_AI_PROMPT;
+    if (!text) return;
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else if (typeof document !== "undefined") {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        textarea.style.pointerEvents = "none";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      } else {
+        throw new Error("Clipboard API unavailable");
+      }
+
+      setCampaignImportPromptCopied(true);
+      window.setTimeout(() => setCampaignImportPromptCopied(false), 1800);
+    } catch {
+      setCampaignImportError("Unable to copy AI prompt automatically. Open the prompt preview and copy it manually.");
+    }
   }
 
   function validateCampaignImportDraft() {
@@ -853,18 +885,16 @@ export default function AdminScreen({
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     <button type="button" className="button-control" style={buttonStyle} onClick={openCampaignImportModal}>
                       Import
                     </button>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                      <button type="button" className="button-control" style={buttonStyle} onClick={duplicateActiveCampaign}>
-                        Duplicate Campaign
-                      </button>
-                      <button type="button" className="button-control" style={buttonStyle} onClick={deleteActiveCampaign}>
-                        Delete Campaign
-                      </button>
-                    </div>
+                    <button type="button" className="button-control" style={buttonStyle} onClick={duplicateActiveCampaign}>
+                      Duplicate Campaign
+                    </button>
+                    <button type="button" className="button-control" style={buttonStyle} onClick={deleteActiveCampaign}>
+                      Delete Campaign
+                    </button>
                   </div>
                 </div>
 
@@ -2294,6 +2324,52 @@ export default function AdminScreen({
               </>
             ) : (
               <>
+                <section style={{ ...cardStyle(), display: "grid", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <div>
+                      <h4 style={{ margin: 0, color: "var(--text-primary)" }}>Create JSON with AI</h4>
+                      <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                        Want to import content from a book, PDF, notes, or an image? Copy the prompt below, paste it into an AI assistant, then provide your source text or image. The AI should return JSON that you can paste back into this importer.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="button-control"
+                      style={buttonStyle}
+                      onClick={() => void copyCampaignImportPrompt()}
+                    >
+                      Copy AI Prompt
+                    </button>
+                  </div>
+                  {campaignImportPromptCopied ? (
+                    <div style={{ color: "var(--text-secondary)", fontSize: 13, fontWeight: 600 }}>
+                      AI prompt copied.
+                    </div>
+                  ) : null}
+                  <details style={{ border: "1px solid var(--cb-border)", borderRadius: 8, padding: "8px 10px", background: "rgba(11, 22, 42, 0.45)" }}>
+                    <summary style={{ cursor: "pointer", color: "var(--text-primary)", fontWeight: 600 }}>
+                      Preview AI Prompt
+                    </summary>
+                    <pre
+                      style={{
+                        margin: "10px 0 0",
+                        padding: 12,
+                        borderRadius: 8,
+                        border: "1px solid var(--cb-border)",
+                        background: "rgba(3, 12, 24, 0.85)",
+                        color: "var(--text-secondary)",
+                        fontFamily: "SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace",
+                        fontSize: 12,
+                        lineHeight: 1.45,
+                        whiteSpace: "pre-wrap",
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {CAMPAIGN_IMPORT_AI_PROMPT}
+                    </pre>
+                  </details>
+                </section>
+
                 <label style={labelTextStyle}>
                   Import JSON
                   <textarea

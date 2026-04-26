@@ -206,4 +206,36 @@ describe("campaignImport", () => {
     expect(preview.warnings.some((warning) => warning.message.includes("missing description"))).toBe(true);
     expect(preview.warnings.some((warning) => warning.message.includes("unknown fields"))).toBe(true);
   });
+
+  it("accepts item usableAsAttack=true and maps it to campaign attack usability", () => {
+    const preview = buildCampaignImportPreview(
+      stringify({
+        format: "character-builder.campaign-content-import",
+        version: 1,
+        content: {
+          items: [{ name: "Shock Baton", description: "Stuns target", usableAsAttack: true }],
+        },
+      }),
+      makeCampaign()
+    );
+
+    expect(preview.items).toHaveLength(1);
+    expect(preview.items[0]?.isAttack).toBe(true);
+  });
+
+  it("tolerates item usableAsAttack missing by defaulting to non-attack", () => {
+    const preview = buildCampaignImportPreview(
+      stringify({
+        format: "character-builder.campaign-content-import",
+        version: 1,
+        content: {
+          items: [{ name: "Med Kit", description: "Field first aid" }],
+        },
+      }),
+      makeCampaign()
+    );
+
+    expect(preview.items).toHaveLength(1);
+    expect(preview.items[0]?.isAttack).toBe(false);
+  });
 });

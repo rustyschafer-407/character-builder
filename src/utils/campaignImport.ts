@@ -6,10 +6,23 @@ export interface CampaignContentImportPayload {
   format: string;
   version: number;
   content: {
-    powers?: unknown[];
-    skills?: unknown[];
-    items?: unknown[];
+    powers?: CampaignContentImportPower[];
+    skills?: CampaignContentImportSkill[];
+    items?: CampaignContentImportItem[];
   };
+}
+
+export interface CampaignContentImportPower {
+  [key: string]: unknown;
+}
+
+export interface CampaignContentImportSkill {
+  [key: string]: unknown;
+}
+
+export interface CampaignContentImportItem {
+  usableAsAttack?: boolean;
+  [key: string]: unknown;
 }
 
 export interface ImportWarning {
@@ -187,12 +200,12 @@ function parseBoolean(value: unknown): boolean | undefined {
   return undefined;
 }
 
-function ensureArray(value: unknown, label: string): unknown[] {
+function ensureArray<T>(value: unknown, label: string): T[] {
   if (value === undefined) return [];
   if (!Array.isArray(value)) {
     throw new Error(`${label} must be an array when provided.`);
   }
-  return value;
+  return value as T[];
 }
 
 function addUnknownFieldWarnings(
@@ -241,9 +254,9 @@ function validateImportEnvelope(payload: unknown): CampaignContentImportPayload 
   }
 
   const content = root.content as CampaignContentImportPayload["content"];
-  const powers = ensureArray(content.powers, "content.powers");
-  const skills = ensureArray(content.skills, "content.skills");
-  const items = ensureArray(content.items, "content.items");
+  const powers = ensureArray<CampaignContentImportPower>(content.powers, "content.powers");
+  const skills = ensureArray<CampaignContentImportSkill>(content.skills, "content.skills");
+  const items = ensureArray<CampaignContentImportItem>(content.items, "content.items");
 
   if (powers.length === 0 && skills.length === 0 && items.length === 0) {
     throw new Error("Import content must include at least one power, skill, or item.");
