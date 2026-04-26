@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
-  generateId,
   getCharacterType,
   getAttributeModifier,
   getClassById,
@@ -817,27 +816,6 @@ export default function App() {
     removeManualItem,
     addManualItem,
   });
-
-  function duplicateSelectedCharacter() {
-    if (!selected || !uiCanEditSelectedCharacter) return;
-
-    const duplicateId = generateId();
-    const duplicateNameBase = selected.identity.name?.trim() || "Character";
-    const duplicatedCharacter: CharacterRecord = {
-      ...selected,
-      id: duplicateId,
-      identity: {
-        ...selected.identity,
-        name: `${duplicateNameBase} Copy`,
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setCharacters((previous) => [...previous, duplicatedCharacter]);
-    setSelectedId(duplicateId);
-    void persistCharacterUpsert(duplicatedCharacter);
-  }
 
   async function refreshAccessContextState() {
     try {
@@ -2338,9 +2316,6 @@ export default function App() {
               onRemoveCharacterAccess={handleRemoveCharacterAccess}
               characterAccessErrorMessage={accessManagementError}
               onClearCharacterAccessError={() => setAccessManagementError("")}
-              canUseGmQuickActions={uiCanEditSelectedCharacter}
-              onDuplicateCharacter={duplicateSelectedCharacter}
-              onDeleteCharacter={() => deleteCharacter(selected.id)}
               {...selectedWorkspaceCallbacks}
             />
           )}

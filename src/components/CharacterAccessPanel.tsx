@@ -9,7 +9,6 @@ import { getAccessRowDisplayName } from "../lib/userDisplay";
 import { buttonStyle, inputStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
 
 interface CharacterAccessPanelProps {
-  characterName: string;
   campaignAccessRows: CampaignAccessRowWithProfile[];
   characterAccessRows: CharacterAccessRowWithProfile[];
   characterUserCandidateIds: string[];
@@ -25,7 +24,6 @@ interface CharacterAccessPanelProps {
 type AccessFeedback = { type: "success" | "error"; message: string } | null;
 
 export default function CharacterAccessPanel({
-  characterName,
   campaignAccessRows,
   characterAccessRows,
   characterUserCandidateIds,
@@ -117,28 +115,16 @@ export default function CharacterAccessPanel({
     setShowAddModal(false);
   }
 
-  return (
-    <section style={{ ...panelStyle, display: "grid", gap: 16 }} className="character-access-panel mobile-stack">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: 18 }}>Access</h3>
-          <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-            Who can view or edit {characterName}.
-          </div>
-        </div>
-        <button
-          className="button-control"
-          style={primaryButtonStyle}
-          disabled={busy}
-          onClick={() => {
-            setResult(null);
-            setShowAddModal(true);
-          }}
-        >
-          + Add Player
-        </button>
-      </div>
+  function toggleRole(userId: string, currentRole: CharacterAccessRole) {
+    const nextRole = currentRole === "editor" ? "viewer" : "editor";
+    void runAction(async () => {
+      await onUpdateCharacterAccess({ userId, role: nextRole });
+      setResult({ type: "success", message: `Updated ${getUserLabel(userId)} to ${nextRole === "editor" ? "edit" : "view"}.` });
+    });
+  }
 
+  return (
+    <div style={{ display: "grid", gap: 12 }} className="character-access-panel mobile-stack">
       {errorMessage ? (
         <div
           style={{
@@ -171,7 +157,7 @@ export default function CharacterAccessPanel({
         </div>
       ) : null}
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      <div className="access-chip-row" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {chipRows.length === 0 ? (
           <div
             style={{
@@ -189,6 +175,7 @@ export default function CharacterAccessPanel({
           chipRows.map((row) => (
             <span
               key={`${row.inherited ? "campaign" : "direct"}:${row.userId}`}
+              className="access-chip"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -198,22 +185,33 @@ export default function CharacterAccessPanel({
                 border: "1px solid var(--cb-border)",
                 background: row.inherited ? "color-mix(in srgb, var(--cb-surface-raised) 82%, transparent)" : "var(--cb-selection-row-bg)",
                 color: "var(--cb-text)",
-                padding: "0 12px",
+                padding: "0 10px 0 14px",
                 maxWidth: "100%",
               }}
               title={row.inherited ? "Inherited from campaign" : "Direct access"}
             >
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 220, fontWeight: 600 }}>
                 {row.label}
               </span>
-              <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>
-                {row.role === "editor" ? "Edit" : "View"}
-              </span>
-              {!row.inherited ? (
+              {row.inherited ? (
+                <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 700 }}>GM</span>
+              ) : (
                 <button
                   type="button"
                   className="button-control button-control--secondary"
-                  style={{ ...buttonStyle, minWidth: 28, width: 28, padding: 0, borderRadius: 999 }}
+                  style={{ ...buttonStyle, minHeight: 24, padding: "0 8px", borderRadius: 999, fontSize: 12 }}
+                  disabled={busy}
+                  onClick={() => toggleRole(row.userId, row.role)}
+                  aria-label={`Change ${row.label} access role`}
+                >
+                  {row.role === "editor" ? "Edit" : "View"}
+                </button>
+              )}
+              {!row.inherited ? (
+                <button
+                  type="button"
+                  className="button-control button-control--secondary access-chip-remove"
+                  style={{ ...buttonStyle, minWidth: 24, width: 24, minHeight: 24, padding: 0, borderRadius: 999 }}
                   disabled={busy}
                   onClick={() => {
                     void runAction(async () => {
@@ -229,46 +227,19 @@ export default function CharacterAccessPanel({
             </span>
           ))
         )}
-      </div>
 
-      {explicitRows.length > 0 ? (
-        <div style={{ display: "grid", gap: 8 }}>
-          {explicitRows.map((row) => (
-            <div
-              key={`role:${row.userId}`}
-              style={{
-                border: "1px solid var(--cb-border)",
-                borderRadius: 12,
-                padding: "12px 16px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                flexWrap: "wrap",
-                background: "color-mix(in srgb, var(--cb-surface-raised) 88%, transparent)",
-              }}
-            >
-              <strong style={{ color: "var(--text-primary)", fontSize: 14 }}>{row.label}</strong>
-              <select
-                value={row.role}
-                disabled={busy}
-                className="form-control"
-                style={{ ...inputStyle, width: 148, marginTop: 0 }}
-                onChange={(event) => {
-                  const nextRole = event.target.value as CharacterAccessRole;
-                  void runAction(async () => {
-                    await onUpdateCharacterAccess({ userId: row.userId, role: nextRole });
-                    setResult({ type: "success", message: `Updated ${row.label} to ${nextRole === "editor" ? "edit" : "view"}.` });
-                  });
-                }}
-              >
-                <option value="editor">Can edit</option>
-                <option value="viewer">Can view</option>
-              </select>
-            </div>
-          ))}
-        </div>
-      ) : null}
+        <button
+          className="button-control add-player-button"
+          style={{ ...primaryButtonStyle, minHeight: 36, padding: "0 14px", borderRadius: 999 }}
+          disabled={busy}
+          onClick={() => {
+            setResult(null);
+            setShowAddModal(true);
+          }}
+        >
+          + Add Player
+        </button>
+      </div>
 
       {showAddModal
         ? createPortal(
@@ -390,6 +361,6 @@ export default function CharacterAccessPanel({
             document.body
           )
         : null}
-    </section>
+    </div>
   );
 }

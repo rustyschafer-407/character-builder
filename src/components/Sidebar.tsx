@@ -85,10 +85,10 @@ export default function Sidebar({
     ...buttonStyle,
     flex: 1,
     justifyContent: "center" as const,
-    padding: "5px 10px",
+    padding: "0 12px",
     fontSize: 12,
     fontWeight: 700,
-    minHeight: 30,
+    minHeight: 34,
     borderColor: typeFilter === segment ? "var(--accent-primary)" : "rgba(255,255,255,0.1)",
     color: typeFilter === segment ? "var(--text-primary)" : "var(--text-secondary)",
     background:
@@ -105,6 +105,7 @@ export default function Sidebar({
       style={{
         ...panelStyle,
         width: 300,
+        gap: 0,
       }}
     >
       <h2 style={{ marginTop: 0, marginBottom: 16, color: "var(--text-primary)" }}>Characters</h2>
@@ -160,7 +161,7 @@ export default function Sidebar({
         </div>
       ) : null}
 
-      <div className="sidebar-character-list" style={{ marginTop: 18, display: "grid", gap: 6 }}>
+      <div className="sidebar-character-list" style={{ marginTop: 18, display: "grid", gap: 8 }}>
         {visibleCharacters.length === 0 && <p style={{ margin: 0, ...mutedTextStyle }}>No characters yet.</p>}
 
         {visibleCharacters.map((c) => {
@@ -180,8 +181,8 @@ export default function Sidebar({
                 gridTemplateColumns: "1fr auto 40px",
                 alignItems: "center",
                 gap: 12,
-                padding: "12px 14px",
-                borderRadius: 10,
+                padding: "13px 14px",
+                borderRadius: 12,
                 border: isSelected ? "1px solid var(--cb-accent)" : "1px solid var(--cb-border)",
                 background: isSelected ? "var(--cb-accent-soft)" : "var(--cb-surface-raised)",
                 boxShadow: isSelected ? "inset 0 0 0 1px var(--cb-accent-soft-strong)" : "none",
@@ -211,6 +212,7 @@ export default function Sidebar({
                     display: "block",
                     color: "var(--text-primary)",
                     fontSize: 14,
+                    fontWeight: 750,
                     lineHeight: 1.25,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -240,9 +242,9 @@ export default function Sidebar({
                     letterSpacing: "0.06em",
                     fontWeight: 700,
                     textTransform: "uppercase",
-                    minWidth: 44,
+                    minWidth: 46,
                     textAlign: "center",
-                    padding: "3px 8px",
+                    padding: "4px 8px",
                     borderRadius: 999,
                     border: isNpc ? "1px solid rgba(255, 188, 83, 0.34)" : "1px solid rgba(73, 224, 255, 0.28)",
                     color: isNpc ? "#e8c78c" : "#98ddec",
