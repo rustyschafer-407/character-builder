@@ -97,6 +97,7 @@ export interface NpcImportClass {
   description?: string;
   attributeBonuses?: Array<{ attribute?: string; amount?: number | string }>;
   hitDie?: number | string;
+  hitDiceAtLevel1?: number | string;
   defaultPowerNames?: string[];
   defaultItemNames?: string[];
   startingAttackNames?: string[];
@@ -165,6 +166,6 @@ export const NPC_IMPORT_SCHEMA_FIELDS = {
   items: ["name", "description", "isAttack", "stackable", "defaultQuantity", "tags"],
   attacks: ["name", "attribute", "damage", "bonus", "notes", "tags"],
   races: ["name", "description", "attributeBonuses", "defaultPowerNames", "availableClassNames"],
-  classes: ["name", "description", "attributeBonuses", "hitDie", "defaultPowerNames", "defaultItemNames", "startingAttackNames"],
+  classes: ["name", "description", "attributeBonuses", "hitDie", "hitDiceAtLevel1", "defaultPowerNames", "defaultItemNames", "startingAttackNames"],
   characters: ["name", "type", "campaign", "race", "class", "level", "attributes", "skills", "powers", "items", "attacks", "notes"],
 } as const;

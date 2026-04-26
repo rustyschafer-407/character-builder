@@ -5,6 +5,7 @@ import {
   getCharacterType,
   getAttributeModifier,
   getClassById,
+  getHitDiceAtLevel1,
   getRaceById,
   makeBaseAttributes,
   sortByName,
@@ -185,7 +186,9 @@ function makeDraftFromCampaignClassAndRace(
     draft.attributes = applyClassAttributeModifiers(makeBaseAttributes(), cls, race);
   }
 
-  const hpMax = Math.max(1, cls.hpRule.hitDie + getAttributeModifier(draft.attributes.CON));
+  const level1HitDice = getHitDiceAtLevel1(cls);
+  const baseHp = cls.hpRule.hitDie * level1HitDice;
+  const hpMax = Math.max(baseHp, baseHp + getAttributeModifier(draft.attributes.CON));
   draft.hp = {
     ...draft.hp,
     max: hpMax,

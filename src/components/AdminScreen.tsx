@@ -74,6 +74,7 @@ function makeBlankClass(campaignId: string): ClassDefinition {
     attributeBonuses: [],
     hpRule: {
       hitDie: 8,
+      hitDiceAtLevel1: 1,
       level1Mode: "fixed-max",
       levelUpMode: "fixed-average",
       levelUpFixedValue: 5,
@@ -1058,6 +1059,25 @@ export default function AdminScreen({
                             </option>
                           ))}
                         </select>
+                      </label>
+                      <label style={labelTextStyle}>
+                        # Hit Die
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          value={selectedClass.hpRule.hitDiceAtLevel1 ?? 1}
+                          onChange={(e) =>
+                            updateClass({
+                              ...selectedClass,
+                              hpRule: {
+                                ...selectedClass.hpRule,
+                                hitDiceAtLevel1: Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                              },
+                            })
+                          }
+                          className="form-control" style={inputStyle}
+                        />
                       </label>
                     </div>
                   </section>

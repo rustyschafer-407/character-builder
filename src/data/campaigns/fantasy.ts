@@ -31,6 +31,7 @@ export const fantasyCampaign: CampaignDefinition = {
       attributeBonuses: [{ attribute: "STR", amount: 2 }],
       hpRule: {
         hitDie: 10,
+        hitDiceAtLevel1: 1,
         level1Mode: "fixed-max",
         levelUpMode: "fixed-average",
         level1FixedValue: 6,
@@ -56,6 +57,7 @@ export const fantasyCampaign: CampaignDefinition = {
       attributeBonuses: [{ attribute: "INT", amount: 2 }],
       hpRule: {
         hitDie: 6,
+        hitDiceAtLevel1: 1,
         level1Mode: "fixed-max",
         levelUpMode: "fixed-average",
         level1FixedValue: 4,

@@ -72,6 +72,7 @@ describe("normalizeCampaignDefinition", () => {
             attributeBonuses: [],
             hpRule: {
               hitDie: 8,
+              hitDiceAtLevel1: 1,
               level1Mode: "fixed-max",
               levelUpMode: "fixed-average",
             },
@@ -114,5 +115,29 @@ describe("normalizeCampaignDefinition", () => {
     expect(cls.levelUpSkillChoiceRules).toEqual([{ choose: 0, skillIds: ["skill-1"] }]);
     expect(cls.levelUpPowerChoiceRules).toEqual([{ choose: 0, powerIds: ["power-1"] }]);
     expect(cls.levelUpItemChoiceRules).toEqual([{ choose: 0, itemIds: ["item-1"] }]);
+  });
+
+  it("defaults legacy class hpRule.hitDiceAtLevel1 to 1", () => {
+    const normalized = normalizeCampaignDefinition(
+      makeCampaign({
+        classes: [
+          {
+            id: "class-1",
+            campaignId: "campaign-1",
+            name: "Legacy Class",
+            description: "",
+            attributeBonuses: [],
+            hpRule: {
+              hitDie: 8,
+              level1Mode: "fixed-max",
+              levelUpMode: "fixed-average",
+            } as any,
+            levelProgression: [],
+          },
+        ] as any,
+      })
+    );
+
+    expect(normalized.classes[0]?.hpRule.hitDiceAtLevel1).toBe(1);
   });
 });

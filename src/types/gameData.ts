@@ -63,6 +63,7 @@ export interface ClassItemChoiceRule {
 
 export interface HpRule {
   hitDie: number;
+  hitDiceAtLevel1: number;
   level1Mode: "fixed-max" | "fixed-value" | "roll";
   level1FixedValue?: number;
   levelUpMode: "fixed-average" | "fixed-value" | "roll";

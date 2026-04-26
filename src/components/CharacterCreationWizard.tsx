@@ -665,7 +665,7 @@ export default function CharacterCreationWizard({
                 {selectedClass.description || "No description."}
               </div>
               <div style={{ marginTop: 8, fontSize: 14, color: "var(--cb-text-muted)" }}>
-                Hit Die: d{selectedClass.hpRule.hitDie}
+                Hit Die: {selectedClass.hpRule.hitDiceAtLevel1 ?? 1}d{selectedClass.hpRule.hitDie}
               </div>
               <div style={{ marginTop: 8, fontSize: 14, color: "var(--cb-text-muted)" }}>
                 Modifiers: {classModifiersText}
@@ -1195,7 +1195,7 @@ export default function CharacterCreationWizard({
           </div>
           {selectedClass && (
             <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-              Starting HP uses the full d{selectedClass.hpRule.hitDie} at level 1, and positive CON can raise it further.
+              Starting HP uses full {selectedClass.hpRule.hitDiceAtLevel1 ?? 1}d{selectedClass.hpRule.hitDie} at level 1, and positive CON can raise it further.
             </div>
           )}
           {quickstartActive && (

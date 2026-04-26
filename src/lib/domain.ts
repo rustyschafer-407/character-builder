@@ -44,6 +44,10 @@ function makeDefaultLabels() {
 function makeDefaultHpRule(rule: Partial<HpRule> | undefined): HpRule {
   return {
     hitDie: Number.isFinite(rule?.hitDie) ? Number(rule?.hitDie) : 8,
+    hitDiceAtLevel1:
+      Number.isFinite(rule?.hitDiceAtLevel1) && Number(rule?.hitDiceAtLevel1) > 0
+        ? Math.max(1, Math.floor(Number(rule?.hitDiceAtLevel1)))
+        : 1,
     level1Mode: rule?.level1Mode ?? "fixed-max",
     level1FixedValue: Number.isFinite(rule?.level1FixedValue)
       ? Number(rule?.level1FixedValue)

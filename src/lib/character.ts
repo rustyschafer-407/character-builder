@@ -31,6 +31,12 @@ export function getAttributeModifier(score: number) {
   return Math.floor((score - 10) / 2);
 }
 
+export function getHitDiceAtLevel1(cls: Pick<ClassDefinition, "hpRule">) {
+  const configured = cls.hpRule?.hitDiceAtLevel1;
+  if (!Number.isFinite(configured)) return 1;
+  return Math.max(1, Math.floor(Number(configured)));
+}
+
 export function sortByName<T extends { name: string }>(items: T[]) {
   return [...items].sort((a, b) =>
     a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
@@ -144,10 +150,12 @@ function makeAttributeGeneration(
 function makeHp(cls: ClassDefinition, conScore: number): CharacterHp {
   const conMod = getAttributeModifier(conScore);
   const hitDie = cls.hpRule.hitDie;
+  const hitDiceAtLevel1 = getHitDiceAtLevel1(cls);
+  const baseHp = hitDie * hitDiceAtLevel1;
 
   // Character creation is always the full hit die at level 1.
-  // Positive CON can increase it, but negative CON should not reduce it below the class hit die.
-  const max = Math.max(hitDie, hitDie + conMod);
+  // Positive CON can increase it, but negative CON should not reduce it below base level-1 HP.
+  const max = Math.max(baseHp, baseHp + conMod);
 
   return {
     max,
@@ -184,9 +192,10 @@ function makeSheetDefaults(): CharacterRecord["sheet"] {
   };
 }
 
-function makeLevelProgressionDefaults(level: number): CharacterRecord["levelProgression"] {
+function makeLevelProgressionDefaults(level: number, cls: ClassDefinition): CharacterRecord["levelProgression"] {
+  const hitDiceAtLevel1 = getHitDiceAtLevel1(cls);
   return {
-    totalHitDice: Math.max(1, level),
+    totalHitDice: Math.max(hitDiceAtLevel1, level),
     gainedSkillIds: [],
     gainedPowerIds: [],
     appliedLevels: Array.from({ length: Math.max(1, level) }, (_value, index) => index + 1),
@@ -291,7 +300,7 @@ export function createCharacterFromCampaignAndClass(
       },
       campaign
     ),
-    levelProgression: makeLevelProgressionDefaults(1),
+    levelProgression: makeLevelProgressionDefaults(1, cls),
     createdAt,
     updatedAt: createdAt,
   };

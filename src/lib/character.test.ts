@@ -62,7 +62,7 @@ describe("createCharacterFromCampaignAndClass", () => {
       {
         id: "class-1",
         name: "Scout",
-        hpRule: { hitDie: 8 },
+        hpRule: { hitDie: 8, hitDiceAtLevel1: 1 },
       } as any,
       "Low Con Hero",
       {
@@ -75,5 +75,43 @@ describe("createCharacterFromCampaignAndClass", () => {
 
     expect(character.hp.max).toBe(8);
     expect(character.hp.current).toBe(8);
+  });
+
+  it("uses # Hit Die to scale level-1 max HP", () => {
+    const character = createCharacterFromCampaignAndClass(
+      {
+        id: "campaign-1",
+        name: "Gamma Test",
+        description: "",
+        labels: {
+          attributes: "Attributes",
+          skills: "Skills",
+          attacks: "Attacks",
+          powers: "Powers",
+          inventory: "Inventory",
+          className: "Class",
+          level: "Level",
+          hp: "HP",
+        },
+        attributeRules: {
+          generationMethods: ["manual"],
+        },
+        classes: [],
+        races: [],
+        skills: [],
+        powers: [],
+        items: [],
+        attackTemplates: [],
+      } as any,
+      {
+        id: "class-1",
+        name: "Guardian",
+        hpRule: { hitDie: 8, hitDiceAtLevel1: 4 },
+      } as any,
+      "Tank"
+    );
+
+    expect(character.hp.max).toBe(32);
+    expect(character.hp.current).toBe(32);
   });
 });

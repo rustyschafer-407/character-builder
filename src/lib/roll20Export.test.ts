@@ -12,6 +12,7 @@ function makeClass(campaignId: string): ClassDefinition {
     attributeBonuses: [],
     hpRule: {
       hitDie: 10,
+      hitDiceAtLevel1: 1,
       level1Mode: "fixed-max",
       levelUpMode: "fixed-average",
       levelUpFixedValue: 6,

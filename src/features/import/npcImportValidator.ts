@@ -154,8 +154,13 @@ function buildBlankRace(campaign: CampaignDefinition, input: { name: string; des
   };
 }
 
-function buildBlankClass(campaign: CampaignDefinition, input: { name: string; description?: string; hitDie?: number }): ClassDefinition {
+function buildBlankClass(
+  campaign: CampaignDefinition,
+  input: { name: string; description?: string; hitDie?: number; hitDiceAtLevel1?: number }
+): ClassDefinition {
   const hitDie = input.hitDie && input.hitDie > 0 ? input.hitDie : 8;
+  const hitDiceAtLevel1 =
+    input.hitDiceAtLevel1 && input.hitDiceAtLevel1 > 0 ? Math.floor(input.hitDiceAtLevel1) : 1;
   return {
     id: `class-${generateId()}`,
     campaignId: campaign.id,
@@ -164,6 +169,7 @@ function buildBlankClass(campaign: CampaignDefinition, input: { name: string; de
     attributeBonuses: [],
     hpRule: {
       hitDie,
+      hitDiceAtLevel1,
       level1Mode: "fixed-max",
       levelUpMode: "fixed-average",
       levelUpFixedValue: Math.max(1, Math.ceil(hitDie / 2)),
@@ -388,6 +394,7 @@ export function buildNpcImportPreview(rawJson: string, campaign: CampaignDefinit
         name,
         description: typeof record.description === "string" ? record.description.trim() : "",
         hitDie: parseInteger(record.hitDie) ?? 8,
+        hitDiceAtLevel1: parseInteger(record.hitDiceAtLevel1) ?? 1,
       })
     );
   }
@@ -700,7 +707,12 @@ export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportP
     ...preview.characterPlan.attributes,
   };
 
-  const hpMax = Math.max(selectedClass.hpRule.hitDie, selectedClass.hpRule.hitDie + getAttributeModifier(nextAttributes.CON));
+  const hitDiceAtLevel1 =
+    Number.isFinite(selectedClass.hpRule.hitDiceAtLevel1) && Number(selectedClass.hpRule.hitDiceAtLevel1) > 0
+      ? Math.max(1, Math.floor(Number(selectedClass.hpRule.hitDiceAtLevel1)))
+      : 1;
+  const baseHp = selectedClass.hpRule.hitDie * hitDiceAtLevel1;
+  const hpMax = Math.max(baseHp, baseHp + getAttributeModifier(nextAttributes.CON));
 
   const characterWithSelections = {
     ...baseCharacter,

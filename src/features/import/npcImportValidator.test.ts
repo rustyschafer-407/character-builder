@@ -18,6 +18,7 @@ function makeCampaign() {
         attributeBonuses: [],
         hpRule: {
           hitDie: 10,
+          hitDiceAtLevel1: 1,
           level1Mode: "fixed-max" as const,
           levelUpMode: "fixed-average" as const,
           levelUpFixedValue: 6,
