@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { gameData as seedGameData } from "./data/gameData";
 import {
   createCharacterFromCampaignAndClass,
@@ -213,6 +213,7 @@ export default function App() {
   const inviteSignInFlow = inviteRouteActive || returnToFromQuery.startsWith("/invite");
   const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => readDisplayPreferences());
   const [campaignThemesByCampaignRowId, setCampaignThemesByCampaignRowId] = useState<Record<string, CbTheme>>({});
+  const [campaignThemesReady, setCampaignThemesReady] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(false);
   const cloudEnabled = hasSupabaseEnv();
   const [authReady, setAuthReady] = useState(false);
@@ -842,9 +843,13 @@ export default function App() {
     ? campaignThemesByCampaignRowId[currentCampaignRowId] ?? null
     : null;
   const globalTheme = normalizeThemeId(currentUserProfile?.default_theme_id) ?? null;
+  const localFallbackTheme = normalizeThemeId(displayPreferences.theme) ?? DISPLAY_PREFS_DEFAULTS.theme;
+  const cloudFallbackTheme = cloudEnabled && currentUserId
+    ? DISPLAY_PREFS_DEFAULTS.theme
+    : localFallbackTheme;
   const activeTheme = campaignThemeOverride
     ?? globalTheme
-    ?? normalizeThemeId(displayPreferences.theme)
+    ?? (campaignThemesReady ? localFallbackTheme : cloudFallbackTheme)
     ?? DISPLAY_PREFS_DEFAULTS.theme;
   const resolvedDisplayPreferences = useMemo<DisplayPreferences>(
     () => ({
@@ -854,7 +859,7 @@ export default function App() {
     [displayPreferences, activeTheme]
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     applyDisplayPreferences(resolvedDisplayPreferences);
     // Local storage is only a temporary fallback before auth/preferences load.
     persistDisplayPreferences(displayPreferences, { persistTheme: !currentUserId });
@@ -863,10 +868,12 @@ export default function App() {
   useEffect(() => {
     if (!cloudEnabled || !currentUserId) {
       setCampaignThemesByCampaignRowId({});
+      setCampaignThemesReady(false);
       return;
     }
 
     let isCancelled = false;
+    setCampaignThemesReady(false);
 
     async function loadCampaignThemes() {
       try {
@@ -886,6 +893,10 @@ export default function App() {
         }
         if (!isCancelled) {
           setCampaignThemesByCampaignRowId({});
+        }
+      } finally {
+        if (!isCancelled) {
+          setCampaignThemesReady(true);
         }
       }
     }
