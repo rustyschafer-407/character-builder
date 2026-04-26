@@ -50,6 +50,7 @@ interface Props {
 
 type AdminTab = "campaign" | "classes" | "races" | "skills" | "powers" | "items" | "attacks";
 const HIT_DIE_OPTIONS = [4, 6, 8, 10, 12, 20] as const;
+const HIT_DICE_AT_LEVEL_1_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 10] as const;
 const ATTRIBUTE_KEYS: AttributeKey[] = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 const compactNumberInputStyle = {
   ...inputStyle,
@@ -1062,22 +1063,25 @@ export default function AdminScreen({
                       </label>
                       <label style={labelTextStyle}>
                         # Hit Die
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
+                        <select
                           value={selectedClass.hpRule.hitDiceAtLevel1 ?? 1}
                           onChange={(e) =>
                             updateClass({
                               ...selectedClass,
                               hpRule: {
                                 ...selectedClass.hpRule,
-                                hitDiceAtLevel1: Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                                hitDiceAtLevel1: Math.max(1, Number(e.target.value) || 1),
                               },
                             })
                           }
                           className="form-control" style={inputStyle}
-                        />
+                        >
+                          {HIT_DICE_AT_LEVEL_1_OPTIONS.map((count) => (
+                            <option key={count} value={count}>
+                              {count}
+                            </option>
+                          ))}
+                        </select>
                       </label>
                     </div>
                   </section>
