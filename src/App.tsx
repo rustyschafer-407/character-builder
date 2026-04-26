@@ -706,6 +706,7 @@ export default function App() {
     openAdminForCurrentCampaign,
     createCampaignAndOpenAdmin,
     cancelAdmin,
+    requestAdminSave,
     handleAdminSave: applyAdminSaveLocally,
     handleAdminGameDataChange,
   } = useCampaignAdminSession({
@@ -1927,7 +1928,7 @@ export default function App() {
         <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
           {adminOpen ? (
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={cancelAdmin} className="button-control" style={buttonStyle}>
+              <button onClick={requestAdminSave} className="button-control" style={buttonStyle}>
                 Close
               </button>
             </div>
