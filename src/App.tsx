@@ -79,6 +79,8 @@ import {
   type CbTheme,
   type DisplayPreferences,
 } from "./lib/displayPreferences";
+import { applyNpcImport } from "./features/import/npcImportValidator";
+import type { NpcImportPreview } from "./features/import/npcImportTypes";
 
 const rememberedEmailStorageKey = "character-builder.rememberedEmail";
 
@@ -818,6 +820,41 @@ export default function App() {
     removeManualItem,
     addManualItem,
   });
+
+  async function handleCreateNpcImport(preview: NpcImportPreview) {
+    if (!wizardCampaign || !creationDraft) {
+      throw new Error("Character wizard campaign is not ready.");
+    }
+
+    const canCreateNpc = Permissions.canCreateCharacter(authState, wizardCampaign.id, "npc");
+    const canEditCampaignForImport = Permissions.canEditCampaign(authState, wizardCampaign.id);
+
+    if (!canCreateNpc || !canEditCampaignForImport) {
+      throw new Error("You are not authorized to generate NPC imports for this campaign.");
+    }
+
+    const importResult = applyNpcImport(wizardCampaign, preview);
+    const nextGameData: GameData = {
+      ...gameData,
+      campaigns: gameData.campaigns.map((campaign) =>
+        campaign.id === wizardCampaign.id ? importResult.campaign : campaign
+      ),
+    };
+
+    await persistCampaignChanges(gameData, nextGameData);
+    setGameData(nextGameData);
+
+    commitCreatedCharacter({
+      draft: importResult.draft,
+      setCharacters,
+      onPersistUpsert: persistCharacterUpsert,
+      currentUserId,
+    });
+
+    setCampaignId(importResult.draft.campaignId);
+    closeWizard();
+    setCloudStatus(`NPC ${importResult.draft.identity.name} created from import.`);
+  }
 
   async function refreshAccessContextState() {
     try {
@@ -2268,6 +2305,11 @@ export default function App() {
                 onQuickstartRerollAttributes={rerollAttributes}
                 onQuickstartRerollSkills={rerollSkills}
                 onQuickstartEditManually={editGeneratedCharacterManually}
+                npcImportEnabled={
+                  Permissions.shouldShowNpcControls(authState) &&
+                  Permissions.canEditCampaign(authState, creationDraft.campaignId)
+                }
+                onCreateNpcImport={handleCreateNpcImport}
                 canChooseCharacterType={Permissions.shouldShowNpcControls(authState)}
               />
             </div>

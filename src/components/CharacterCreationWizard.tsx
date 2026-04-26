@@ -35,6 +35,8 @@ import { getAttributeModifier } from "../lib/character";
 import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
 import type { QuickstartConcept, QuickstartLocks } from "../lib/characterQuickstart";
 import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, selectStyle, statCardStyle } from "./uiStyles";
+import NpcImportPanel from "../features/import/NpcImportPanel";
+import type { NpcImportPreview } from "../features/import/npcImportTypes";
 import "./CharacterCreationWizard.css";
 
 export interface CharacterCreationDraft {
@@ -108,6 +110,8 @@ interface Props {
   onQuickstartRerollAttributes: () => void;
   onQuickstartRerollSkills: () => void;
   onQuickstartEditManually: () => void;
+  npcImportEnabled: boolean;
+  onCreateNpcImport: (preview: NpcImportPreview) => Promise<void>;
   /** When false, character type is forced to PC and the type selector is hidden. */
   canChooseCharacterType: boolean;
 }
@@ -211,9 +215,12 @@ export default function CharacterCreationWizard({
   onQuickstartRerollAttributes,
   onQuickstartRerollSkills,
   onQuickstartEditManually,
+  npcImportEnabled,
+  onCreateNpcImport,
   canChooseCharacterType,
 }: Props) {
   const [rollEffect, setRollEffect] = useState<RollEffectType | null>(null);
+  const [npcImportOpen, setNpcImportOpen] = useState(false);
   const [isMinMaxTooltipOpen, setIsMinMaxTooltipOpen] = useState(false);
   const glowSoundRef = useRef<HTMLAudioElement | null>(null);
   const crackSoundRef = useRef<HTMLAudioElement | null>(null);
@@ -507,6 +514,47 @@ export default function CharacterCreationWizard({
               <span style={{ marginLeft: 6, opacity: 0.75 }}>— generate a complete character in seconds</span>
             </span>
           </button>
+
+          {npcImportEnabled ? (
+            <button
+              onClick={() => setNpcImportOpen(true)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                background: "none",
+                border: "none",
+                padding: "4px 2px",
+                cursor: "pointer",
+                color: "var(--text-secondary)",
+                fontSize: 12,
+                opacity: 0.52,
+                transition: "opacity 0.15s, color 0.15s",
+                textAlign: "left",
+                width: "fit-content",
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.opacity = "1";
+                el.style.color = "var(--accent-primary)";
+              }}
+              onMouseLeave={(e) => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.opacity = "0.65";
+                el.style.color = "var(--text-secondary)";
+              }}
+            >
+              <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>
+                🧠
+              </span>
+              <span>
+                <span style={{ fontWeight: 600 }}>Generate NPC</span>
+                <span style={{ marginLeft: 6, opacity: 0.75 }}>
+                  — describe an NPC or paste a stat block, then generate campaign values and a ready-to-edit NPC
+                </span>
+              </span>
+            </button>
+          ) : null}
         </div>
       )}
 
@@ -1455,6 +1503,17 @@ export default function CharacterCreationWizard({
             : "Structural integrity... questionable."}
         </div>
       )}
+
+      <NpcImportPanel
+        open={npcImportOpen}
+        campaign={selectedCampaign ?? campaigns.find((entry) => entry.id === draft.campaignId) ?? campaigns[0]}
+        canImport={npcImportEnabled}
+        onClose={() => setNpcImportOpen(false)}
+        onCreateNpc={async (preview) => {
+          await onCreateNpcImport(preview);
+          setNpcImportOpen(false);
+        }}
+      />
     </section>
   );
 }
