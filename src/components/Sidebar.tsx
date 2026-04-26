@@ -89,13 +89,13 @@ export default function Sidebar({
     fontSize: 12,
     fontWeight: 700,
     minHeight: 34,
-    borderColor: typeFilter === segment ? "var(--accent-primary)" : "rgba(255,255,255,0.1)",
-    color: typeFilter === segment ? "var(--text-primary)" : "var(--text-secondary)",
+    borderColor: typeFilter === segment ? "var(--cb-border-strong)" : "var(--cb-border)",
+    color: "var(--text-primary)",
     background:
       typeFilter === segment
         ? "linear-gradient(140deg, var(--cb-accent-soft), var(--cb-accent-soft-strong))"
-        : "rgba(8, 16, 31, 0.66)",
-    boxShadow: typeFilter === segment ? "0 0 0 1px var(--cb-accent-soft-strong), 0 6px 14px rgba(0, 0, 0, 0.2)" : "none",
+        : "var(--cb-surface-raised)",
+    boxShadow: typeFilter === segment ? "0 0 0 1px var(--cb-accent-soft-strong), 0 6px 14px rgba(0, 0, 0, 0.12)" : "none",
     transition: "all 180ms ease",
   });
 
