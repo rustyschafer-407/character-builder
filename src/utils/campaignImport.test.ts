@@ -230,6 +230,7 @@ describe("campaignImport", () => {
     expect(result.importedCounts.attacks).toBe(1);
     expect(attack).toBeTruthy();
     expect(attack?.damage).toBe("1d8");
+    expect(attack?.attribute).toBe("STR");
     expect(attack?.derivedFromType).toBe("power");
   });
 
@@ -252,7 +253,82 @@ describe("campaignImport", () => {
     expect(result.importedCounts.attacks).toBe(1);
     expect(attack).toBeTruthy();
     expect(attack?.damage).toBe("2d6");
+    expect(attack?.attribute).toBe("STR");
     expect(attack?.derivedFromType).toBe("item");
+  });
+
+  it("uses optional power attackAttribute when creating the derived attack", () => {
+    const campaign = makeCampaign();
+    const preview = buildCampaignImportPreview(
+      stringify({
+        format: "character-builder.campaign-content-import",
+        version: 1,
+        content: {
+          powers: [
+            {
+              name: "Arc Shot",
+              description: "Fires a bolt for 1d10 damage",
+              usableAsAttack: true,
+              attackAttribute: "DEX",
+            },
+          ],
+        },
+      }),
+      campaign
+    );
+
+    const result = applyCampaignImport(campaign, preview, "skip");
+    const attack = result.campaign.attackTemplates.find((entry) => entry.name === "Arc Shot");
+    expect(attack?.attribute).toBe("DEX");
+  });
+
+  it("uses optional item attackAttribute when creating the derived attack", () => {
+    const campaign = makeCampaign();
+    const preview = buildCampaignImportPreview(
+      stringify({
+        format: "character-builder.campaign-content-import",
+        version: 1,
+        content: {
+          items: [
+            {
+              name: "Throwing Knife",
+              description: "Thrown weapon for 1d4 damage",
+              usableAsAttack: true,
+              attackAttribute: "DEX",
+            },
+          ],
+        },
+      }),
+      campaign
+    );
+
+    const result = applyCampaignImport(campaign, preview, "skip");
+    const attack = result.campaign.attackTemplates.find((entry) => entry.name === "Throwing Knife");
+    expect(attack?.attribute).toBe("DEX");
+  });
+
+  it("infers DEX for ranged attacks when attackAttribute is missing", () => {
+    const campaign = makeCampaign();
+    const preview = buildCampaignImportPreview(
+      stringify({
+        format: "character-builder.campaign-content-import",
+        version: 1,
+        content: {
+          items: [
+            {
+              name: "Longbow",
+              description: "Ranged shot deals 1d8 damage",
+              usableAsAttack: true,
+            },
+          ],
+        },
+      }),
+      campaign
+    );
+
+    const result = applyCampaignImport(campaign, preview, "skip");
+    const attack = result.campaign.attackTemplates.find((entry) => entry.name === "Longbow");
+    expect(attack?.attribute).toBe("DEX");
   });
 
   it("does not create an attack for powers when usableAsAttack is false", () => {

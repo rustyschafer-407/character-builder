@@ -27,10 +27,14 @@ describe("campaignImportPrompt", () => {
     for (const fieldSnippet of unsupportedFieldKeySnippets) {
       expect(CAMPAIGN_IMPORT_AI_PROMPT).not.toContain(fieldSnippet);
     }
+
+    expect(CAMPAIGN_IMPORT_AI_PROMPT).toContain('"attackAttribute": ""');
   });
 
   it("instructs usableAsAttack when damage dice are present", () => {
     expect(CAMPAIGN_IMPORT_AI_PROMPT).toContain("Set usableAsAttack to true if the power deals damage, lists damage dice");
     expect(CAMPAIGN_IMPORT_AI_PROMPT).toContain("Set usableAsAttack to true if the item is used to attack, lists damage dice");
+    expect(CAMPAIGN_IMPORT_AI_PROMPT).toContain("Use STR for melee attacks and DEX for ranged attacks");
+    expect(CAMPAIGN_IMPORT_AI_PROMPT).toContain("Use STR for melee weapons and DEX for ranged weapons");
   });
 });

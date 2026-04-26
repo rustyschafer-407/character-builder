@@ -21,6 +21,7 @@ export interface CampaignContentImportPower {
   level?: number | string;
   usesPerDay?: number | string;
   powerAttribute?: string;
+  attackAttribute?: string;
   usableAsAttack?: boolean;
   description?: string;
   [key: string]: unknown;
@@ -35,6 +36,7 @@ export interface CampaignContentImportSkill {
 export interface CampaignContentImportItem {
   name?: string;
   usableAsAttack?: boolean;
+  attackAttribute?: string;
   description?: string;
   [key: string]: unknown;
 }
@@ -58,6 +60,10 @@ export interface ImportPreview {
   powers: PowerDefinition[];
   skills: SkillDefinition[];
   items: ItemDefinition[];
+  attackAttributeHintsByName: {
+    powers: Record<string, AttributeKey | undefined>;
+    items: Record<string, AttributeKey | undefined>;
+  };
   duplicateCount: number;
   duplicateCounts: {
     powers: number;
@@ -90,6 +96,8 @@ const EXPECTED_FORMAT = "character-builder.campaign-content-import";
 const EXPECTED_VERSION = 1;
 
 type RawRecord = Record<string, unknown>;
+type ParsedPowerImport = { record: PowerDefinition; attackAttributeHint?: AttributeKey };
+type ParsedItemImport = { record: ItemDefinition; attackAttributeHint?: AttributeKey };
 
 const ATTRIBUTE_ALIASES: Record<string, AttributeKey> = {
   str: "STR",
@@ -105,6 +113,9 @@ const ATTRIBUTE_ALIASES: Record<string, AttributeKey> = {
   cha: "CHA",
   charisma: "CHA",
 };
+
+const RANGED_ATTACK_HINT_PATTERN = /\b(ranged|range|bow|crossbow|gun|rifle|pistol|firearm|projectile|throw|thrown|shot|shoot)\b/i;
+const MELEE_ATTACK_HINT_PATTERN = /\b(melee|sword|axe|hammer|mace|spear|blade|dagger|club|staff|punch|kick|unarmed|strike)\b/i;
 
 class WarningCollector {
   private counts = new Map<string, { code: ImportWarning["code"]; message: string; count: number }>();
@@ -181,6 +192,13 @@ function stringifyMetadataValue(value: unknown): string | null {
 function parseAttributeKey(value: unknown): AttributeKey | undefined {
   if (typeof value !== "string") return undefined;
   return ATTRIBUTE_ALIASES[normalizeImportKey(value)];
+}
+
+function inferAttackAttributeFromDescription(description: string | undefined): AttributeKey | undefined {
+  if (!description) return undefined;
+  if (RANGED_ATTACK_HINT_PATTERN.test(description)) return "DEX";
+  if (MELEE_ATTACK_HINT_PATTERN.test(description)) return "STR";
+  return undefined;
 }
 
 function parseNumber(value: unknown): number | undefined {
@@ -311,7 +329,7 @@ function parseSkillRecord(record: RawRecord, index: number, warnings: WarningCol
   };
 }
 
-function parsePowerRecord(record: RawRecord, index: number, warnings: WarningCollector): PowerDefinition {
+function parsePowerRecord(record: RawRecord, index: number, warnings: WarningCollector): ParsedPowerImport {
   const normalizedRecord = buildNormalizedRecord(record);
   const nameValue = readAliasedValue(normalizedRecord, ["name"]);
   const name = typeof nameValue === "string" ? nameValue.trim() : "";
@@ -342,6 +360,12 @@ function parsePowerRecord(record: RawRecord, index: number, warnings: WarningCol
     warnings.add("invalid-attribute", "Power entries include unrecognized power attributes and they were ignored");
   }
 
+  const attackAttributeValue = readAliasedValue(normalizedRecord, ["attackattribute"]);
+  const attackAttribute = parseAttributeKey(attackAttributeValue);
+  if (!attackAttribute && attackAttributeValue !== undefined) {
+    warnings.add("invalid-attribute", "Power entries include unrecognized attack attributes and they were ignored");
+  }
+
   const usableAsAttackValue = readAliasedValue(normalizedRecord, ["usableasattack"]);
   const usableAsAttack = parseBoolean(usableAsAttackValue);
   if (usableAsAttackValue !== undefined && usableAsAttack === undefined) {
@@ -356,24 +380,30 @@ function parsePowerRecord(record: RawRecord, index: number, warnings: WarningCol
   addUnknownFieldWarnings(
     `Power \"${name}\"`,
     normalizedRecord,
-    new Set(["name", "level", "usesperday", "powerattribute", "usableasattack", "description"]),
+    new Set(["name", "level", "usesperday", "powerattribute", "attackattribute", "usableasattack", "description"]),
     warnings
   );
 
+  const inferredAttackAttribute = inferAttackAttributeFromDescription(normalizedDescription);
+  const attackAttributeHint = attackAttribute ?? saveAttribute ?? inferredAttackAttribute;
+
   return {
-    id: `power-${generateId()}`,
-    name,
-    level: parsedLevel !== undefined ? Math.max(1, Math.floor(parsedLevel)) : 1,
-    description: normalizedDescription,
-    tags: [],
-    isAttack: usableAsAttack ?? false,
-    sourceText: "",
-    usesPerDay: parsedUsesPerDay !== undefined ? Math.max(0, Math.floor(parsedUsesPerDay)) : undefined,
-    saveAttribute,
+    record: {
+      id: `power-${generateId()}`,
+      name,
+      level: parsedLevel !== undefined ? Math.max(1, Math.floor(parsedLevel)) : 1,
+      description: normalizedDescription,
+      tags: [],
+      isAttack: usableAsAttack ?? false,
+      sourceText: "",
+      usesPerDay: parsedUsesPerDay !== undefined ? Math.max(0, Math.floor(parsedUsesPerDay)) : undefined,
+      saveAttribute,
+    },
+    attackAttributeHint,
   };
 }
 
-function parseItemRecord(record: RawRecord, index: number, warnings: WarningCollector): ItemDefinition {
+function parseItemRecord(record: RawRecord, index: number, warnings: WarningCollector): ParsedItemImport {
   const normalizedRecord = buildNormalizedRecord(record);
   const nameValue = readAliasedValue(normalizedRecord, ["name"]);
   const name = typeof nameValue === "string" ? nameValue.trim() : "";
@@ -392,6 +422,12 @@ function parseItemRecord(record: RawRecord, index: number, warnings: WarningColl
     warnings.add("invalid-boolean", "Item entries include invalid usable as attack flags and defaulted to false");
   }
 
+  const attackAttributeValue = readAliasedValue(normalizedRecord, ["attackattribute"]);
+  const attackAttribute = parseAttributeKey(attackAttributeValue);
+  if (!attackAttribute && attackAttributeValue !== undefined) {
+    warnings.add("invalid-attribute", "Item entries include unrecognized attack attributes and they were ignored");
+  }
+
   const normalizedDescription = typeof descriptionValue === "string" ? descriptionValue.trim() : "";
   if ((isAttack ?? false) && !extractDamageDiceFromText(normalizedDescription)) {
     warnings.add("attack-no-dice", `Item \"${name}\" is usable as attack but no damage dice were found. Attack will be created without damage.`);
@@ -400,18 +436,24 @@ function parseItemRecord(record: RawRecord, index: number, warnings: WarningColl
   addUnknownFieldWarnings(
     `Item \"${name}\"`,
     normalizedRecord,
-    new Set(["name", "usableasattackflag", "usableasattack", "isattack", "description"]),
+    new Set(["name", "usableasattackflag", "usableasattack", "isattack", "attackattribute", "description"]),
     warnings
   );
 
+  const inferredAttackAttribute = inferAttackAttributeFromDescription(normalizedDescription);
+  const attackAttributeHint = attackAttribute ?? inferredAttackAttribute;
+
   return {
-    id: `item-${generateId()}`,
-    name,
-    description: normalizedDescription,
-    isAttack: isAttack ?? false,
-    stackable: false,
-    defaultQuantity: 1,
-    tags: [],
+    record: {
+      id: `item-${generateId()}`,
+      name,
+      description: normalizedDescription,
+      isAttack: isAttack ?? false,
+      stackable: false,
+      defaultQuantity: 1,
+      tags: [],
+    },
+    attackAttributeHint,
   };
 }
 
@@ -524,9 +566,20 @@ export function buildCampaignImportPreview(rawJson: string, campaign: CampaignDe
 
   const payload = validateImportEnvelope(parsedPayload);
   const warnings = new WarningCollector();
-  const powers = payload.content.powers?.map((entry, index) => parsePowerRecord(asRecord(entry, `Power ${index + 1}`), index, warnings)) ?? [];
+  const parsedPowers = payload.content.powers?.map((entry, index) => parsePowerRecord(asRecord(entry, `Power ${index + 1}`), index, warnings)) ?? [];
+  const powers = parsedPowers.map((entry) => entry.record);
   const skills = payload.content.skills?.map((entry, index) => parseSkillRecord(asRecord(entry, `Skill ${index + 1}`), index, warnings)) ?? [];
-  const items = payload.content.items?.map((entry, index) => parseItemRecord(asRecord(entry, `Item ${index + 1}`), index, warnings)) ?? [];
+  const parsedItems = payload.content.items?.map((entry, index) => parseItemRecord(asRecord(entry, `Item ${index + 1}`), index, warnings)) ?? [];
+  const items = parsedItems.map((entry) => entry.record);
+
+  const attackAttributeHintsByName = {
+    powers: Object.fromEntries(
+      parsedPowers.map((entry) => [normalizeImportName(entry.record.name), entry.attackAttributeHint])
+    ),
+    items: Object.fromEntries(
+      parsedItems.map((entry) => [normalizeImportName(entry.record.name), entry.attackAttributeHint])
+    ),
+  };
 
   const duplicateCounts = getDuplicateCounts(campaign, { powers, skills, items });
   addAttackNameConflictWarnings(campaign, powers, items, warnings);
@@ -540,6 +593,7 @@ export function buildCampaignImportPreview(rawJson: string, campaign: CampaignDe
     powers,
     skills,
     items,
+    attackAttributeHintsByName,
     duplicateCount: duplicateCounts.total,
     duplicateCounts,
     attacksToCreate: attacksToCreateByMode.skip,
@@ -672,7 +726,44 @@ export function applyCampaignImport(
     });
   }
 
-  const attacksCreated = updatedCampaign.attackTemplates.filter((attack) => !beforeAttackIds.has(attack.id)).length;
+  const newlyCreatedAttackIds = new Set(
+    updatedCampaign.attackTemplates
+      .filter((attack) => !beforeAttackIds.has(attack.id))
+      .map((attack) => attack.id)
+  );
+
+  if (newlyCreatedAttackIds.size > 0) {
+    updatedCampaign = {
+      ...updatedCampaign,
+      attackTemplates: updatedCampaign.attackTemplates.map((attack) => {
+        if (!newlyCreatedAttackIds.has(attack.id)) return attack;
+
+        if (attack.derivedFromType === "power" && attack.derivedFromId) {
+          const sourcePower = updatedCampaign.powers.find((entry) => entry.id === attack.derivedFromId);
+          const hintedAttribute = sourcePower
+            ? preview.attackAttributeHintsByName.powers[normalizeImportName(sourcePower.name)]
+            : undefined;
+          const inferredAttribute = inferAttackAttributeFromDescription(sourcePower?.description);
+          const nextAttribute = hintedAttribute ?? sourcePower?.saveAttribute ?? inferredAttribute;
+          return nextAttribute ? { ...attack, attribute: nextAttribute } : attack;
+        }
+
+        if (attack.derivedFromType === "item" && attack.derivedFromId) {
+          const sourceItem = updatedCampaign.items.find((entry) => entry.id === attack.derivedFromId);
+          const hintedAttribute = sourceItem
+            ? preview.attackAttributeHintsByName.items[normalizeImportName(sourceItem.name)]
+            : undefined;
+          const inferredAttribute = inferAttackAttributeFromDescription(sourceItem?.description);
+          const nextAttribute = hintedAttribute ?? inferredAttribute;
+          return nextAttribute ? { ...attack, attribute: nextAttribute } : attack;
+        }
+
+        return attack;
+      }),
+    };
+  }
+
+  const attacksCreated = newlyCreatedAttackIds.size;
 
   return {
     campaign: updatedCampaign,

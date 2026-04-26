@@ -158,6 +158,55 @@ function makeBlankAttackTemplate(): AttackTemplateDefinition {
   };
 }
 
+type AttackDamageMode = "dice" | "flat";
+
+function parseAttackDamageValue(rawDamage: string | undefined) {
+  const damageText = (rawDamage ?? "").trim();
+  const base = damageText.split("+")[0]?.trim() ?? "";
+
+  const flatMatch = base.match(/^(\d+)$/);
+  if (flatMatch) {
+    return {
+      mode: "flat" as AttackDamageMode,
+      amount: flatMatch[1] ?? "1",
+      diceCount: "1",
+      dieType: "6",
+    };
+  }
+
+  const diceMatch = base.match(/^(\d+)d(\d+)$/i);
+  if (diceMatch) {
+    return {
+      mode: "dice" as AttackDamageMode,
+      amount: "1",
+      diceCount: diceMatch[1] ?? "1",
+      dieType: diceMatch[2] ?? "6",
+    };
+  }
+
+  return {
+    mode: "dice" as AttackDamageMode,
+    amount: "1",
+    diceCount: "1",
+    dieType: "6",
+  };
+}
+
+function buildAttackDamageValue(input: {
+  mode: AttackDamageMode;
+  amount: string;
+  diceCount: string;
+  dieType: string;
+  bonus: number;
+}) {
+  const normalizedBonus = Number.isFinite(input.bonus) ? input.bonus : 0;
+  const base =
+    input.mode === "flat"
+      ? input.amount || "1"
+      : `${input.diceCount || "1"}d${input.dieType || "6"}`;
+  return normalizedBonus > 0 ? `${base} + ${normalizedBonus}` : base;
+}
+
 function cardStyle() {
   return {
     ...panelStyle,
@@ -2023,6 +2072,11 @@ export default function AdminScreen({
                   <p style={{ margin: 0, ...mutedTextStyle }}>Select attack to edit.</p>
                 </div>
               ) : (
+                (() => {
+                  const parsedDamage = parseAttackDamageValue(selectedAttack.damage);
+                  const attackBonus = selectedAttack.bonus || 0;
+
+                  return (
                 <div style={{ display: "grid", gap: 16 }}>
                   <section style={cardStyle()}>
                     <h3 style={{ marginTop: 0, color: "var(--text-primary)" }}>Attack Details</h3>
@@ -2051,14 +2105,71 @@ export default function AdminScreen({
                         </select>
                       </label>
                       <label style={labelTextStyle}>
+                        Damage Mode
+                        <select
+                          value={parsedDamage.mode}
+                          onChange={(e) => {
+                            const nextMode = e.target.value as AttackDamageMode;
+                            const damage = buildAttackDamageValue({
+                              mode: nextMode,
+                              amount: parsedDamage.amount,
+                              diceCount: parsedDamage.diceCount,
+                              dieType: parsedDamage.dieType,
+                              bonus: attackBonus,
+                            });
+                            updateAttack({ ...selectedAttack, damage });
+                          }}
+                          className="form-control" style={inputStyle}
+                        >
+                          <option value="dice">Dice</option>
+                          <option value="flat">Flat</option>
+                        </select>
+                      </label>
+                      {parsedDamage.mode === "flat" ? (
+                        <label style={labelTextStyle}>
+                          Flat Damage
+                          <select
+                            value={parsedDamage.amount}
+                            onChange={(e) => {
+                              const amount = e.target.value;
+                              const damage = buildAttackDamageValue({
+                                mode: "flat",
+                                amount,
+                                diceCount: parsedDamage.diceCount,
+                                dieType: parsedDamage.dieType,
+                                bonus: attackBonus,
+                              });
+                              updateAttack({ ...selectedAttack, damage });
+                            }}
+                            className="form-control" style={inputStyle}
+                          >
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                          </select>
+                        </label>
+                      ) : (
+                        <>
+                      <label style={labelTextStyle}>
                         Damage Dice
                         <select
-                          value={selectedAttack.damage.split('d')[0] || "1"}
+                          value={parsedDamage.diceCount}
                           onChange={(e) => {
                             const diceCount = e.target.value;
-                            const dieType = selectedAttack.damage.split('d')[1]?.split(' ')[0] || "6";
-                            const bonus = selectedAttack.bonus || 0;
-                            const damage = bonus > 0 ? `${diceCount}d${dieType} + ${bonus}` : `${diceCount}d${dieType}`;
+                            const damage = buildAttackDamageValue({
+                              mode: "dice",
+                              amount: parsedDamage.amount,
+                              diceCount,
+                              dieType: parsedDamage.dieType,
+                              bonus: attackBonus,
+                            });
                             updateAttack({ ...selectedAttack, damage });
                           }}
                           className="form-control" style={inputStyle}
@@ -2078,16 +2189,21 @@ export default function AdminScreen({
                       <label style={labelTextStyle}>
                         Die Type
                         <select
-                          value={selectedAttack.damage.split('d')[1]?.split(' ')[0] || "6"}
+                          value={parsedDamage.dieType}
                           onChange={(e) => {
-                            const diceCount = selectedAttack.damage.split('d')[0] || "1";
                             const dieType = e.target.value;
-                            const bonus = selectedAttack.bonus || 0;
-                            const damage = bonus > 0 ? `${diceCount}d${dieType} + ${bonus}` : `${diceCount}d${dieType}`;
+                            const damage = buildAttackDamageValue({
+                              mode: "dice",
+                              amount: parsedDamage.amount,
+                              diceCount: parsedDamage.diceCount,
+                              dieType,
+                              bonus: attackBonus,
+                            });
                             updateAttack({ ...selectedAttack, damage });
                           }}
                           className="form-control" style={inputStyle}
                         >
+                          <option value="2">d2</option>
                           <option value="4">d4</option>
                           <option value="6">d6</option>
                           <option value="8">d8</option>
@@ -2096,16 +2212,22 @@ export default function AdminScreen({
                           <option value="20">d20</option>
                         </select>
                       </label>
+                        </>
+                      )}
                       <label style={labelTextStyle}>
                         Damage Bonus
                         <input
                           type="number"
-                          value={selectedAttack.bonus || 0}
+                          value={attackBonus}
                           onChange={(e) => {
                             const bonus = Number(e.target.value);
-                            const diceCount = selectedAttack.damage.split('d')[0] || "1";
-                            const dieType = selectedAttack.damage.split('d')[1]?.split(' ')[0] || "6";
-                            const damage = bonus > 0 ? `${diceCount}d${dieType} + ${bonus}` : `${diceCount}d${dieType}`;
+                            const damage = buildAttackDamageValue({
+                              mode: parsedDamage.mode,
+                              amount: parsedDamage.amount,
+                              diceCount: parsedDamage.diceCount,
+                              dieType: parsedDamage.dieType,
+                              bonus,
+                            });
                             updateAttack({ ...selectedAttack, damage, bonus: bonus || undefined });
                           }}
                           className="form-control" style={inputStyle}
@@ -2114,6 +2236,8 @@ export default function AdminScreen({
                     </div>
                   </section>
                 </div>
+                  );
+                })()
               )}
             </main>
           </div>

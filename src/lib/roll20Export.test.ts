@@ -257,4 +257,32 @@ describe("buildRoll20ModPayload", () => {
     expect(payload.repeating.attacks[0].attributes.attackprof).toBe("1");
     expect(payload.repeating.attacks[0].attributes.attackattr).toBe("str_mod");
   });
+
+  it("passes through flat and d2 damage values for attacks", () => {
+    const campaign = makeCampaign();
+    const character = makeCharacter();
+    character.attacks = [
+      { id: "atk-flat", name: "Punch", attribute: "STR", damage: "1", bonus: 0 },
+      { id: "atk-d2", name: "Needle", attribute: "DEX", damage: "1d2", bonus: 0 },
+    ];
+
+    const gameData: GameData = {
+      campaigns: [campaign],
+      classes: campaign.classes,
+      races: campaign.races ?? [],
+      skills: campaign.skills,
+      powers: campaign.powers,
+      items: campaign.items,
+      attackTemplates: campaign.attackTemplates,
+    };
+
+    const payload = buildRoll20ModPayload(character, gameData);
+    expect(payload.repeating.attacks).toHaveLength(2);
+
+    const punch = payload.repeating.attacks.find((row) => row.attributes.attackname === "Punch");
+    const needle = payload.repeating.attacks.find((row) => row.attributes.attackname === "Needle");
+
+    expect(punch?.attributes.damagedice).toBe("1");
+    expect(needle?.attributes.damagedice).toBe("1d2");
+  });
 });

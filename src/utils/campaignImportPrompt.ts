@@ -13,6 +13,7 @@ I will provide source material as pasted text, OCR text, notes, or an image. Ext
 }
 
 Return ONLY valid JSON. Do not include markdown, commentary, explanations, or code fences.
+Format the response so it can be copied in one click from the AI tool and pasted directly into Character Builder Import.
 
 You may create any combination of:
 - powers
@@ -56,6 +57,7 @@ Power object fields:
   "level": "",
   "usesPerDay": "",
   "powerAttribute": "",
+  "attackAttribute": "",
   "usableAsAttack": false,
   "description": ""
 }
@@ -65,6 +67,7 @@ Power interpretation rules:
 - level should capture the level, rank, tier, prerequisite level, or minimum level if present.
 - usesPerDay should capture limits such as at will, once per day, 3/day, per session, costs, charges, cooldowns, or similar. If no usage limit is present, leave it blank.
 - powerAttribute should capture the governing attribute, discipline group, school, source, or power family if present.
+- attackAttribute should be the best attack stat when known. Use STR for melee attacks and DEX for ranged attacks unless the source clearly indicates a different core attribute.
 - Set usableAsAttack to true if the power deals damage, lists damage dice, makes an attack, grants an attack, or is clearly used offensively.
 - If the power lists damage dice, include those dice in the description.
 - Do not add a separate damage field.
@@ -74,12 +77,14 @@ Item object fields:
 
 {
   "name": "",
+  "attackAttribute": "",
   "usableAsAttack": false,
   "description": ""
 }
 
 Item interpretation rules:
 - Use items for equipment, weapons, armor, gear, consumables, tools, vehicles, treasure, artifacts, cyberware, magic items, ammunition, or other inventory objects.
+- attackAttribute should be the best attack stat when known. Use STR for melee weapons and DEX for ranged weapons unless the source clearly indicates a different core attribute.
 - Set usableAsAttack to true if the item is used to attack, lists damage dice, has attack rules, grants an attack, or has obvious combat use as a weapon.
 - If the item lists damage dice, include those dice in the description.
 - If the item is armor or protective gear, do not mark usableAsAttack true unless it also has an attack.
