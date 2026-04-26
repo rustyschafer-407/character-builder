@@ -92,6 +92,7 @@
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
+  --cb-number-input-color-scheme: dark;
 
   --mobile-page-padding: 12px;
   --mobile-card-gap: 12px;
@@ -430,6 +431,7 @@ html[data-cb-theme="paper"] {
   --cb-modal-overlay: rgba(0, 0, 0, 0.36);
   --cb-grid-line: rgba(0, 0, 0, 0.08);
   --cb-body-glow-a: rgba(0, 0, 0, 0.02);
+  --cb-number-input-color-scheme: light;
   --cb-body-glow-b: rgba(0, 0, 0, 0.01);
   --cb-focus-shadow: rgba(34, 34, 34, 0.2);
   --cb-button-bg: #f2f2f2;
@@ -952,6 +954,7 @@ html[data-cb-theme="minimal"] {
   --cb-success-soft-border: rgba(47, 124, 88, 0.34);
   --cb-danger-soft: rgba(182, 73, 87, 0.12);
   --cb-danger-soft-border: rgba(182, 73, 87, 0.34);
+  --cb-number-input-color-scheme: light;
   --cb-modal-overlay: rgba(21, 34, 46, 0.28);
   --cb-grid-line: rgba(29, 48, 66, 0.08);
   --cb-body-glow-a: rgba(45, 127, 198, 0.06);
@@ -1018,6 +1021,7 @@ html[data-cb-theme="cosmic"] {
   --cb-body-glow-a: rgba(158, 138, 255, 0.14);
   --cb-body-glow-b: rgba(95, 211, 248, 0.1);
   --cb-focus-shadow: rgba(196, 183, 255, 0.22);
+  --cb-number-input-color-scheme: light;
   --cb-button-bg: rgba(28, 36, 77, 0.95);
   --cb-button-danger-bg: rgba(241, 164, 209, 0.16);
   --cb-button-danger-border: rgba(241, 164, 209, 0.42);
@@ -1203,7 +1207,7 @@ button {
 }
 
 input[type="number"] {
-  color-scheme: dark;
+  color-scheme: var(--cb-number-input-color-scheme);
   padding-right: 12px;
 }
 

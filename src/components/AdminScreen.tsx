@@ -269,7 +269,7 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
                     padding: 12,
                     borderRadius: 8,
                     border: isSelected ? "1px solid var(--accent-primary)" : "1px solid var(--border-soft)",
-                    background: isSelected ? "var(--cb-accent-soft)" : "rgba(11, 22, 42, 0.75)",
+                    background: isSelected ? "var(--cb-accent-soft)" : "var(--cb-selection-row-bg)",
                     color: "var(--text-primary)",
                     cursor: "pointer",
                   }}
