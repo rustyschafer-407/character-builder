@@ -17,6 +17,7 @@
 }
 
 .character-creation-wizard .wizard-minmax-warning {
+  position: relative;
   display: inline-flex;
   align-items: center;
 }
