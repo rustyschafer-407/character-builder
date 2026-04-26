@@ -68,6 +68,7 @@ export function useLevelUpWorkflow({
     ? selectedPowers.filter(
         (power) =>
           (allowedLevelUpPowerIds ? allowedLevelUpPowerIds.has(power.id) : true) &&
+          (power.level ?? 1) <= selected.level + 1 &&
           !selected.powers.some((entry) => entry.powerId === power.id)
       )
     : [];

@@ -270,6 +270,9 @@ export default function LevelUpWizard({
                     >
                       <span>
                         <strong>{power.name}</strong>
+                        <span style={{ marginLeft: 8, fontSize: 12, color: "var(--text-secondary)", fontWeight: 600 }}>
+                          Level {power.level ?? 1}
+                        </span>
                         <div
                           style={{
                             fontWeight: 400,

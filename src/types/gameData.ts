@@ -121,6 +121,7 @@ export interface SkillDefinition {
 export interface PowerDefinition {
   id: string;
   name: string;
+  level?: number;
   description?: string;
   tags?: string[];
   isAttack?: boolean;

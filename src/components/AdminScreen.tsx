@@ -116,6 +116,7 @@ function makeBlankPower(): PowerDefinition {
   return {
     id: `power-${Date.now()}`,
     name: "New Power",
+    level: 1,
     description: "",
     tags: [],
     isAttack: false,
@@ -1714,6 +1715,19 @@ export default function AdminScreen({
                         <input
                           value={selectedPower.name}
                           onChange={(e) => updatePower({ ...selectedPower, name: e.target.value })}
+                          className="form-control" style={inputStyle}
+                        />
+                      </label>
+                      <label style={labelTextStyle}>
+                        Level
+                        <input
+                          type="number"
+                          min={1}
+                          value={selectedPower.level ?? 1}
+                          onChange={(e) => updatePower({
+                            ...selectedPower,
+                            level: Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                          })}
                           className="form-control" style={inputStyle}
                         />
                       </label>

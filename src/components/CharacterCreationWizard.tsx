@@ -949,7 +949,9 @@ export default function CharacterCreationWizard({
             );
           })}
 
-          {powers.map((power) => {
+          {powers
+            .filter((power) => (power.level ?? 1) <= 1)
+            .map((power) => {
             const isSelected = draft.powers.some((p) => p.powerId === power.id);
             const choiceState = getPowerChoiceState(
               power.id,
@@ -982,6 +984,9 @@ export default function CharacterCreationWizard({
               >
                 <span>
                   <strong>{power.name}</strong>
+                  <span style={{ marginLeft: 8, fontSize: 12, color: "var(--text-secondary)", fontWeight: 600 }}>
+                    Level {power.level ?? 1}
+                  </span>
                   <div style={{ fontWeight: 400, fontSize: 14, color: "var(--text-secondary)", marginTop: 4 }}>
                     {power.description || "No description."}
                   </div>

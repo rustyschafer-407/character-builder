@@ -91,6 +91,14 @@ function normalizeItemRules(
     .filter((rule) => rule.choose > 0 || rule.itemIds.length > 0);
 }
 
+function normalizePowerDefinition(power: PowerDefinition): PowerDefinition {
+  return {
+    ...power,
+    level: Number.isFinite(power.level) ? Math.max(1, Math.floor(Number(power.level))) : 1,
+    isAttack: Boolean(power.isAttack),
+  };
+}
+
 function normalizeProgressionRows(
   rows: ClassLevelProgressionRow[] | undefined,
   fallbackAttributeBonuses: Array<{ attribute: AttributeKey; amount: number }>
@@ -205,10 +213,7 @@ export function normalizeCampaignDefinition(campaign: CampaignDefinition): Campa
   const baseAssets = {
     races: campaign.races ?? [],
     skills: campaign.skills ?? [],
-    powers: (campaign.powers ?? []).map((power) => ({
-      ...power,
-      isAttack: Boolean(power.isAttack),
-    })),
+    powers: (campaign.powers ?? []).map((power) => normalizePowerDefinition(power)),
     items: (campaign.items ?? []).map((item) => ({
       ...item,
       isAttack: Boolean(item.isAttack),

@@ -221,6 +221,7 @@ function makePowers(
   return [...defaultPowerIds]
     .map((powerId) => campaign.powers.find((power) => power.id === powerId))
     .filter((power): power is NonNullable<typeof power> => Boolean(power))
+    .filter((power) => (power.level ?? 1) <= 1)
     .map((power) => ({
       powerId: power.id,
       name: power.name,
