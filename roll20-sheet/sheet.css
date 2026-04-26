@@ -43,22 +43,159 @@
 }
 
 .charsheet #sheet-theme-ui-scifi:checked ~ .sheet-wrapper {
-  --bg: #0d1821;
-  --panel: #132330;
-  --line: #4fa3c7;
-  --text: #eaf7ff;
-  --accent: #35d8ff;
-  --accent2: #16384a;
-  --button: #173243;
-  --button-border: #4ec6f5;
-  --input-bg: #0f1c26;
-  --readonly-bg: #152733;
-  --shadow: rgba(0,180,255,.14);
-  --title-text: #f2fcff;
-  --highlight-bg: rgba(17,49,68,.95);
+  --bg: #070b17;
+  --panel: rgba(15, 27, 48, 0.92);
+  --line: #3f5fa8;
+  --text: #e5eefc;
+  --accent: #49e0ff;
+  --accent2: #111b2a;
+  --button: rgba(16, 30, 58, 0.92);
+  --button-border: #3f5fa8;
+  --input-bg: rgba(8, 16, 31, 0.82);
+  --readonly-bg: rgba(9, 20, 38, 0.82);
+  --shadow: rgba(2, 8, 24, 0.48);
+  --title-text: #e5eefc;
+  --highlight-bg: rgba(73, 224, 255, 0.2);
   --highlight-border: #35d8ff;
 }
 
+.charsheet #sheet-theme-ui-arcane:checked ~ .sheet-wrapper {
+  --bg: #120f1f;
+  --panel: rgba(36, 26, 57, 0.96);
+  --line: #806ab0;
+  --text: #f3ecff;
+  --accent: #a86cff;
+  --accent2: #23193e;
+  --button: rgba(41, 30, 64, 0.95);
+  --button-border: #806ab0;
+  --input-bg: rgba(22, 16, 37, 0.96);
+  --readonly-bg: rgba(28, 21, 44, 0.94);
+  --shadow: rgba(8, 5, 16, 0.52);
+  --title-text: #f3ecff;
+  --highlight-bg: rgba(168, 108, 255, 0.24);
+  --highlight-border: #a86cff;
+}
+
+.charsheet #sheet-theme-ui-tavern:checked ~ .sheet-wrapper {
+  --bg: #1b140f;
+  --panel: rgba(51, 37, 27, 0.96);
+  --line: #957256;
+  --text: #f7ede0;
+  --accent: #e8a74a;
+  --accent2: #312219;
+  --button: rgba(56, 41, 30, 0.94);
+  --button-border: #957256;
+  --input-bg: rgba(32, 24, 18, 0.95);
+  --readonly-bg: rgba(40, 29, 21, 0.94);
+  --shadow: rgba(8, 5, 3, 0.5);
+  --title-text: #f7ede0;
+  --highlight-bg: rgba(232, 167, 74, 0.23);
+  --highlight-border: #e8a74a;
+}
+
+.charsheet #sheet-theme-ui-neon:checked ~ .sheet-wrapper {
+  --bg: #080511;
+  --panel: rgba(24, 16, 50, 0.96);
+  --line: #20d7ff;
+  --text: #f4f3ff;
+  --accent: #20d7ff;
+  --accent2: #1f1040;
+  --button: rgba(28, 18, 56, 0.95);
+  --button-border: #20d7ff;
+  --input-bg: rgba(12, 8, 28, 0.97);
+  --readonly-bg: rgba(18, 12, 39, 0.95);
+  --shadow: rgba(2, 0, 10, 0.62);
+  --title-text: #f4f3ff;
+  --highlight-bg: rgba(32, 215, 255, 0.3);
+  --highlight-border: #20d7ff;
+}
+
+.charsheet #sheet-theme-ui-terminal:checked ~ .sheet-wrapper {
+  --bg: #030503;
+  --panel: rgba(10, 16, 10, 0.97);
+  --line: #46a84f;
+  --text: #b8f6b5;
+  --accent: #54e05f;
+  --accent2: #0a120a;
+  --button: rgba(14, 23, 14, 0.95);
+  --button-border: #46a84f;
+  --input-bg: rgba(6, 11, 6, 0.97);
+  --readonly-bg: rgba(9, 15, 9, 0.95);
+  --shadow: rgba(0, 0, 0, 0.58);
+  --title-text: #b8f6b5;
+  --highlight-bg: rgba(84, 224, 95, 0.24);
+  --highlight-border: #54e05f;
+}
+
+.charsheet #sheet-theme-ui-paper:checked ~ .sheet-wrapper {
+  --bg: #ffffff;
+  --panel: #fafafa;
+  --line: #9a9a9a;
+  --text: #111111;
+  --accent: #1f4ea8;
+  --accent2: #f0f0f0;
+  --button: #f2f2f2;
+  --button-border: #9a9a9a;
+  --input-bg: #ffffff;
+  --readonly-bg: #f4f4f4;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --title-text: #ffffff;
+  --highlight-bg: rgba(31, 78, 168, 0.2);
+  --highlight-border: #1f4ea8;
+}
+
+.charsheet #sheet-theme-ui-slate:checked ~ .sheet-wrapper {
+  --bg: #1a2028;
+  --panel: rgba(40, 50, 63, 0.96);
+  --line: #7485a2;
+  --text: #e6ecf6;
+  --accent: #7da6d9;
+  --accent2: #293341;
+  --button: rgba(44, 54, 68, 0.95);
+  --button-border: #7485a2;
+  --input-bg: rgba(27, 35, 46, 0.96);
+  --readonly-bg: rgba(33, 42, 53, 0.95);
+  --shadow: rgba(5, 9, 16, 0.46);
+  --title-text: #e6ecf6;
+  --highlight-bg: rgba(125, 166, 217, 0.22);
+  --highlight-border: #7da6d9;
+}
+
+.charsheet #sheet-theme-ui-dragonfire:checked ~ .sheet-wrapper {
+  --bg: #120b0b;
+  --panel: rgba(44, 25, 23, 0.96);
+  --line: #956454;
+  --text: #f6ece7;
+  --accent: #e46a3b;
+  --accent2: #2a1714;
+  --button: rgba(46, 27, 24, 0.95);
+  --button-border: #956454;
+  --input-bg: rgba(27, 16, 15, 0.96);
+  --readonly-bg: rgba(33, 19, 18, 0.95);
+  --shadow: rgba(8, 3, 2, 0.54);
+  --title-text: #f6ece7;
+  --highlight-bg: rgba(228, 106, 59, 0.24);
+  --highlight-border: #e46a3b;
+}
+
+.charsheet #sheet-theme-ui-feywild:checked ~ .sheet-wrapper {
+  --bg: #13201b;
+  --panel: rgba(42, 60, 52, 0.95);
+  --line: #8db4a0;
+  --text: #f3fff8;
+  --accent: #7bdba8;
+  --accent2: #25372f;
+  --button: rgba(45, 63, 55, 0.94);
+  --button-border: #8db4a0;
+  --input-bg: rgba(24, 37, 31, 0.95);
+  --readonly-bg: rgba(34, 49, 42, 0.94);
+  --shadow: rgba(5, 12, 9, 0.42);
+  --title-text: #f3fff8;
+  --highlight-bg: rgba(123, 219, 168, 0.24);
+  --highlight-border: #7bdba8;
+}
+
+/* Legacy-only themes retained for rollback compatibility. */
 .charsheet #sheet-theme-ui-horror:checked ~ .sheet-wrapper {
   --bg: #1b1517;
   --panel: #261d20;
@@ -94,20 +231,105 @@
 }
 
 .charsheet #sheet-theme-ui-pulp:checked ~ .sheet-wrapper {
-  --bg: #f3ddb3;
-  --panel: #fff3d7;
-  --line: #a66a2c;
-  --text: #3b2412;
-  --accent: #bf3f1f;
-  --accent2: #d89b3c;
-  --button: #f3c976;
-  --button-border: #9d511b;
-  --input-bg: #fffaf0;
-  --readonly-bg: #f5e4bd;
-  --shadow: rgba(140,60,0,.18);
-  --title-text: #fff7eb;
-  --highlight-bg: rgba(255,247,225,.96);
-  --highlight-border: #bf3f1f;
+  --bg: #2a1d16;
+  --panel: rgba(77, 52, 37, 0.96);
+  --line: #c58f5f;
+  --text: #fff2df;
+  --accent: #f05a3a;
+  --accent2: #492f22;
+  --button: rgba(79, 53, 38, 0.95);
+  --button-border: #c58f5f;
+  --input-bg: rgba(51, 35, 25, 0.97);
+  --readonly-bg: rgba(63, 42, 30, 0.95);
+  --shadow: rgba(11, 6, 3, 0.52);
+  --title-text: #fff2df;
+  --highlight-bg: rgba(240, 90, 58, 0.24);
+  --highlight-border: #f05a3a;
+}
+
+.charsheet #sheet-theme-ui-gothic:checked ~ .sheet-wrapper {
+  --bg: #0f0c12;
+  --panel: rgba(35, 27, 39, 0.97);
+  --line: #856f89;
+  --text: #f1ebf1;
+  --accent: #d4688c;
+  --accent2: #211925;
+  --button: rgba(38, 29, 43, 0.95);
+  --button-border: #856f89;
+  --input-bg: rgba(20, 15, 23, 0.97);
+  --readonly-bg: rgba(29, 23, 33, 0.95);
+  --shadow: rgba(2, 1, 3, 0.6);
+  --title-text: #f1ebf1;
+  --highlight-bg: rgba(212, 104, 140, 0.24);
+  --highlight-border: #d4688c;
+}
+
+.charsheet #sheet-theme-ui-industrial:checked ~ .sheet-wrapper {
+  --bg: #11161a;
+  --panel: rgba(39, 49, 56, 0.96);
+  --line: #7f919d;
+  --text: #e8f0f4;
+  --accent: #ff9d4d;
+  --accent2: #232c33;
+  --button: rgba(43, 53, 60, 0.95);
+  --button-border: #7f919d;
+  --input-bg: rgba(23, 30, 35, 0.97);
+  --readonly-bg: rgba(33, 42, 48, 0.95);
+  --shadow: rgba(2, 7, 10, 0.5);
+  --title-text: #e8f0f4;
+  --highlight-bg: rgba(255, 157, 77, 0.24);
+  --highlight-border: #ff9d4d;
+}
+
+.charsheet #sheet-theme-ui-retro:checked ~ .sheet-wrapper {
+  --bg: #1c2430;
+  --panel: rgba(54, 70, 87, 0.96);
+  --line: #95b2c4;
+  --text: #f4f8f7;
+  --accent: #ff8d72;
+  --accent2: #334155;
+  --button: rgba(58, 74, 91, 0.95);
+  --button-border: #95b2c4;
+  --input-bg: rgba(36, 47, 60, 0.97);
+  --readonly-bg: rgba(46, 60, 75, 0.95);
+  --shadow: rgba(6, 11, 16, 0.48);
+  --title-text: #f4f8f7;
+  --highlight-bg: rgba(255, 141, 114, 0.24);
+  --highlight-border: #ff8d72;
+}
+
+.charsheet #sheet-theme-ui-minimal:checked ~ .sheet-wrapper {
+  --bg: #f5f6f8;
+  --panel: rgba(251, 252, 253, 0.98);
+  --line: #a5b5c5;
+  --text: #1f2a34;
+  --accent: #2d7fc6;
+  --accent2: #e6ebf0;
+  --button: #eef2f6;
+  --button-border: #a5b5c5;
+  --input-bg: #ffffff;
+  --readonly-bg: #eff3f7;
+  --shadow: rgba(20, 34, 48, 0.12);
+  --title-text: #ffffff;
+  --highlight-bg: rgba(45, 127, 198, 0.18);
+  --highlight-border: #2d7fc6;
+}
+
+.charsheet #sheet-theme-ui-cosmic:checked ~ .sheet-wrapper {
+  --bg: #070a1f;
+  --panel: rgba(24, 32, 70, 0.96);
+  --line: #6e85cf;
+  --text: #edf3ff;
+  --accent: #9e8aff;
+  --accent2: #171f49;
+  --button: rgba(28, 36, 77, 0.95);
+  --button-border: #6e85cf;
+  --input-bg: rgba(14, 20, 48, 0.97);
+  --readonly-bg: rgba(21, 29, 63, 0.95);
+  --shadow: rgba(1, 3, 12, 0.56);
+  --title-text: #edf3ff;
+  --highlight-bg: rgba(158, 138, 255, 0.24);
+  --highlight-border: #9e8aff;
 }
 
 .charsheet .sheet-wrapper {
@@ -583,6 +805,32 @@
 /* dark theme text safety */
 .charsheet #sheet-theme-ui-scifi:checked ~ .sheet-wrapper,
 .charsheet #sheet-theme-ui-scifi:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-arcane:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-arcane:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-tavern:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-tavern:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-neon:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-neon:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-terminal:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-terminal:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-slate:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-slate:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-dragonfire:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-dragonfire:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-feywild:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-feywild:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-fantasy:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-fantasy:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-gothic:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-gothic:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-industrial:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-industrial:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-pulp:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-pulp:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-retro:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-retro:checked ~ .sheet-wrapper *,
+.charsheet #sheet-theme-ui-cosmic:checked ~ .sheet-wrapper,
+.charsheet #sheet-theme-ui-cosmic:checked ~ .sheet-wrapper *,
 .charsheet #sheet-theme-ui-horror:checked ~ .sheet-wrapper,
 .charsheet #sheet-theme-ui-horror:checked ~ .sheet-wrapper * {
   color: var(--text);

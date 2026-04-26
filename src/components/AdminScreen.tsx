@@ -2204,6 +2204,7 @@ export default function AdminScreen({
                           className="form-control" style={inputStyle}
                         >
                           <option value="2">d2</option>
+                          <option value="3">d3</option>
                           <option value="4">d4</option>
                           <option value="6">d6</option>
                           <option value="8">d8</option>

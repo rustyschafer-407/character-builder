@@ -1,0 +1,98 @@
+/*
+  Roll20 legacy theme palettes snapshot (pre-CB-theme alignment)
+
+  Quick rollback steps:
+  1) Set THEME_SET_MODE = "legacy" in sheet.html worker script.
+  2) Replace the active blocks in sheet.css for:
+       #sheet-theme-ui-fantasy
+       #sheet-theme-ui-scifi
+       #sheet-theme-ui-horror
+       #sheet-theme-ui-modern
+       #sheet-theme-ui-pulp
+     with the blocks below.
+*/
+
+.charsheet #sheet-theme-ui-fantasy:checked ~ .sheet-wrapper {
+  --bg: #efe6d2;
+  --panel: #fbf6ea;
+  --line: #ab9670;
+  --text: #2b2115;
+  --accent: #6c4b1f;
+  --accent2: #c9b07a;
+  --button: #e7d5ae;
+  --button-border: #9c7e46;
+  --input-bg: #fffdf8;
+  --readonly-bg: #f4ecd8;
+  --shadow: rgba(87, 60, 18, .16);
+  --title-text: #fffaf0;
+  --highlight-bg: rgba(255,248,232,.95);
+  --highlight-border: #8f6730;
+}
+
+.charsheet #sheet-theme-ui-scifi:checked ~ .sheet-wrapper {
+  --bg: #0d1821;
+  --panel: #132330;
+  --line: #4fa3c7;
+  --text: #eaf7ff;
+  --accent: #35d8ff;
+  --accent2: #16384a;
+  --button: #173243;
+  --button-border: #4ec6f5;
+  --input-bg: #0f1c26;
+  --readonly-bg: #152733;
+  --shadow: rgba(0,180,255,.14);
+  --title-text: #f2fcff;
+  --highlight-bg: rgba(17,49,68,.95);
+  --highlight-border: #35d8ff;
+}
+
+.charsheet #sheet-theme-ui-horror:checked ~ .sheet-wrapper {
+  --bg: #1b1517;
+  --panel: #261d20;
+  --line: #8f5d63;
+  --text: #f3e9e9;
+  --accent: #c44a4a;
+  --accent2: #43272b;
+  --button: #3a272b;
+  --button-border: #b06d74;
+  --input-bg: #1f1719;
+  --readonly-bg: #2a2023;
+  --shadow: rgba(90,10,10,.20);
+  --title-text: #fff3f3;
+  --highlight-bg: rgba(67,30,34,.96);
+  --highlight-border: #c44a4a;
+}
+
+.charsheet #sheet-theme-ui-modern:checked ~ .sheet-wrapper {
+  --bg: #e9ecef;
+  --panel: #f8f9fb;
+  --line: #a3aab3;
+  --text: #20252b;
+  --accent: #475865;
+  --accent2: #d7dde3;
+  --button: #e3e8ec;
+  --button-border: #8e99a4;
+  --input-bg: #ffffff;
+  --readonly-bg: #eef1f4;
+  --shadow: rgba(40,50,60,.10);
+  --title-text: #ffffff;
+  --highlight-bg: rgba(255,255,255,.98);
+  --highlight-border: #6c7a87;
+}
+
+.charsheet #sheet-theme-ui-pulp:checked ~ .sheet-wrapper {
+  --bg: #f3ddb3;
+  --panel: #fff3d7;
+  --line: #a66a2c;
+  --text: #3b2412;
+  --accent: #bf3f1f;
+  --accent2: #d89b3c;
+  --button: #f3c976;
+  --button-border: #9d511b;
+  --input-bg: #fffaf0;
+  --readonly-bg: #f5e4bd;
+  --shadow: rgba(140,60,0,.18);
+  --title-text: #fff7eb;
+  --highlight-bg: rgba(255,247,225,.96);
+  --highlight-border: #bf3f1f;
+}

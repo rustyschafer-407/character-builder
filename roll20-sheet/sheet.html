@@ -3,6 +3,19 @@
   <!-- Hidden helper radios for theme styling -->
   <input type="radio" id="sheet-theme-ui-fantasy" name="attr_theme_ui" value="fantasy" checked>
   <input type="radio" id="sheet-theme-ui-scifi" name="attr_theme_ui" value="scifi">
+  <input type="radio" id="sheet-theme-ui-arcane" name="attr_theme_ui" value="arcane">
+  <input type="radio" id="sheet-theme-ui-tavern" name="attr_theme_ui" value="tavern">
+  <input type="radio" id="sheet-theme-ui-neon" name="attr_theme_ui" value="neon">
+  <input type="radio" id="sheet-theme-ui-terminal" name="attr_theme_ui" value="terminal">
+  <input type="radio" id="sheet-theme-ui-paper" name="attr_theme_ui" value="paper">
+  <input type="radio" id="sheet-theme-ui-slate" name="attr_theme_ui" value="slate">
+  <input type="radio" id="sheet-theme-ui-dragonfire" name="attr_theme_ui" value="dragonfire">
+  <input type="radio" id="sheet-theme-ui-feywild" name="attr_theme_ui" value="feywild">
+  <input type="radio" id="sheet-theme-ui-gothic" name="attr_theme_ui" value="gothic">
+  <input type="radio" id="sheet-theme-ui-industrial" name="attr_theme_ui" value="industrial">
+  <input type="radio" id="sheet-theme-ui-retro" name="attr_theme_ui" value="retro">
+  <input type="radio" id="sheet-theme-ui-minimal" name="attr_theme_ui" value="minimal">
+  <input type="radio" id="sheet-theme-ui-cosmic" name="attr_theme_ui" value="cosmic">
   <input type="radio" id="sheet-theme-ui-horror" name="attr_theme_ui" value="horror">
   <input type="radio" id="sheet-theme-ui-modern" name="attr_theme_ui" value="modern">
   <input type="radio" id="sheet-theme-ui-pulp" name="attr_theme_ui" value="pulp">
@@ -12,7 +25,9 @@
   <input type="radio" id="sheet-tab-skillssaves" name="sheet_tab">
   <input type="radio" id="sheet-tab-combat" name="sheet_tab">
   <input type="radio" id="sheet-tab-powers" name="sheet_tab">
+  <!--
   <input type="radio" id="sheet-tab-effects" name="sheet_tab">
+  -->
   <input type="radio" id="sheet-tab-inventory" name="sheet_tab">
 
   <div class="sheet-wrapper">
@@ -36,11 +51,22 @@
         <label class="sheet-theme-dropdown">
           <span>Theme</span>
           <select name="attr_sheet_theme">
-            <option value="fantasy" selected>Fantasy</option>
             <option value="scifi">Sci-Fi</option>
-            <option value="horror">Horror</option>
-            <option value="modern">Modern</option>
+            <option value="arcane">Arcane</option>
+            <option value="tavern">Tavern</option>
+            <option value="neon">Neon</option>
+            <option value="cosmic">Cosmic</option>
+            <option value="retro">Retro</option>
+            <option value="fantasy" selected>Fantasy</option>
+            <option value="gothic">Gothic</option>
+            <option value="industrial">Industrial</option>
             <option value="pulp">Pulp</option>
+            <option value="minimal">Minimal</option>
+            <option value="terminal">Terminal</option>
+            <option value="paper">Paper</option>
+            <option value="slate">Slate</option>
+            <option value="dragonfire">Dragonfire</option>
+            <option value="feywild">Feywild</option>
           </select>
         </label>
       </div>
@@ -51,7 +77,7 @@
       <label for="sheet-tab-skillssaves" class="sheet-tab-label">Skills/Saves</label>
       <label for="sheet-tab-combat" class="sheet-tab-label">Combat</label>
       <label for="sheet-tab-powers" class="sheet-tab-label">Powers</label>
-      <label for="sheet-tab-effects" class="sheet-tab-label">Effects</label>
+      <!-- <label for="sheet-tab-effects" class="sheet-tab-label">Effects</label> -->
       <label for="sheet-tab-inventory" class="sheet-tab-label">Inventory</label>
     </div>
 
@@ -317,7 +343,11 @@
       </div>
     </div>
 
-    <!-- EFFECTS -->
+    <!--
+    EFFECTS tab is intentionally disabled to keep the tab row from wrapping
+    at Roll20's default sheet width. Leave this block commented so it can be
+    restored quickly later if needed.
+
     <div class="sheet-tab-panel sheet-panel-effects">
       <div class="sheet-section">
         <div class="sheet-section-title">Effects</div>
@@ -411,6 +441,7 @@
         </div>
       </div>
     </div>
+    -->
 
     <!-- INVENTORY -->
     <div class="sheet-tab-panel sheet-panel-inventory">
@@ -436,6 +467,32 @@
   </div>
 
   <script type="text/worker">
+    // Rollback switch:
+    // - "expanded": full Character Builder theme list
+    // - "legacy": original five Roll20 themes (fantasy/scifi/horror/modern/pulp)
+    // Legacy palette snapshot is in roll20-sheet/legacy-theme-palettes.css.
+    const THEME_SET_MODE = "expanded";
+    const LEGACY_THEMES = ["fantasy", "scifi", "horror", "modern", "pulp"];
+    const EXPANDED_THEMES = [
+      "scifi",
+      "arcane",
+      "tavern",
+      "neon",
+      "cosmic",
+      "retro",
+      "fantasy",
+      "gothic",
+      "industrial",
+      "pulp",
+      "minimal",
+      "terminal",
+      "paper",
+      "slate",
+      "dragonfire",
+      "feywild"
+    ];
+    const ALLOWED_THEMES = THEME_SET_MODE === "legacy" ? LEGACY_THEMES : EXPANDED_THEMES;
+
     function calcMod(score) {
       const n = parseInt(score, 10) || 0;
       return Math.floor((n - 10) / 2);
@@ -447,9 +504,14 @@
 
     function syncThemeUI() {
       getAttrs(["sheet_theme"], function(v) {
-        const allowed = ["fantasy", "scifi", "horror", "modern", "pulp"];
-        const theme = allowed.includes(v.sheet_theme) ? v.sheet_theme : "fantasy";
-        setAttrs({ theme_ui: theme });
+        const isValidTheme = ALLOWED_THEMES.includes(v.sheet_theme);
+        const theme = isValidTheme ? v.sheet_theme : "fantasy";
+        if (isValidTheme) {
+          setAttrs({ theme_ui: theme });
+          return;
+        }
+        // Persist fantasy as the sheet default until a user picks something else.
+        setAttrs({ sheet_theme: theme, theme_ui: theme });
       });
     }
 
