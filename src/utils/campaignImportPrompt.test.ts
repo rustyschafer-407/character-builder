@@ -7,4 +7,22 @@ describe("campaignImportPrompt", () => {
     expect(CAMPAIGN_IMPORT_AI_PROMPT.length).toBeGreaterThan(100);
     expect(CAMPAIGN_IMPORT_AI_PROMPT).toContain("character-builder.campaign-content-import");
   });
+
+  it("does not include unsupported field names", () => {
+    const unsupportedFieldKeySnippets = [
+      '"tags":',
+      '"notes":',
+      '"category":',
+      '"source":',
+      '"damage":',
+      '"saveAttribute":',
+      '"quantity":',
+      '"weight":',
+      '"cost":',
+    ];
+
+    for (const fieldSnippet of unsupportedFieldKeySnippets) {
+      expect(CAMPAIGN_IMPORT_AI_PROMPT).not.toContain(fieldSnippet);
+    }
+  });
 });
