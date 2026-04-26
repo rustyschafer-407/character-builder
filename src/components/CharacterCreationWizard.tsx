@@ -1147,7 +1147,7 @@ export default function CharacterCreationWizard({
           </div>
           {selectedClass && (
             <div style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-              Starting HP uses d{selectedClass.hpRule.hitDie} + CON modifier.
+              Starting HP uses the full d{selectedClass.hpRule.hitDie} at level 1, and positive CON can raise it further.
             </div>
           )}
           {quickstartActive && (

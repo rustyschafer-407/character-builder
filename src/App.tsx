@@ -832,7 +832,12 @@ export default function App() {
     setCharacterRolesByCharacterId(context.characterRolesByCharacterId);
   }
 
-  const currentCampaignRowId = campaignRowIdsByAppId[campaignId] ?? "";
+  const activeThemeCampaignId = wizardOpen && wizardCampaign
+    ? wizardCampaign.id
+    : adminOpen
+    ? campaignId
+    : selected?.campaignId ?? campaignId;
+  const currentCampaignRowId = campaignRowIdsByAppId[activeThemeCampaignId] ?? "";
   const campaignThemeOverride = currentCampaignRowId
     ? campaignThemesByCampaignRowId[currentCampaignRowId] ?? null
     : null;

@@ -48,9 +48,28 @@ type ClassChoiceRule = ClassSkillChoiceRule | ClassPowerChoiceRule | ClassItemCh
 type QuickstartMode = "surprise" | "guided" | "concepts";
 
 function getDraftHpForCon(hitDie: number, conScore: number) {
-  const nextMax = Math.max(1, hitDie + getAttributeModifier(conScore));
+  const nextMax = Math.max(hitDie, hitDie + getAttributeModifier(conScore));
   return {
     max: nextMax,
+  };
+}
+
+function applyDraftAttributesAndHp(
+  draft: CharacterCreationDraft,
+  nextAttributes: Record<AttributeKey, number>,
+  hitDie: number
+) {
+  const nextHp = getDraftHpForCon(hitDie, nextAttributes.CON);
+
+  return {
+    ...draft,
+    attributes: nextAttributes,
+    hp: {
+      ...draft.hp,
+      hitDie,
+      max: nextHp.max,
+      current: Math.min(nextHp.max, draft.hp.current + (nextHp.max - draft.hp.max)),
+    },
   };
 }
 
@@ -330,20 +349,13 @@ export function useCharacterCreation({
 
       if (spent > totalAllowed) return;
 
-      const nextHp = getDraftHpForCon(
-        wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,
-        nextAttributes.CON
+      setCreationDraft(
+        applyDraftAttributesAndHp(
+          creationDraft,
+          nextAttributes,
+          wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8
+        )
       );
-
-      setCreationDraft({
-        ...creationDraft,
-        attributes: nextAttributes,
-        hp: {
-          ...creationDraft.hp,
-          max: nextHp.max,
-          current: Math.min(nextHp.max, creationDraft.hp.current + (nextHp.max - creationDraft.hp.max)),
-        },
-      });
       return;
     }
 
@@ -352,20 +364,13 @@ export function useCharacterCreation({
         ...creationDraft.attributes,
         [key]: value,
       };
-      const nextHp = getDraftHpForCon(
-        wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,
-        nextAttributes.CON
+      setCreationDraft(
+        applyDraftAttributesAndHp(
+          creationDraft,
+          nextAttributes,
+          wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8
+        )
       );
-
-      setCreationDraft({
-        ...creationDraft,
-        attributes: nextAttributes,
-        hp: {
-          ...creationDraft.hp,
-          max: nextHp.max,
-          current: Math.min(nextHp.max, creationDraft.hp.current + (nextHp.max - creationDraft.hp.max)),
-        },
-      });
       return;
     }
 
@@ -373,20 +378,13 @@ export function useCharacterCreation({
       ...creationDraft.attributes,
       [key]: value,
     };
-    const nextHp = getDraftHpForCon(
-      wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8,
-      nextAttributes.CON
+    setCreationDraft(
+      applyDraftAttributesAndHp(
+        creationDraft,
+        nextAttributes,
+        wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8
+      )
     );
-
-    setCreationDraft({
-      ...creationDraft,
-      attributes: nextAttributes,
-      hp: {
-        ...creationDraft.hp,
-        max: nextHp.max,
-        current: Math.min(nextHp.max, creationDraft.hp.current + (nextHp.max - creationDraft.hp.max)),
-      },
-    });
   }
 
   function toggleWizardSkill(skillId: string, nextSelected: boolean) {
@@ -613,8 +611,11 @@ export function useCharacterCreation({
         : applyClassAttributeModifiers(makeBaseAttributes(), wizardClass, wizardRace);
 
     setCreationDraft({
-      ...creationDraft,
-      attributes: nextAttributes,
+      ...applyDraftAttributesAndHp(
+        creationDraft,
+        nextAttributes,
+        wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8
+      ),
       attributeGeneration: {
         ...creationDraft.attributeGeneration,
         method,
@@ -641,8 +642,11 @@ export function useCharacterCreation({
     const newAttributes = applyClassAttributeModifiers(rolledAttributes, wizardClass, wizardRace);
 
     setCreationDraft({
-      ...creationDraft,
-      attributes: newAttributes,
+      ...applyDraftAttributesAndHp(
+        creationDraft,
+        newAttributes,
+        wizardClass?.hpRule.hitDie ?? creationDraft.hp.hitDie ?? 8
+      ),
       attributeGeneration: {
         ...creationDraft.attributeGeneration,
         method: "randomRoll",

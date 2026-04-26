@@ -257,6 +257,27 @@ describe("campaignImport", () => {
     expect(attack?.derivedFromType).toBe("item");
   });
 
+  it("creates a derived attack for flat-damage powers when usableAsAttack is true", () => {
+    const campaign = makeCampaign();
+    const preview = buildCampaignImportPreview(
+      stringify({
+        format: "character-builder.campaign-content-import",
+        version: 1,
+        content: {
+          powers: [{ name: "Shock Touch", description: "Deal 1 damage to one adjacent target", usableAsAttack: true }],
+        },
+      }),
+      campaign
+    );
+
+    const result = applyCampaignImport(campaign, preview, "skip");
+    const attack = result.campaign.attackTemplates.find((entry) => entry.name === "Shock Touch");
+
+    expect(result.importedCounts.attacks).toBe(1);
+    expect(attack?.damage).toBe("1");
+    expect(attack?.derivedFromType).toBe("power");
+  });
+
   it("uses optional power attackAttribute when creating the derived attack", () => {
     const campaign = makeCampaign();
     const preview = buildCampaignImportPreview(

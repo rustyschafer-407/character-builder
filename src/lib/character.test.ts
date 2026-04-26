@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getAttributeModifier } from "./character";
+import { createCharacterFromCampaignAndClass, getAttributeModifier } from "./character";
 
 describe("getAttributeModifier", () => {
   it("matches the standard attribute modifier chart", () => {
@@ -29,5 +29,51 @@ describe("getAttributeModifier", () => {
     for (const [score, expectedModifier] of expectedByScore) {
       expect(getAttributeModifier(score)).toBe(expectedModifier);
     }
+  });
+});
+
+describe("createCharacterFromCampaignAndClass", () => {
+  it("does not reduce first-level HP below the class hit die", () => {
+    const character = createCharacterFromCampaignAndClass(
+      {
+        id: "campaign-1",
+        name: "Gamma Test",
+        description: "",
+        labels: {
+          attributes: "Attributes",
+          skills: "Skills",
+          attacks: "Attacks",
+          powers: "Powers",
+          inventory: "Inventory",
+          className: "Class",
+          level: "Level",
+          hp: "HP",
+        },
+        attributeRules: {
+          generationMethods: ["manual"],
+        },
+        classes: [],
+        races: [],
+        skills: [],
+        powers: [],
+        items: [],
+        attackTemplates: [],
+      } as any,
+      {
+        id: "class-1",
+        name: "Scout",
+        hpRule: { hitDie: 8 },
+      } as any,
+      "Low Con Hero",
+      {
+        id: "race-1",
+        name: "Shriveled",
+        availableClassIds: [],
+        attributeBonuses: [{ attribute: "CON", amount: -2 }],
+      } as any
+    );
+
+    expect(character.hp.max).toBe(8);
+    expect(character.hp.current).toBe(8);
   });
 });

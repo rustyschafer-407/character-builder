@@ -15,6 +15,8 @@ export const DERIVED_ATTACK_DEFAULTS = {
 };
 
 const DAMAGE_DICE_PATTERN = /\b\d+d\d+(?:\s*[+-]\s*\d+)?\b/i;
+const DAMAGE_VALUE_BEFORE_DAMAGE_PATTERN = /\b(\d+d\d+(?:\s*[+-]\s*\d+)?|\d+)\s+damage\b/i;
+const DAMAGE_VALUE_AFTER_LABEL_PATTERN = /\bdamage(?:\s+dice)?\s*[:=-]?\s*(\d+d\d+(?:\s*[+-]\s*\d+)?|\d+)\b/i;
 
 export function normalizeDerivedAttackName(name: string) {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
@@ -22,6 +24,16 @@ export function normalizeDerivedAttackName(name: string) {
 
 export function extractDamageDiceFromText(text: string | undefined): string | null {
   if (!text) return null;
+  const labeledDamageMatch = text.match(DAMAGE_VALUE_AFTER_LABEL_PATTERN);
+  if (labeledDamageMatch?.[1]) {
+    return labeledDamageMatch[1].replace(/\s+/g, "");
+  }
+
+  const damageValueMatch = text.match(DAMAGE_VALUE_BEFORE_DAMAGE_PATTERN);
+  if (damageValueMatch?.[1]) {
+    return damageValueMatch[1].replace(/\s+/g, "");
+  }
+
   const match = text.match(DAMAGE_DICE_PATTERN);
   return match ? match[0].replace(/\s+/g, "") : null;
 }

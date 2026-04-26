@@ -68,8 +68,8 @@ Power interpretation rules:
 - usesPerDay should capture limits such as at will, once per day, 3/day, per session, costs, charges, cooldowns, or similar. If no usage limit is present, leave it blank.
 - powerAttribute should capture the governing attribute, discipline group, school, source, or power family if present.
 - attackAttribute should be the best attack stat when known. Use STR for melee attacks and DEX for ranged attacks unless the source clearly indicates a different core attribute.
-- Set usableAsAttack to true if the power deals damage, lists damage dice, makes an attack, grants an attack, or is clearly used offensively.
-- If the power lists damage dice, include those dice in the description.
+- Set usableAsAttack to true if the power deals damage, lists damage dice, lists a flat damage amount, makes an attack, grants an attack, or is clearly used offensively.
+- If the power lists damage dice or a flat damage amount, include that damage text in the description.
 - Do not add a separate damage field.
 - description should summarize the effect in a short usable form.
 
@@ -85,8 +85,8 @@ Item object fields:
 Item interpretation rules:
 - Use items for equipment, weapons, armor, gear, consumables, tools, vehicles, treasure, artifacts, cyberware, magic items, ammunition, or other inventory objects.
 - attackAttribute should be the best attack stat when known. Use STR for melee weapons and DEX for ranged weapons unless the source clearly indicates a different core attribute.
-- Set usableAsAttack to true if the item is used to attack, lists damage dice, has attack rules, grants an attack, or has obvious combat use as a weapon.
-- If the item lists damage dice, include those dice in the description.
+- Set usableAsAttack to true if the item is used to attack, lists damage dice, lists a flat damage amount, has attack rules, grants an attack, or has obvious combat use as a weapon.
+- If the item lists damage dice or a flat damage amount, include that damage text in the description.
 - If the item is armor or protective gear, do not mark usableAsAttack true unless it also has an attack.
 - description should summarize the item’s function.
 - Do not add separate fields for damage, range, cost, weight, quantity, tags, notes, source, or category.

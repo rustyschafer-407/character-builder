@@ -54,6 +54,19 @@ describe("syncCampaignDerivedAttackTemplates", () => {
     expect(powerTemplate?.damage).toBe("");
     expect(itemTemplate?.damage).toBe("");
   });
+
+  it("extracts flat damage values when source text uses flat damage", () => {
+    const campaign = makeCampaign();
+    campaign.powers = [{ id: "p1", name: "Zap", isAttack: true, description: "Deal 1 damage to one target" }];
+    campaign.items = [];
+
+    const synced = syncCampaignDerivedAttackTemplates(campaign);
+    const powerTemplate = synced.attackTemplates.find(
+      (attack) => attack.derivedFromType === "power" && attack.derivedFromId === "p1"
+    );
+
+    expect(powerTemplate?.damage).toBe("1");
+  });
 });
 
 describe("syncDerivedAttacks", () => {

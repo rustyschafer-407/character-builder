@@ -7,9 +7,10 @@ interface Props {
   label: string;
   onAdd: () => void;
   onChange: (id: string, field: "name" | "damage" | "bonus", value: string | number) => void;
+  onDelete: (id: string) => void;
 }
 
-export default function AttacksSection({ character, label, onAdd, onChange }: Props) {
+export default function AttacksSection({ character, label, onAdd, onChange, onDelete }: Props) {
   return (
     <section style={panelStyle} className="attacks-section mobile-stack">
       <div className="attacks-section-header"
@@ -37,7 +38,7 @@ export default function AttacksSection({ character, label, onAdd, onChange }: Pr
               style={{
                 ...cardStyle,
                 display: "grid",
-                gridTemplateColumns: "2fr 1fr 1fr 1fr",
+                gridTemplateColumns: "minmax(0, 2fr) minmax(88px, 1fr) minmax(72px, 0.7fr) auto auto",
                 gap: 8,
                 alignItems: "center",
               }}
@@ -61,6 +62,22 @@ export default function AttacksSection({ character, label, onAdd, onChange }: Pr
               <div style={{ color: "var(--text-primary)" }}>
                 Total: <strong>{total >= 0 ? "+" : ""}{total}</strong>
               </div>
+              <button
+                type="button"
+                onClick={() => onDelete(a.id)}
+                className="button-control"
+                style={{
+                  ...buttonStyle,
+                  minWidth: 0,
+                  paddingInline: 12,
+                  background: "var(--cb-button-danger-bg)",
+                  border: "1px solid var(--cb-button-danger-border)",
+                  color: "var(--cb-button-danger-text)",
+                  boxShadow: "none",
+                }}
+              >
+                Delete
+              </button>
             </div>
           );
         })}

@@ -200,6 +200,15 @@ export function useSelectedCharacterWorkspaceCallbacks({
     });
   }
 
+  function onDeleteAttack(id: string) {
+    if (!selected) return;
+
+    updateCharacter({
+      ...selected,
+      attacks: selected.attacks.filter((attack) => attack.id !== id),
+    });
+  }
+
   return {
     onNameChange,
     onCharacterTypeChange,
@@ -220,5 +229,6 @@ export function useSelectedCharacterWorkspaceCallbacks({
     onAddManualItem,
     onAddAttack,
     onAttackChange,
+    onDeleteAttack,
   };
 }

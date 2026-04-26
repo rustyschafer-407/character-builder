@@ -161,6 +161,7 @@ interface SelectedCharacterWorkspaceProps {
   onAddManualItem: () => void;
   onAddAttack: () => void;
   onAttackChange: (id: string, field: "name" | "damage" | "bonus", value: string | number) => void;
+  onDeleteAttack: (id: string) => void;
   canManageCharacterAccess: boolean;
   campaignAccessRows: CampaignAccessRowWithProfile[];
   characterAccessRows: CharacterAccessRowWithProfile[];
@@ -222,6 +223,7 @@ export default function SelectedCharacterWorkspace({
   onAddManualItem,
   onAddAttack,
   onAttackChange,
+  onDeleteAttack,
   canManageCharacterAccess,
   campaignAccessRows,
   characterAccessRows,
@@ -512,6 +514,7 @@ export default function SelectedCharacterWorkspace({
               label={labels.attacks}
               onAdd={onAddAttack}
               onChange={onAttackChange}
+              onDelete={onDeleteAttack}
             />
           </fieldset>
         </CollapsibleSection>
