@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CharacterRecord } from "../types/character";
 import { buttonStyle, inputStyle, labelTextStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
 import "./IdentitySection.css";
@@ -14,6 +14,7 @@ interface Props {
   roll20ModPayload: string;
   readOnly?: boolean;
   canEditCharacterType?: boolean;
+  editNameRequestToken?: number;
   onNameChange: (name: string) => void;
   onCharacterTypeChange: (characterType: "pc" | "npc") => void;
   onOpenLevelUpWizard: () => void;
@@ -30,6 +31,7 @@ export default function IdentitySection({
   roll20ModPayload,
   readOnly = false,
   canEditCharacterType = false,
+  editNameRequestToken = 0,
   onNameChange,
   onCharacterTypeChange,
   onOpenLevelUpWizard,
@@ -41,6 +43,11 @@ export default function IdentitySection({
     setDraftName(character.identity.name);
     setEditingName(true);
   }
+
+  useEffect(() => {
+    if (editNameRequestToken <= 0 || readOnly) return;
+    startNameEdit();
+  }, [editNameRequestToken, readOnly]);
 
   function saveNameEdit() {
     const nextName = draftName.trim();

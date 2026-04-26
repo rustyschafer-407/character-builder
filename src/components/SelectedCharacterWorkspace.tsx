@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { CharacterRecord } from "../types/character";
 import type {
   AttributeBonusRule,
@@ -23,6 +23,7 @@ import type {
   CharacterAccessRowWithProfile,
 } from "../lib/cloudRepository";
 import { getAccessRowDisplayName } from "../lib/userDisplay";
+import { buttonStyle, cardStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
 
 interface CollapsibleSectionProps {
   id: string;
@@ -40,18 +41,9 @@ function CollapsibleSection({
   children,
 }: CollapsibleSectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <section
-      className="workspace-collapsible-card"
-      style={{
-        border: "1px solid var(--cb-border)",
-        borderRadius: 10,
-        background: "var(--cb-surface-raised)",
-        overflow: "hidden",
-      }}
-    >
+    <section className="workspace-collapsible-card" style={{ ...panelStyle, padding: 0, borderRadius: 12 }}>
       <button
         type="button"
         aria-expanded={isExpanded}
@@ -66,31 +58,28 @@ function CollapsibleSection({
           gap: 12,
           border: "none",
           borderBottom: isExpanded ? "1px solid var(--cb-border)" : "none",
-          borderRadius: 0,
-          background: isHovered ? "rgba(255, 255, 255, 0.035)" : "rgba(255, 255, 255, 0.01)",
+          borderRadius: 12,
+          background: "transparent",
           color: "var(--cb-text)",
-          padding: "10px 12px",
-          minHeight: 44,
+          padding: "12px 16px",
+          minHeight: 40,
           textAlign: "left",
           cursor: "pointer",
-          transition: "background-color 180ms ease, box-shadow 180ms ease",
+          boxShadow: "none",
         }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
-        <span style={{ display: "grid", gap: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 750, color: "var(--cb-text)" }}>{title}</span>
+        <span style={{ display: "grid", gap: 4 }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: "var(--cb-text)" }}>{title}</span>
           {summary ? (
-            <span style={{ fontSize: 12, color: "var(--cb-text-muted)", opacity: 0.78 }}>{summary}</span>
+            <span style={{ fontSize: 12, color: "var(--cb-text-muted)", opacity: 0.84 }}>{summary}</span>
           ) : null}
         </span>
         <span
           aria-hidden="true"
           style={{
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 700,
             color: "var(--cb-text-muted)",
-            opacity: 0.78,
             minWidth: 12,
             textAlign: "center",
           }}
@@ -100,7 +89,7 @@ function CollapsibleSection({
       </button>
 
       {isExpanded ? (
-        <div id={id} style={{ padding: "var(--space-3)" }}>
+        <div id={id} style={{ padding: "16px" }}>
           {children}
         </div>
       ) : null}
@@ -171,6 +160,9 @@ interface SelectedCharacterWorkspaceProps {
   onRemoveCharacterAccess: (userId: string) => Promise<void>;
   characterAccessErrorMessage: string;
   onClearCharacterAccessError: () => void;
+  canUseGmQuickActions: boolean;
+  onDuplicateCharacter: () => void;
+  onDeleteCharacter: () => void;
 }
 
 export default function SelectedCharacterWorkspace({
@@ -232,88 +224,31 @@ export default function SelectedCharacterWorkspace({
   onRemoveCharacterAccess,
   characterAccessErrorMessage,
   onClearCharacterAccessError,
+  canUseGmQuickActions,
+  onDuplicateCharacter,
+  onDeleteCharacter,
 }: SelectedCharacterWorkspaceProps) {
-  const summarizeValues = (values: string[], maxVisible = 4) => {
-    const cleaned = values
-      .map((value) => value.trim())
-      .filter((value, index, collection) => Boolean(value) && collection.indexOf(value) === index);
+  const [showAllAttacks, setShowAllAttacks] = useState(false);
+  const [nameEditRequestToken, setNameEditRequestToken] = useState(0);
+  const [addPlayerRequestToken, setAddPlayerRequestToken] = useState(0);
+  const [abilitiesExpandedSeed, setAbilitiesExpandedSeed] = useState(0);
 
-    if (cleaned.length === 0) {
-      return "None";
-    }
+  const accessNames = useMemo(() => {
+    const labels = [
+      ...characterAccessRows.map((row) => getAccessRowDisplayName(row.profile)),
+      ...campaignAccessRows.map((row) => getAccessRowDisplayName(row.profile)),
+    ];
+    return Array.from(new Set(labels));
+  }, [characterAccessRows, campaignAccessRows]);
 
-    if (cleaned.length <= maxVisible) {
-      return cleaned.join(", ");
-    }
-
-    return `${cleaned.slice(0, maxVisible).join(", ")}, ...`;
-  };
-
-  const attributeSummary = (["STR", "DEX", "CON", "INT", "WIS", "CHA"] as AttributeKey[])
-    .map((key) => `${key} ${character.attributes[key]}`)
-    .join(", ");
-
-  const skillsSummary = summarizeValues(
-    character.skills
-      .filter((skill) => skill.proficient || skill.bonus !== 0)
-      .map((skill) => selectedSkills.find((candidate) => candidate.id === skill.skillId)?.name || skill.skillId)
+  const topAttacks = useMemo(
+    () => [...character.attacks].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" })).slice(0, 2),
+    [character.attacks]
   );
 
-  const powersSummary = summarizeValues(
-    character.powers.map((power) => {
-      const directName = power.name?.trim();
-      if (directName) {
-        return directName;
-      }
-
-      if (power.powerId) {
-        return selectedPowers.find((candidate) => candidate.id === power.powerId)?.name || power.powerId;
-      }
-
-      return "";
-    })
-  );
-
-  const inventorySummary = summarizeValues(
-    character.inventory.map((item) => {
-      const name = item.name?.trim();
-      if (!name) {
-        return "";
-      }
-
-      return item.quantity > 1 ? `${name} x${item.quantity}` : name;
-    })
-  );
-
-  const attacksSummary = summarizeValues(
-    character.attacks.map((attack) => attack.name?.trim() || attack.id)
-  );
-
-  const accessSummaryRows = [
-    ...characterAccessRows.map((row) => ({
-      key: `direct:${row.user_id}`,
-      label: getAccessRowDisplayName(row.profile),
-    })),
-    ...campaignAccessRows.map((row) => ({
-      key: `campaign:${row.user_id}`,
-      label: getAccessRowDisplayName(row.profile),
-    })),
-  ];
-
-  const accessSummary = summarizeValues(
-    Array.from(new Map(accessSummaryRows.map((row) => [row.key, row.label])).values()),
-    5
-  );
-
-  if (import.meta.env.DEV && canManageCharacterAccess) {
-    console.info("[gm-access-debug] collapsed access summary rows", {
-      summary_rows: accessSummaryRows,
-      summary_value: accessSummary,
-    });
-  }
-  const coreSummary = `AC ${character.sheet.acBase + character.sheet.acBonus}, Init ${
-    character.sheet.initMisc
-  }, Speed ${character.sheet.speed || "-"}`;
+  const hpValue = `${character.hp.current}/${character.hp.max}`;
+  const acValue = character.sheet.acBase + character.sheet.acBonus + (character.sheet.acUseDex ? Math.floor((character.attributes.DEX - 10) / 2) : 0);
+  const initiativeValue = Math.floor((character.attributes.DEX - 10) / 2) + character.sheet.initMisc;
 
   if (levelUpOpen) {
     return (
@@ -344,177 +279,276 @@ export default function SelectedCharacterWorkspace({
   }
 
   return (
-    <div style={{ flex: 1, display: "grid", gap: 24 }} className="selected-workspace mobile-stack">
-      <IdentitySection
-        character={character}
-        campaignName={selectedCampaignName}
-        raceName={selectedRaceName}
-        classLabel={labels.className}
-        className={selectedClassName}
-        levelLabel={labels.level}
-        hpLabel={labels.hp}
-        roll20ModPayload={roll20ModPayload}
-        readOnly={readOnly}
-        canEditCharacterType={canEditCharacterType}
-        onNameChange={onNameChange}
-        onCharacterTypeChange={onCharacterTypeChange}
-        onOpenLevelUpWizard={onOpenLevelUpWizard}
-      />
-
-      {canManageCharacterAccess ? (
-        <CollapsibleSection
-          id="character-access-section"
-          title="Accounts & Permissions"
-          summary={accessSummary}
-        >
-          <CharacterAccessPanel
-            characterName={character.identity.name?.trim() || "this character"}
-            campaignAccessRows={campaignAccessRows}
-            characterAccessRows={characterAccessRows}
-            characterUserCandidateIds={characterUserCandidateIds}
-            getUserLabel={getUserLabel}
-            onAssignCharacterAccess={onAssignCharacterAccess}
-            onUpdateCharacterAccess={onUpdateCharacterAccess}
-            onRemoveCharacterAccess={onRemoveCharacterAccess}
-            errorMessage={characterAccessErrorMessage}
-            onClearError={onClearCharacterAccessError}
-          />
-        </CollapsibleSection>
-      ) : null}
-
-      {readOnly ? (
-        <div
-          style={{
-            padding: "10px 12px",
-            borderRadius: 8,
-            border: "1px solid var(--border-soft)",
-            background: "rgba(11, 22, 42, 0.65)",
-            color: "var(--text-secondary)",
-            fontSize: 13,
-            fontWeight: 600,
-          }}
-        >
-          Read-only access: you can view this character, but editing is disabled.
-        </div>
-      ) : null}
-
+    <div style={{ flex: 1, display: "grid", gap: 16 }} className="selected-workspace mobile-stack character-dashboard">
       <div
+        className="character-quick-actions"
         style={{
-          display: "grid",
-          gap: 16,
-          minWidth: 0,
+          position: "sticky",
+          top: 0,
+          zIndex: 5,
+          ...panelStyle,
+          padding: 12,
+          display: "flex",
+          gap: 8,
+          flexWrap: "wrap",
+          alignItems: "center",
         }}
       >
-        <CollapsibleSection
-          id="attributes-section"
-          title={labels.attributes}
-          summary={attributeSummary}
+        <button
+          className="button-control"
+          style={primaryButtonStyle}
+          disabled={readOnly}
+          onClick={() => setNameEditRequestToken((value) => value + 1)}
         >
-          <fieldset
-            disabled={readOnly}
-            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
-          >
-            <AttributesSection
-              character={character}
-              label={labels.attributes}
-              onChange={onAttributeChange}
-            />
-          </fieldset>
-        </CollapsibleSection>
-
-        <CollapsibleSection id="core-section" title="Core" summary={coreSummary}>
-          <fieldset
-            disabled={readOnly}
-            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
-          >
-            <SheetFieldsSection
-              character={character}
-              onSpeedChange={onSpeedChange}
-              onAcBaseChange={onAcBaseChange}
-              onAcBonusChange={onAcBonusChange}
-              onAcUseDexChange={onAcUseDexChange}
-              onInitMiscChange={onInitMiscChange}
-              onSaveProfChange={onSaveProfChange}
-              onSaveBonusChange={onSaveBonusChange}
-            />
-          </fieldset>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          id="skills-section"
-          title={labels.skills}
-          summary={skillsSummary}
+          Edit
+        </button>
+        <button
+          className="button-control"
+          style={buttonStyle}
+          disabled={!canUseGmQuickActions}
+          onClick={onDuplicateCharacter}
         >
-          <fieldset
-            disabled={readOnly}
-            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
-          >
-            <SkillsSection
-              character={character}
-              skills={selectedSkills}
-              label={labels.skills}
-              onChange={onSkillChange}
-            />
-          </fieldset>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          id="powers-section"
-          title={labels.powers}
-          summary={powersSummary}
+          Duplicate
+        </button>
+        <button
+          className="button-control"
+          style={buttonStyle}
+          disabled={!canUseGmQuickActions || !canManageCharacterAccess}
+          onClick={() => setAddPlayerRequestToken((value) => value + 1)}
         >
-          <fieldset
-            disabled={readOnly}
-            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
-          >
-            <PowersSection
-              character={character}
-              powers={selectedPowers}
-              label={labels.powers}
-              onTogglePower={onTogglePower}
-              onPowerChange={onPowerChange}
-            />
-          </fieldset>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          id="inventory-section"
-          title={labels.inventory}
-          summary={inventorySummary}
+          Assign Player
+        </button>
+        <button
+          className="button-control"
+          style={buttonStyle}
+          disabled={readOnly}
+          onClick={() => setAbilitiesExpandedSeed((value) => value + 1)}
         >
-          <fieldset
-            disabled={readOnly}
-            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
-          >
-            <InventorySection
-              character={character}
-              items={selectedItems}
-              label={labels.inventory}
-              onToggleItem={onToggleItem}
-              onQuantityChange={onQuantityChange}
-              onRemoveManualItem={onRemoveManualItem}
-              onAddManualItem={onAddManualItem}
-            />
-          </fieldset>
-        </CollapsibleSection>
-
-        <CollapsibleSection
-          id="attacks-section"
-          title={labels.attacks}
-          summary={attacksSummary}
+          Add Power
+        </button>
+        <button
+          className="button-control"
+          style={{ ...buttonStyle, borderColor: "var(--cb-button-danger-border)", color: "var(--cb-button-danger-text)" }}
+          disabled={!canUseGmQuickActions}
+          onClick={onDeleteCharacter}
         >
-          <fieldset
-            disabled={readOnly}
-            style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}
-          >
-            <AttacksSection
+          Delete
+        </button>
+      </div>
+
+      <div className="character-dashboard-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.35fr) minmax(0, 1fr)", gap: 16 }}>
+        <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
+          <section style={{ ...panelStyle, padding: 16 }}>
+            <IdentitySection
               character={character}
-              label={labels.attacks}
-              onAdd={onAddAttack}
-              onChange={onAttackChange}
+              campaignName={selectedCampaignName}
+              raceName={selectedRaceName}
+              classLabel={labels.className}
+              className={selectedClassName}
+              levelLabel={labels.level}
+              hpLabel={labels.hp}
+              roll20ModPayload={roll20ModPayload}
+              readOnly={readOnly}
+              canEditCharacterType={canEditCharacterType}
+              editNameRequestToken={nameEditRequestToken}
+              onNameChange={onNameChange}
+              onCharacterTypeChange={onCharacterTypeChange}
+              onOpenLevelUpWizard={onOpenLevelUpWizard}
             />
-          </fieldset>
-        </CollapsibleSection>
+          </section>
+
+          <section style={{ ...panelStyle, padding: 16, display: "grid", gap: 12 }}>
+            <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: 18 }}>Access</h3>
+            {canManageCharacterAccess ? (
+              <CharacterAccessPanel
+                characterName={character.identity.name?.trim() || "this character"}
+                campaignAccessRows={campaignAccessRows}
+                characterAccessRows={characterAccessRows}
+                characterUserCandidateIds={characterUserCandidateIds}
+                getUserLabel={getUserLabel}
+                onAssignCharacterAccess={onAssignCharacterAccess}
+                onUpdateCharacterAccess={onUpdateCharacterAccess}
+                onRemoveCharacterAccess={onRemoveCharacterAccess}
+                errorMessage={characterAccessErrorMessage}
+                onClearError={onClearCharacterAccessError}
+                openAddPlayerRequestToken={addPlayerRequestToken}
+              />
+            ) : (
+              <div style={{ display: "grid", gap: 8 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {accessNames.length > 0
+                    ? accessNames.map((name) => (
+                        <span
+                          key={name}
+                          style={{
+                            minHeight: 36,
+                            borderRadius: 999,
+                            padding: "0 12px",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            border: "1px solid var(--cb-border)",
+                            background: "var(--cb-selection-row-bg)",
+                            color: "var(--text-primary)",
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {name}
+                        </span>
+                      ))
+                    : (
+                      <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>No players assigned.</div>
+                    )}
+                </div>
+                <div style={{ color: "var(--text-secondary)", fontSize: 12 }}>
+                  You can view assigned players, but only a GM/Admin can modify access.
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section style={{ ...panelStyle, padding: 16, display: "grid", gap: 16 }}>
+            <h3 style={{ margin: 0, color: "var(--text-primary)", fontSize: 18 }}>Combat</h3>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+              <div style={{ ...cardStyle, display: "grid", gap: 4, background: "var(--cb-accent-soft)", borderColor: "var(--cb-border-strong)" }}>
+                <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>HP</span>
+                <strong style={{ color: "var(--text-primary)", fontSize: 18 }}>{hpValue}</strong>
+              </div>
+              <div style={{ ...cardStyle, display: "grid", gap: 4 }}>
+                <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>AC</span>
+                <strong style={{ color: "var(--text-primary)", fontSize: 18 }}>{acValue}</strong>
+              </div>
+              <div style={{ ...cardStyle, display: "grid", gap: 4 }}>
+                <span style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>INIT</span>
+                <strong style={{ color: "var(--text-primary)", fontSize: 18 }}>{initiativeValue >= 0 ? `+${initiativeValue}` : initiativeValue}</strong>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>Top attacks</div>
+              {topAttacks.length > 0 ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {topAttacks.map((attack) => (
+                    <div key={attack.id} style={{ ...cardStyle, display: "grid", gap: 4 }}>
+                      <strong style={{ color: "var(--text-primary)", fontSize: 14 }}>{attack.name}</strong>
+                      <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                        {attack.damage} • Bonus {attack.bonus >= 0 ? `+${attack.bonus}` : attack.bonus}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>No attacks added yet.</div>
+              )}
+              <button
+                type="button"
+                className="button-control button-control--secondary"
+                style={buttonStyle}
+                onClick={() => setShowAllAttacks((value) => !value)}
+                disabled={readOnly && character.attacks.length === 0}
+              >
+                {showAllAttacks ? "Hide full attacks" : "Show full attacks"}
+              </button>
+            </div>
+
+            {showAllAttacks ? (
+              <fieldset disabled={readOnly} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+                <AttacksSection
+                  character={character}
+                  label={labels.attacks}
+                  onAdd={onAddAttack}
+                  onChange={onAttackChange}
+                />
+              </fieldset>
+            ) : null}
+
+            <CollapsibleSection id="combat-details" title="Combat details" summary="Speed, AC formula, saves">
+              <fieldset disabled={readOnly} style={{ border: 0, margin: 0, padding: 0, minWidth: 0 }}>
+                <SheetFieldsSection
+                  character={character}
+                  onSpeedChange={onSpeedChange}
+                  onAcBaseChange={onAcBaseChange}
+                  onAcBonusChange={onAcBonusChange}
+                  onAcUseDexChange={onAcUseDexChange}
+                  onInitMiscChange={onInitMiscChange}
+                  onSaveProfChange={onSaveProfChange}
+                  onSaveBonusChange={onSaveBonusChange}
+                />
+              </fieldset>
+            </CollapsibleSection>
+          </section>
+        </div>
+
+        <div style={{ display: "grid", gap: 16, alignContent: "start" }}>
+          <CollapsibleSection
+            key={`abilities-section-${abilitiesExpandedSeed}`}
+            id="abilities-section"
+            title="Abilities"
+            summary={`${labels.skills}, ${labels.powers}`}
+            defaultExpanded={abilitiesExpandedSeed > 0}
+          >
+            <fieldset disabled={readOnly} style={{ border: 0, margin: 0, padding: 0, minWidth: 0, display: "grid", gap: 16 }}>
+              <SkillsSection
+                character={character}
+                skills={selectedSkills}
+                label={labels.skills}
+                onChange={onSkillChange}
+              />
+              {selectedPowers.length === 0 ? (
+                <div style={{ ...cardStyle, color: "var(--text-secondary)", fontSize: 13 }}>No powers added yet.</div>
+              ) : null}
+              <PowersSection
+                character={character}
+                powers={selectedPowers}
+                label={labels.powers}
+                onTogglePower={onTogglePower}
+                onPowerChange={onPowerChange}
+              />
+            </fieldset>
+          </CollapsibleSection>
+
+          <CollapsibleSection id="details-section" title="Details" summary={`${labels.inventory}, notes, misc`}>
+            <fieldset disabled={readOnly} style={{ border: 0, margin: 0, padding: 0, minWidth: 0, display: "grid", gap: 16 }}>
+              <AttributesSection
+                character={character}
+                label={labels.attributes}
+                onChange={onAttributeChange}
+              />
+              <InventorySection
+                character={character}
+                items={selectedItems}
+                label={labels.inventory}
+                onToggleItem={onToggleItem}
+                onQuantityChange={onQuantityChange}
+                onRemoveManualItem={onRemoveManualItem}
+                onAddManualItem={onAddManualItem}
+              />
+              <section style={{ ...cardStyle, display: "grid", gap: 8 }}>
+                <div style={{ color: "var(--text-secondary)", fontSize: 12, fontWeight: 600 }}>Notes</div>
+                <div style={{ color: "var(--text-primary)", fontSize: 14 }}>
+                  {character.identity.notes?.trim() || "No notes added yet."}
+                </div>
+              </section>
+            </fieldset>
+          </CollapsibleSection>
+
+          {readOnly ? (
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: 12,
+                border: "1px solid var(--border-soft)",
+                background: "rgba(11, 22, 42, 0.65)",
+                color: "var(--text-secondary)",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Read-only access: you can view this character, but editing is disabled.
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

@@ -23,9 +23,9 @@ export const inputStyle: React.CSSProperties = {
   height: "var(--cb-control-height)",
   minHeight: "var(--cb-control-height)",
   lineHeight: "1.2",
-  marginTop: 4,
+  marginTop: 8,
   boxSizing: "border-box",
-  borderRadius: 10,
+  borderRadius: 8,
   border: "1px solid var(--cb-input-border)",
   background: "var(--cb-input-bg)",
   color: "var(--cb-text)",
@@ -42,7 +42,7 @@ export const selectStyle: React.CSSProperties = {
 export const buttonStyle: React.CSSProperties = {
   minHeight: "var(--cb-control-height)",
   padding: "0 var(--cb-control-padding-x)",
-  borderRadius: 10,
+  borderRadius: 8,
   border: "1px solid var(--cb-border-strong)",
   background: "var(--cb-button-bg)",
   color: "var(--cb-text)",
@@ -54,7 +54,7 @@ export const buttonStyle: React.CSSProperties = {
   alignItems: "center",
   justifyContent: "center",
   gap: 8,
-  transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease, opacity 180ms ease",
+  transition: "transform 140ms ease-out, box-shadow 140ms ease-out, border-color 140ms ease-out, background-color 140ms ease-out, opacity 140ms ease-out",
   boxShadow: "0 0 0 rgba(0, 0, 0, 0)",
 };
 
@@ -95,14 +95,14 @@ export const labelTextStyle: React.CSSProperties = {
 
 export const cardStyle: React.CSSProperties = {
   border: "1px solid var(--cb-border)",
-  borderRadius: 10,
-  padding: 12,
+  borderRadius: 12,
+  padding: 16,
   background: "var(--cb-surface)",
 };
 
 export const statCardStyle: React.CSSProperties = {
   border: "1px solid var(--cb-border)",
-  borderRadius: 10,
-  padding: 12,
+  borderRadius: 12,
+  padding: 16,
   background: "var(--cb-surface-raised)",
 };

@@ -199,7 +199,7 @@ function EntityListEditor<T extends { id: string; name: string }>(props: {
           props.items.map((item) => {
             const isSelected = item.id === props.selectedId;
             return (
-              <div key={item.id} style={{ display: "flex", gap: 6 }}>
+              <div key={item.id} style={{ display: "flex", gap: 8 }}>
                 <button
                   onClick={() => props.onSelect(item.id)}
                   style={{
@@ -853,7 +853,7 @@ export default function AdminScreen({
       {tab === "classes" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage classes.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Select campaign to manage classes.</p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
@@ -870,7 +870,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedClass ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a class to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Select class to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -925,7 +925,7 @@ export default function AdminScreen({
                     </p>
                     <div style={gridCols(3)}>
                       {ATTRIBUTE_KEYS.map((attribute) => (
-                        <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 6 }}>
+                        <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 8 }}>
                           <span>{attribute}</span>
                           <input
                             type="number"
@@ -1007,7 +1007,7 @@ export default function AdminScreen({
                           <div style={{ ...panelStyle, padding: 12 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
                               <h4 style={{ margin: 0 }}>Allowed Skills</h4>
-                              <div style={{ display: "flex", gap: 6 }}>
+                              <div style={{ display: "flex", gap: 8 }}>
                                 <button
                                   type="button"
                                   className="button-control" style={buttonStyle}
@@ -1055,7 +1055,7 @@ export default function AdminScreen({
                           <div style={{ ...panelStyle, padding: 12 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
                               <h4 style={{ margin: 0 }}>Allowed Powers</h4>
-                              <div style={{ display: "flex", gap: 6 }}>
+                              <div style={{ display: "flex", gap: 8 }}>
                                 <button
                                   type="button"
                                   className="button-control" style={buttonStyle}
@@ -1106,7 +1106,7 @@ export default function AdminScreen({
                           <div style={{ ...panelStyle, padding: 12 }}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
                               <h4 style={{ margin: 0 }}>Allowed Items</h4>
-                              <div style={{ display: "flex", gap: 6 }}>
+                              <div style={{ display: "flex", gap: 8 }}>
                                 <button
                                   type="button"
                                   className="button-control" style={buttonStyle}
@@ -1162,7 +1162,7 @@ export default function AdminScreen({
                       <div style={{ ...panelStyle, padding: 12 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
                           <h4 style={{ margin: 0 }}>Starting Attacks</h4>
-                          <div style={{ display: "flex", gap: 6 }}>
+                          <div style={{ display: "flex", gap: 8 }}>
                             <button
                               type="button"
                               className="button-control" style={buttonStyle}
@@ -1198,7 +1198,7 @@ export default function AdminScreen({
                       <div style={{ ...panelStyle, padding: 12 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
                           <h4 style={{ margin: 0 }}>Default Powers</h4>
-                          <div style={{ display: "flex", gap: 6 }}>
+                          <div style={{ display: "flex", gap: 8 }}>
                             <button
                               type="button"
                               className="button-control" style={buttonStyle}
@@ -1238,7 +1238,7 @@ export default function AdminScreen({
                       <h3 style={{ marginTop: 0, marginBottom: 0, color: "var(--text-primary)" }}>Level Progression</h3>
                       <button
                         type="button"
-                        style={{ ...buttonStyle, padding: "8px 12px", minWidth: 132 }}
+                        style={{ ...buttonStyle, padding: "0 12px", minWidth: 132 }}
                         onClick={addClassLevelProgressionRow}
                       >
                         Add Level Row
@@ -1262,7 +1262,7 @@ export default function AdminScreen({
                               <strong style={{ color: "var(--text-primary)" }}>Level {row.level}</strong>
                               <button
                                 type="button"
-                                style={{ ...buttonStyle, padding: "6px 10px" }}
+                                style={{ ...buttonStyle, padding: "0 12px" }}
                                 onClick={() => removeClassLevelProgressionRow(index)}
                               >
                                 Remove
@@ -1368,7 +1368,7 @@ export default function AdminScreen({
                                 </div>
                                 <button
                                   type="button"
-                                  style={{ ...buttonStyle, padding: "6px 10px", width: "100%" }}
+                                  style={{ ...buttonStyle, padding: "0 12px", width: "100%" }}
                                   onClick={() => addClassLevelRowBonus(index)}
                                 >
                                   Add Bonus
@@ -1415,7 +1415,7 @@ export default function AdminScreen({
                                       </label>
                                       <button
                                         type="button"
-                                        style={{ ...buttonStyle, padding: "6px 10px", width: "100%" }}
+                                        style={{ ...buttonStyle, padding: "0 12px", width: "100%" }}
                                         onClick={() => removeClassLevelRowBonus(index, bonusIndex)}
                                       >
                                         Remove
@@ -1440,7 +1440,7 @@ export default function AdminScreen({
       {tab === "races" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage races.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Select campaign to manage races.</p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
@@ -1457,7 +1457,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedRace ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a race to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Select race to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1490,7 +1490,7 @@ export default function AdminScreen({
                     </p>
                     <div style={gridCols(3)}>
                       {ATTRIBUTE_KEYS.map((attribute) => (
-                        <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 6 }}>
+                        <label key={attribute} style={{ ...labelTextStyle, display: "grid", gap: 8 }}>
                           <span>{attribute}</span>
                           <input
                             type="number"
@@ -1510,7 +1510,7 @@ export default function AdminScreen({
                     <div style={{ ...panelStyle, padding: 12 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
                         <h4 style={{ margin: 0 }}>Default Powers</h4>
-                        <div style={{ display: "flex", gap: 6 }}>
+                        <div style={{ display: "flex", gap: 8 }}>
                           <button
                             type="button"
                             className="button-control" style={buttonStyle}
@@ -1564,7 +1564,7 @@ export default function AdminScreen({
                     <div style={{ ...panelStyle, padding: 12 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 12 }}>
                         <h4 style={{ margin: 0 }}>Available Classes</h4>
-                        <div style={{ display: "flex", gap: 6 }}>
+                        <div style={{ display: "flex", gap: 8 }}>
                           <button
                             type="button"
                             className="button-control" style={buttonStyle}
@@ -1626,7 +1626,7 @@ export default function AdminScreen({
       {tab === "skills" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage skills.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Select campaign to manage skills.</p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
@@ -1643,7 +1643,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedSkill ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a skill to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Select skill to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1685,7 +1685,7 @@ export default function AdminScreen({
       {tab === "powers" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage powers.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Select campaign to manage powers.</p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
@@ -1702,7 +1702,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedPower ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose a power to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Select power to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1758,7 +1758,7 @@ export default function AdminScreen({
                           onClick={() => updatePower({ ...selectedPower, isAttack: !attackEnabled })}
                           style={{
                             ...buttonStyle,
-                            minHeight: 44,
+                            minHeight: 40,
                             borderRadius: 999,
                             padding: "0 16px",
                             border: attackEnabled
@@ -1803,7 +1803,7 @@ export default function AdminScreen({
       {tab === "items" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage items.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Select campaign to manage items.</p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
@@ -1820,7 +1820,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedItem ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose an item to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Select item to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>
@@ -1850,7 +1850,7 @@ export default function AdminScreen({
                           onClick={() => updateItem({ ...selectedItem, isAttack: !attackEnabled })}
                           style={{
                             ...buttonStyle,
-                            minHeight: 44,
+                            minHeight: 40,
                             borderRadius: 999,
                             padding: "0 16px",
                             border: attackEnabled
@@ -1895,7 +1895,7 @@ export default function AdminScreen({
       {tab === "attacks" && (
         !selectedCampaign ? (
           <div style={cardStyle()}>
-            <p style={{ margin: 0, ...mutedTextStyle }}>Choose a campaign to manage attacks.</p>
+            <p style={{ margin: 0, ...mutedTextStyle }}>Select campaign to manage attacks.</p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 24, flex: 1, minHeight: 0, overflow: "hidden" }} className="admin-split-layout">
@@ -1912,7 +1912,7 @@ export default function AdminScreen({
             <main style={{ height: "100%", minHeight: 0, overflow: "auto" }}>
               {!selectedAttack ? (
                 <div style={cardStyle()}>
-                  <p style={{ margin: 0, ...mutedTextStyle }}>Choose an attack to edit.</p>
+                  <p style={{ margin: 0, ...mutedTextStyle }}>Select attack to edit.</p>
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 16 }}>

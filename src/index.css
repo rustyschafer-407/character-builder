@@ -91,6 +91,7 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
+  --space-6: 32px;
 
   --mobile-page-padding: 12px;
   --mobile-card-gap: 12px;
@@ -1133,7 +1134,7 @@ select {
   min-height: var(--cb-control-height);
   padding: 0 var(--cb-control-padding-x);
   box-sizing: border-box;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--cb-input-border);
   background: var(--cb-input-bg);
   color: var(--cb-text);
@@ -1157,13 +1158,37 @@ select {
 .button-control,
 button {
   min-height: var(--cb-control-height);
-  border-radius: 10px;
+  border-radius: 8px;
+  font-weight: 500;
   transition:
-    transform 180ms ease,
-    box-shadow 180ms ease,
-    background-color 180ms ease,
-    border-color 180ms ease,
-    opacity 180ms ease;
+    transform 140ms ease-out,
+    box-shadow 140ms ease-out,
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    opacity 140ms ease-out;
+  white-space: nowrap;
+}
+
+.button-control.button-control--secondary {
+  min-height: 36px;
+}
+
+.access-management-panel .button-control,
+.admin-screen .button-control {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.access-management-panel .access-list-row .button-control {
+  flex: 0 1 132px;
+}
+
+.admin-tabs .button-control {
+  max-width: 172px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tap-row {
@@ -1192,8 +1217,37 @@ button {
 }
 
 button:hover {
-  transform: translateY(-0.5px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22);
+  transform: scale(1.02);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+button:active,
+.button-control:active {
+  transform: scale(0.98);
+}
+
+.action-feedback {
+  animation: actionFlash 220ms ease-out;
+}
+
+@keyframes actionFlash {
+  0% {
+    box-shadow: 0 0 0 0 var(--cb-accent-soft-strong);
+  }
+
+  100% {
+    box-shadow: 0 0 0 10px rgba(0, 0, 0, 0);
+  }
+}
+
+button:focus-visible,
+.button-control:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--cb-focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--cb-focus-shadow);
 }
 
 /* Neon-only treatment for a stronger cyberpunk identity. */
@@ -1234,6 +1288,38 @@ html[data-cb-theme="neon"] .button-control:hover {
   box-shadow:
     0 0 0 1px rgba(255, 92, 171, 0.5) inset,
     0 0 16px rgba(32, 215, 255, 0.34);
+}
+
+html[data-cb-theme="scifi"] .character-dashboard .character-quick-actions {
+  box-shadow:
+    0 0 0 1px rgba(73, 224, 255, 0.18) inset,
+    0 8px 22px rgba(73, 224, 255, 0.12);
+}
+
+html[data-cb-theme="fantasy"] .character-dashboard section {
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(235, 206, 160, 0.08), transparent 40%),
+    repeating-linear-gradient(45deg, rgba(204, 170, 121, 0.03) 0 2px, transparent 2px 6px);
+}
+
+html[data-cb-theme="horror"] .character-dashboard section {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+html[data-cb-theme="neon"] .character-dashboard .character-quick-actions {
+  box-shadow:
+    0 0 0 1px rgba(255, 92, 171, 0.3) inset,
+    0 0 14px rgba(32, 215, 255, 0.24);
+}
+
+.character-dashboard .character-dashboard-grid {
+  align-items: start;
+}
+
+.character-dashboard .character-quick-actions {
+  backdrop-filter: blur(8px);
 }
 
 /* Mobile utility classes */
@@ -1589,6 +1675,10 @@ html[data-cb-theme="neon"] .button-control:hover {
   .character-creation-wizard [style*="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr))"],
   .character-creation-wizard [style*="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))"],
   .character-creation-wizard [style*="grid-template-columns: repeat(auto-fit, minmax(230px, 1fr))"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .character-dashboard .character-dashboard-grid {
     grid-template-columns: 1fr !important;
   }
 }

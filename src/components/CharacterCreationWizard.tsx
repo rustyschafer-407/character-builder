@@ -214,7 +214,6 @@ export default function CharacterCreationWizard({
   canChooseCharacterType,
 }: Props) {
   const [rollEffect, setRollEffect] = useState<RollEffectType | null>(null);
-  const [isMinMaxTooltipOpen, setIsMinMaxTooltipOpen] = useState(false);
   const glowSoundRef = useRef<HTMLAudioElement | null>(null);
   const crackSoundRef = useRef<HTMLAudioElement | null>(null);
   const hasUserInteractedRef = useRef(false);
@@ -233,7 +232,6 @@ export default function CharacterCreationWizard({
   const highStats = attributeScores.filter((score) => score >= 16).length;
   const dumpStats = attributeScores.filter((score) => score <= 8).length;
   const isMinMaxed = highStats >= 2 && dumpStats >= 1;
-  const showMinMaxTooltip = isMinMaxed && isMinMaxTooltipOpen;
 
   useEffect(() => {
     if (!rollEffect) return;
@@ -370,7 +368,7 @@ export default function CharacterCreationWizard({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 14,
+          marginBottom: 12,
           gap: 12,
           flexWrap: "wrap",
         }}
@@ -391,7 +389,7 @@ export default function CharacterCreationWizard({
           display: "flex",
           alignItems: "center",
           gap: 0,
-          marginBottom: 14,
+          marginBottom: 12,
         }}
       >
         {stepTitles.map((title, index) => {
@@ -420,13 +418,13 @@ export default function CharacterCreationWizard({
           );
         })}
       </div>
-      <div style={{ fontSize: 11, color: "var(--text-secondary)", marginBottom: 10, opacity: 0.58, fontWeight: 500 }}>
+      <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8, opacity: 0.68, fontWeight: 500 }}>
         Step {step + 1} of {stepTitles.length} — {stepTitles[step]}
       </div>
 
       <div className={`${attributesCrackClassName} wizard-step-panel`}>
       {step === 0 && (
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {/* ── Primary: manual inputs ── */}
           <label style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
             Character Name
@@ -671,35 +669,9 @@ export default function CharacterCreationWizard({
               </select>
             </label>
             {isMinMaxed && (
-              <div
-                className="wizard-minmax-warning"
-                onBlur={(event) => {
-                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-                    setIsMinMaxTooltipOpen(false);
-                  }
-                }}
-              >
-                <button
-                  type="button"
-                  className="wizard-minmax-badge"
-                  aria-label="Optimized build warning"
-                  aria-describedby="wizard-minmax-tooltip"
-                  aria-expanded={showMinMaxTooltip}
-                  onClick={() => setIsMinMaxTooltipOpen((open) => !open)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape") {
-                      setIsMinMaxTooltipOpen(false);
-                    }
-                  }}
-                >
-                  ⚠️ Optimized Build
-                </button>
-                <span
-                  id="wizard-minmax-tooltip"
-                  role="tooltip"
-                  className={`wizard-minmax-tooltip ${showMinMaxTooltip ? "is-visible" : ""}`}
-                >
-                  Your GM is already planning your downfall.
+              <div className="wizard-minmax-warning">
+                <span className="wizard-minmax-badge" aria-label="Optimized build warning">
+                  Optimized build
                 </span>
               </div>
             )}

@@ -301,8 +301,8 @@ export default function AccessManagementPanel({
           style={{
             border: "1px solid var(--cb-danger-soft-border)",
             background: "var(--cb-danger-soft)",
-            borderRadius: 10,
-            padding: "12px 12px 12px",
+            borderRadius: 12,
+            padding: "12px 16px",
             color: "var(--cb-danger-text)",
             fontWeight: 600,
             fontSize: 13,
@@ -320,8 +320,8 @@ export default function AccessManagementPanel({
             bottom: 20,
             border: "1px solid var(--cb-success-soft-border)",
             background: "var(--cb-success-soft)",
-            borderRadius: 10,
-            padding: "12px 12px 12px",
+            borderRadius: 12,
+            padding: "12px 16px",
             color: "var(--cb-success-text)",
             fontWeight: 700,
             fontSize: 13,
@@ -350,7 +350,7 @@ export default function AccessManagementPanel({
       </div>
 
       {activeWorkflow === "people" && canManageUsers ? (
-        <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, padding: 12, display: "grid", gap: 12 }}>
+        <div style={{ border: "1px solid var(--border-soft)", borderRadius: 12, padding: 12, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>People</h3>
             <button
@@ -372,8 +372,8 @@ export default function AccessManagementPanel({
               style={{
                 border: peopleResult.type === "success" ? "1px solid var(--cb-success-soft-border)" : "1px solid var(--cb-danger-soft-border)",
                 background: peopleResult.type === "success" ? "var(--cb-success-soft)" : "var(--cb-danger-soft)",
-                borderRadius: 10,
-                padding: "12px 12px 12px",
+                borderRadius: 12,
+                padding: "12px 16px",
                 color: peopleResult.type === "success" ? "var(--cb-success-text)" : "var(--cb-danger-text)",
                 fontWeight: 600,
                 fontSize: 13,
@@ -383,8 +383,8 @@ export default function AccessManagementPanel({
             </div>
           ) : null}
 
-          <div className="access-people-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+          <div className="access-people-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 12, overflow: "hidden" }}>
+            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.4fr 1.8fr 1fr auto", gap: 8, padding: "12px 16px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Name</div>
               <div>Email</div>
               <div>Roles</div>
@@ -392,7 +392,7 @@ export default function AccessManagementPanel({
             </div>
             <div style={{ display: "grid", gap: 0 }}>
               {users.length === 0 ? (
-                <div style={{ display: "grid", placeItems: "center", padding: 24, gap: 6, textAlign: "center" }}>
+                <div style={{ display: "grid", placeItems: "center", padding: 24, gap: 8, textAlign: "center" }}>
                   <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>No players yet.</div>
                   <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>Add a player to get started.</div>
                 </div>
@@ -406,7 +406,7 @@ export default function AccessManagementPanel({
                       gridTemplateColumns: "1.4fr 1.8fr 1fr auto",
                       gap: 8,
                       alignItems: "center",
-                      padding: "12px 12px 12px",
+                      padding: "12px 16px",
                       borderTop: "1px solid rgba(58, 78, 127, 0.35)",
                       background: hoveredPeopleRowId === user.id ? "rgba(73, 224, 255, 0.08)" : "transparent",
                       transition: "background 120ms ease",
@@ -418,7 +418,7 @@ export default function AccessManagementPanel({
                       {user.display_name || user.id}
                     </div>
                     <div style={{ color: "var(--text-secondary)" }}>{user.email || "No email"}</div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {roleBadges(user).map((badge) => (
                         <span
                           key={`${user.id}-${badge}`}
@@ -529,8 +529,8 @@ export default function AccessManagementPanel({
                   style={{
                     border: createPlayerResult.type === "success" ? "1px solid var(--cb-success-soft-border)" : "1px solid var(--cb-danger-soft-border)",
                     background: createPlayerResult.type === "success" ? "var(--cb-success-soft)" : "var(--cb-danger-soft)",
-                    borderRadius: 10,
-                    padding: "12px 12px 12px",
+                    borderRadius: 12,
+                    padding: "12px 16px",
                     color: createPlayerResult.type === "success" ? "var(--cb-success-text)" : "var(--cb-danger-text)",
                     fontWeight: 600,
                     fontSize: 13,
@@ -778,8 +778,8 @@ export default function AccessManagementPanel({
                     style={{
                       border: "1px solid var(--cb-danger-soft-border)",
                       background: "var(--cb-danger-soft)",
-                      borderRadius: 10,
-                      padding: "12px 12px 12px",
+                      borderRadius: 12,
+                      padding: "12px 16px",
                       color: "var(--cb-danger-text)",
                       fontWeight: 600,
                       fontSize: 13,
@@ -815,7 +815,7 @@ export default function AccessManagementPanel({
       ) : null}
 
       {activeWorkflow === "campaign-members" && canManageCampaignAccess ? (
-        <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, padding: 12, display: "grid", gap: 12 }}>
+        <div style={{ border: "1px solid var(--border-soft)", borderRadius: 12, padding: 12, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Campaign Members: {campaignName}</h3>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -844,8 +844,8 @@ export default function AccessManagementPanel({
               style={{
                 border: campaignMemberResult.type === "success" ? "1px solid var(--cb-success-soft-border)" : "1px solid var(--cb-danger-soft-border)",
                 background: campaignMemberResult.type === "success" ? "var(--cb-success-soft)" : "var(--cb-danger-soft)",
-                borderRadius: 10,
-                padding: "12px 12px 12px",
+                borderRadius: 12,
+                padding: "12px 16px",
                 color: campaignMemberResult.type === "success" ? "var(--cb-success-text)" : "var(--cb-danger-text)",
                 fontWeight: 600,
                 fontSize: 13,
@@ -898,7 +898,7 @@ export default function AccessManagementPanel({
                     className="form-control" style={inputStyle}
                     disabled={busy}
                   >
-                    <option value="">Choose player</option>
+                    <option value="">Select player</option>
                     {users
                       .filter((u) => !campaignAccessRows.some((r) => r.user_id === u.id))
                       .map((u) => (
@@ -949,8 +949,8 @@ export default function AccessManagementPanel({
             </div>
           ) : null}
 
-          <div className="access-campaign-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+          <div className="access-campaign-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 12, overflow: "hidden" }}>
+            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.2fr 1.4fr 1fr auto", gap: 8, padding: "12px 16px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>Display Name</div>
               <div>Email</div>
               <div>Role</div>
@@ -958,7 +958,7 @@ export default function AccessManagementPanel({
             </div>
             <div style={{ display: "grid", gap: 0 }}>
               {campaignAccessRows.length === 0 ? (
-                <div style={{ display: "grid", placeItems: "center", padding: 24, gap: 6, textAlign: "center" }}>
+                <div style={{ display: "grid", placeItems: "center", padding: 24, gap: 8, textAlign: "center" }}>
                   <div style={{ color: "var(--text-primary)", fontWeight: 700 }}>No players in this campaign.</div>
                   <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>Add a player to start building characters.</div>
                 </div>
@@ -977,7 +977,7 @@ export default function AccessManagementPanel({
                         gridTemplateColumns: "1.2fr 1.4fr 1fr auto",
                         gap: 8,
                         alignItems: "center",
-                        padding: "12px 12px 12px",
+                        padding: "12px 16px",
                         borderTop: "1px solid rgba(58, 78, 127, 0.35)",
                         background: hoveredCampaignRowId === row.user_id ? "rgba(73, 224, 255, 0.08)" : "transparent",
                         transition: "background 120ms ease",
@@ -1143,7 +1143,7 @@ export default function AccessManagementPanel({
       ) : null}
 
       {activeWorkflow === "character-access" && canManageCharacterAccess && characterName ? (
-        <div style={{ border: "1px solid var(--border-soft)", borderRadius: 10, padding: 12, display: "grid", gap: 12 }}>
+        <div style={{ border: "1px solid var(--border-soft)", borderRadius: 12, padding: 12, display: "grid", gap: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Character Access: {characterName}</h3>
           </div>
@@ -1159,7 +1159,7 @@ export default function AccessManagementPanel({
                   className="form-control" style={inputStyle}
                   disabled={busy}
                 >
-                  <option value="">Choose user</option>
+                  <option value="">Select user</option>
                   {characterUserCandidateIds.map((userId) => (
                     <option key={userId} value={userId}>
                       {getUserLabel(userId)}
@@ -1199,8 +1199,8 @@ export default function AccessManagementPanel({
             </div>
           </div>
 
-          <div className="access-character-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 10, overflow: "hidden" }}>
-            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "12px 12px 12px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
+          <div className="access-character-list" style={{ border: "1px solid var(--border-soft)", borderRadius: 12, overflow: "hidden" }}>
+            <div className="access-list-header" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, padding: "12px 16px", background: "rgba(16, 30, 58, 0.45)", color: "var(--cb-muted-label)", fontWeight: 700, fontSize: 12, letterSpacing: "0.03em" }}>
               <div>User</div>
               <div>Permission</div>
               <div>Actions</div>
@@ -1214,7 +1214,7 @@ export default function AccessManagementPanel({
                     row.role === "viewer" ? ["viewer", "editor"] : characterRoleOptions;
 
                   return (
-                    <div key={`${row.character_id}-${row.user_id}`} className="access-list-row mobile-card" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, alignItems: "center", padding: "12px 12px 12px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
+                    <div key={`${row.character_id}-${row.user_id}`} className="access-list-row mobile-card" style={{ display: "grid", gridTemplateColumns: "1.8fr 1fr auto", gap: 8, alignItems: "center", padding: "12px 16px", borderTop: "1px solid rgba(58, 78, 127, 0.35)" }}>
                       <div style={{ color: "var(--text-primary)", fontWeight: 600 }}>{getUserLabel(row.user_id)}</div>
                       <select
                         value={row.role}
