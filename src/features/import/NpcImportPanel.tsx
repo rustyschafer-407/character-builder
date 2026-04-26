@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import type { CampaignDefinition } from "../../types/gameData";
 import { buttonStyle, inputStyle, labelTextStyle, panelStyle } from "../../components/uiStyles";
 import { buildNpcImportPrompt } from "./npcImportPromptBuilder";
@@ -94,7 +95,7 @@ export default function NpcImportPanel({ open, campaign, canImport, onClose, onC
     }
   }
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
@@ -378,6 +379,7 @@ export default function NpcImportPanel({ open, campaign, canImport, onClose, onC
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
