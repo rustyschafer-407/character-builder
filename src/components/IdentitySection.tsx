@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CharacterRecord } from "../types/character";
 import { buttonStyle, inputStyle, labelTextStyle, panelStyle, primaryButtonStyle } from "./uiStyles";
 import "./IdentitySection.css";
@@ -7,13 +7,13 @@ interface Props {
   character: CharacterRecord;
   campaignName: string;
   raceName: string;
+  classLabel: string;
   className: string;
   levelLabel: string;
   hpLabel: string;
   roll20ModPayload: string;
   readOnly?: boolean;
   canEditCharacterType?: boolean;
-  editNameRequestToken?: number;
   onNameChange: (name: string) => void;
   onCharacterTypeChange: (characterType: "pc" | "npc") => void;
   onOpenLevelUpWizard: () => void;
@@ -23,13 +23,13 @@ export default function IdentitySection({
   character,
   campaignName,
   raceName,
+  classLabel,
   className,
   levelLabel,
   hpLabel,
   roll20ModPayload,
   readOnly = false,
   canEditCharacterType = false,
-  editNameRequestToken = 0,
   onNameChange,
   onCharacterTypeChange,
   onOpenLevelUpWizard,
@@ -41,11 +41,6 @@ export default function IdentitySection({
     setDraftName(character.identity.name);
     setEditingName(true);
   }
-
-  useEffect(() => {
-    if (editNameRequestToken <= 0 || readOnly) return;
-    startNameEdit();
-  }, [editNameRequestToken, readOnly]);
 
   function saveNameEdit() {
     const nextName = draftName.trim();
@@ -84,25 +79,24 @@ export default function IdentitySection({
   }
 
   return (
-    <section style={{ ...panelStyle, padding: 24 }} className="character-identity-card character-header-card">
+    <section style={panelStyle} className="character-identity-card">
       <div className="character-identity-layout">
         <div className="character-identity-main">
           <div>
             {!editingName ? (
-              <div className="character-title-row character-name-row">
-                <h1 className="character-title character-name">{character.identity.name || "Unnamed Character"}</h1>
+              <div className="character-name-row">
+                <div className="character-name">{character.identity.name || "Unnamed Character"}</div>
                 <button
                   onClick={startNameEdit}
-                  className="button-control character-name-edit icon-button"
+                  className="button-control character-name-edit"
                   style={{
                     ...buttonStyle,
-                    width: 32,
-                    minWidth: 32,
-                    height: 32,
-                    minHeight: 32,
-                    padding: 0,
+                    padding: "0 8px",
+                    minWidth: 0,
+                    minHeight: 24,
                     fontSize: 13,
                     lineHeight: 1,
+                    alignSelf: "baseline",
                   }}
                   aria-label="Edit character name"
                   title="Edit name"
@@ -160,29 +154,29 @@ export default function IdentitySection({
 
             {!editingName ? (
               <div className="character-subtitle">
-                {className} · {raceName}
+                {classLabel}: {className} • {raceName}
               </div>
             ) : null}
           </div>
 
-          <div className="character-chip-row character-meta-row">
-            <span className="character-chip character-meta-chip">
+          <div className="character-meta-row">
+            <span className="character-meta-chip">
               <span className="character-meta-label">{levelLabel}</span>
               <span className="character-meta-value">{character.level}</span>
             </span>
-            <span className="character-chip character-meta-chip">
+            <span className="character-meta-chip">
               <span className="character-meta-label">{hpLabel}</span>
               <span className="character-meta-value">
                 {character.hp.current}/{character.hp.max}
               </span>
             </span>
-            <span className="character-chip character-meta-chip">
+            <span className="character-meta-chip">
               <span className="character-meta-label">Campaign:</span>
               <span className="character-meta-value">{campaignName}</span>
             </span>
 
             {isTypeEditable ? (
-              <label className="character-chip character-meta-chip character-type-chip character-type-chip--editable">
+              <label className="character-meta-chip character-type-chip character-type-chip--editable">
                 <span className="character-meta-label">Type:</span>
                 <span className="character-meta-value">{characterType.toUpperCase()}</span>
                 <span className="character-type-caret" aria-hidden="true">
@@ -200,31 +194,30 @@ export default function IdentitySection({
                 </select>
               </label>
             ) : (
-              <span className="character-chip character-meta-chip character-type-chip character-type-chip--readonly">
+              <span className="character-meta-chip character-type-chip character-type-chip--readonly">
                 <span className="character-meta-label">Type:</span>
                 <span className="character-meta-value">{characterType.toUpperCase()}</span>
               </span>
             )}
           </div>
+        </div>
 
-          <div className="character-primary-actions character-actions">
-        
+        <div className="character-actions">
           <button
             onClick={copyToRoll20}
-            className="button-control character-primary-action btn-primary"
-            style={{ ...primaryButtonStyle, padding: "0 16px", minHeight: 40, fontSize: 14, fontWeight: 700 }}
+            className="button-control character-primary-action"
+            style={{ ...primaryButtonStyle, padding: "0 14px", minHeight: 40, fontSize: 14 }}
           >
             Copy to Roll20
           </button>
           <button
             onClick={onOpenLevelUpWizard}
-            className="button-control character-secondary-action btn-secondary"
+            className="button-control character-secondary-action"
             style={{
               ...buttonStyle,
-              padding: "0 16px",
+              padding: "0 14px",
               minHeight: 40,
               fontSize: 14,
-              fontWeight: 700,
               background: "transparent",
               border: "1px solid var(--cb-border)",
             }}
@@ -232,7 +225,6 @@ export default function IdentitySection({
           >
             Level Up
           </button>
-          </div>
         </div>
       </div>
     </section>
