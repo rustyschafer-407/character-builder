@@ -723,7 +723,7 @@ export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportP
     attacks: manualAttacks,
   };
 
-  const attacks = syncDerivedAttacks(
+  const syncedAttacks = syncDerivedAttacks(
     {
       powers: characterWithSelections.powers,
       inventory: characterWithSelections.inventory,
@@ -731,6 +731,16 @@ export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportP
     },
     syncedCampaign
   );
+
+  // Deduplicate by name — keep first occurrence (manual attacks are processed first
+  // by syncDerivedAttacks so they retain their full damage/bonus data).
+  const seenAttackNames = new Set<string>();
+  const attacks = syncedAttacks.filter((attack) => {
+    const key = attack.name.trim().toLowerCase();
+    if (seenAttackNames.has(key)) return false;
+    seenAttackNames.add(key);
+    return true;
+  });
 
   const draft = {
     characterType: "npc" as const,

@@ -109,6 +109,13 @@ REFERENCE RULES:
 - If a referenced name already exists in campaign context below, reuse it.
 - Only add new entries under skills/powers/items/attacks/races/classes when required.
 
+ATTACK DUPLICATION RULES (critical — read carefully):
+- Powers with isAttack=true automatically generate their own attack. Do NOT also add an entry in content.attacks for that same attack.
+- Items with isAttack=true automatically generate their own attack. Do NOT also add an entry in content.attacks for that same attack.
+- Do NOT list an isAttack power or item name in characters[0].attacks — add it only to characters[0].powers or characters[0].items. The attack will be derived automatically.
+- Only add entries to content.attacks for standalone weapon/attack templates that are NOT represented by a power or item with isAttack=true.
+- If you are unsure whether something is a power or a weapon attack, prefer modelling it as a power with isAttack=true and omitting it from content.attacks entirely.
+
 EXISTING CAMPAIGN CONTEXT (prefer reusing these names):
 ${stringifyList(existingContext)}
 
