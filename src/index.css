@@ -93,6 +93,8 @@
   --space-5: 24px;
   --space-6: 32px;
   --cb-number-input-color-scheme: dark;
+  --cb-number-stepper-opacity: 1;
+  --cb-number-stepper-filter: none;
 
   --mobile-page-padding: 12px;
   --mobile-card-gap: 12px;
@@ -664,6 +666,8 @@ html[data-cb-theme="fantasy"] {
   --cb-success-soft-border: rgba(78, 112, 68, 0.34);
   --cb-danger-soft: rgba(165, 93, 75, 0.12);
   --cb-danger-soft-border: rgba(165, 93, 75, 0.34);
+  --cb-number-input-color-scheme: light;
+  --cb-number-stepper-filter: contrast(240%) brightness(0.35);
   --cb-modal-overlay: rgba(43, 33, 21, 0.4);
   --cb-grid-line: rgba(156, 126, 70, 0.2);
   --cb-body-glow-a: rgba(201, 176, 122, 0.12);
@@ -1021,7 +1025,6 @@ html[data-cb-theme="cosmic"] {
   --cb-body-glow-a: rgba(158, 138, 255, 0.14);
   --cb-body-glow-b: rgba(95, 211, 248, 0.1);
   --cb-focus-shadow: rgba(196, 183, 255, 0.22);
-  --cb-number-input-color-scheme: light;
   --cb-button-bg: rgba(28, 36, 77, 0.95);
   --cb-button-danger-bg: rgba(241, 164, 209, 0.16);
   --cb-button-danger-border: rgba(241, 164, 209, 0.42);
@@ -1213,7 +1216,8 @@ input[type="number"] {
 
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
-  opacity: 1;
+  opacity: var(--cb-number-stepper-opacity);
+  filter: var(--cb-number-stepper-filter);
 }
 
 button {
