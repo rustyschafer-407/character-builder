@@ -214,6 +214,7 @@ export default function CharacterCreationWizard({
   canChooseCharacterType,
 }: Props) {
   const [rollEffect, setRollEffect] = useState<RollEffectType | null>(null);
+  const [isMinMaxTooltipOpen, setIsMinMaxTooltipOpen] = useState(false);
   const glowSoundRef = useRef<HTMLAudioElement | null>(null);
   const crackSoundRef = useRef<HTMLAudioElement | null>(null);
   const hasUserInteractedRef = useRef(false);
@@ -670,8 +671,27 @@ export default function CharacterCreationWizard({
             </label>
             {isMinMaxed && (
               <div className="wizard-minmax-warning">
-                <span className="wizard-minmax-badge" aria-label="Optimized build warning">
-                  Optimized build
+                <button
+                  type="button"
+                  className="wizard-minmax-badge"
+                  aria-label="Optimized build warning"
+                  aria-describedby="wizard-minmax-tooltip"
+                  aria-expanded={isMinMaxTooltipOpen}
+                  onClick={() => setIsMinMaxTooltipOpen((open) => !open)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setIsMinMaxTooltipOpen(false);
+                    }
+                  }}
+                >
+                  ⚠️ Optimized Build
+                </button>
+                <span
+                  id="wizard-minmax-tooltip"
+                  role="tooltip"
+                  className={`wizard-minmax-tooltip ${isMinMaxTooltipOpen ? "is-visible" : ""}`}
+                >
+                  Your GM is already planning your downfall.
                 </span>
               </div>
             )}
