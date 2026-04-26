@@ -2201,7 +2201,7 @@ export default function AdminScreen({
                     IMPORT COMPLETE
                   </div>
                   <p style={{ margin: 0, color: "var(--text-primary)", lineHeight: 1.6 }}>
-                    Imported {campaignImportResult.importedCounts.powers} powers, {campaignImportResult.importedCounts.skills} skills, and {campaignImportResult.importedCounts.items} items. Skipped {campaignImportResult.skippedDuplicates} duplicates.
+                    Imported {campaignImportResult.importedCounts.powers} powers, {campaignImportResult.importedCounts.skills} skills, {campaignImportResult.importedCounts.items} items, and {campaignImportResult.importedCounts.attacks} attacks. Skipped {campaignImportResult.skippedDuplicates} duplicates.
                   </p>
                 </div>
 
@@ -2235,6 +2235,14 @@ export default function AdminScreen({
                       <div>
                         <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>Items found</div>
                         <div style={{ color: "var(--text-primary)", fontSize: 24, fontWeight: 800 }}>{campaignImportPreview.items.length}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>Attacks to create</div>
+                        <div style={{ color: "var(--text-primary)", fontSize: 24, fontWeight: 800 }}>
+                          {campaignImportMode === "update"
+                            ? campaignImportPreview.attacksToCreateByMode.update
+                            : campaignImportPreview.attacksToCreateByMode.skip}
+                        </div>
                       </div>
                       <div>
                         <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>Duplicates found</div>

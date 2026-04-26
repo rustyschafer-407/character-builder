@@ -10,9 +10,41 @@ export type DerivedAttackSource = {
 
 export const DERIVED_ATTACK_DEFAULTS = {
   attribute: "STR" as const,
-  damage: "1d6",
+  damage: "",
   bonus: 0,
 };
+
+const DAMAGE_DICE_PATTERN = /\b\d+d\d+(?:\s*[+-]\s*\d+)?\b/i;
+
+export function normalizeDerivedAttackName(name: string) {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+export function extractDamageDiceFromText(text: string | undefined): string | null {
+  if (!text) return null;
+  const match = text.match(DAMAGE_DICE_PATTERN);
+  return match ? match[0].replace(/\s+/g, "") : null;
+}
+
+function resolveDerivedSourceDefaults(campaign: CampaignDefinition, source: DerivedAttackSource) {
+  if (source.type === "power") {
+    const power = campaign.powers.find((entry) => entry.id === source.id);
+    const derivedDamage = extractDamageDiceFromText(power?.description);
+    return {
+      attribute: power?.saveAttribute ?? DERIVED_ATTACK_DEFAULTS.attribute,
+      damage: derivedDamage ?? DERIVED_ATTACK_DEFAULTS.damage,
+      notes: power?.description ?? "",
+    };
+  }
+
+  const item = campaign.items.find((entry) => entry.id === source.id);
+  const derivedDamage = extractDamageDiceFromText(item?.description);
+  return {
+    attribute: DERIVED_ATTACK_DEFAULTS.attribute,
+    damage: derivedDamage ?? DERIVED_ATTACK_DEFAULTS.damage,
+    notes: item?.description ?? "",
+  };
+}
 
 function getDerivedKey(type: DerivedAttackSourceType, id: string) {
   return `${type}:${id}`;
@@ -64,6 +96,7 @@ export function syncCampaignDerivedAttackTemplates(campaign: CampaignDefinition)
     desiredDerivedSources.map((source) => [getDerivedKey(source.type, source.id), source])
   );
   const seenKeys = new Set<string>();
+  const seenNames = new Set<string>();
   const nextAttackTemplates = [] as CampaignDefinition["attackTemplates"];
 
   for (const attack of campaign.attackTemplates) {
@@ -79,28 +112,39 @@ export function syncCampaignDerivedAttackTemplates(campaign: CampaignDefinition)
         name: attack.name || source.name,
       });
       seenKeys.add(key);
+      seenNames.add(normalizeDerivedAttackName(attack.name || source.name));
       continue;
     }
 
     nextAttackTemplates.push(attack);
+    seenNames.add(normalizeDerivedAttackName(attack.name));
   }
 
   for (const source of desiredDerivedSources) {
     const key = getDerivedKey(source.type, source.id);
     if (seenKeys.has(key)) continue;
 
+    const normalizedSourceName = normalizeDerivedAttackName(source.name);
+    if (normalizedSourceName && seenNames.has(normalizedSourceName)) {
+      seenKeys.add(key);
+      continue;
+    }
+
+    const defaults = resolveDerivedSourceDefaults(campaign, source);
+
     nextAttackTemplates.push({
       id: `attack-${crypto.randomUUID()}`,
       derivedFromType: source.type,
       derivedFromId: source.id,
       name: source.name,
-      attribute: DERIVED_ATTACK_DEFAULTS.attribute,
-      damage: DERIVED_ATTACK_DEFAULTS.damage,
+      attribute: defaults.attribute,
+      damage: defaults.damage,
       bonus: DERIVED_ATTACK_DEFAULTS.bonus,
-      notes: "",
+      notes: defaults.notes,
       tags: [],
     });
     seenKeys.add(key);
+    seenNames.add(normalizedSourceName);
   }
 
   const availableAttackTemplateIds = campaign.availableAttackTemplateIds

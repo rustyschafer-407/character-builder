@@ -24,16 +24,14 @@ If a category has no entries, return it as an empty array.
 General rules:
 - Preserve original names as closely as possible.
 - Do not invent content that is not supported by the source.
-- If the source is unclear, make the most reasonable structured interpretation using only the supported fields.
 - Keep descriptions concise but complete.
 - Use plain text only.
 - Do not copy long copyrighted passages verbatim. Summarize rules text into short usable descriptions.
 - If multiple entries are visible, extract all clear entries.
 - Ignore page numbers, headers, footers, ads, decorative text, and unrelated prose.
-- If an entry appears incomplete, include it only if it has a clear name and enough useful information.
 - Every object must have a non-empty name.
 - Use true/false booleans for usableAsAttack.
-- Leave unknown text out unless it can reasonably fit into description.
+- Leave unknown values as empty strings.
 - Do not include unsupported fields.
 - Do not include comments.
 - Do not include trailing commas.
@@ -67,7 +65,9 @@ Power interpretation rules:
 - level should capture the level, rank, tier, prerequisite level, or minimum level if present.
 - usesPerDay should capture limits such as at will, once per day, 3/day, per session, costs, charges, cooldowns, or similar. If no usage limit is present, leave it blank.
 - powerAttribute should capture the governing attribute, discipline group, school, source, or power family if present.
-- Set usableAsAttack to true if the power deals damage, makes an attack, grants an attack, or is clearly used offensively.
+- Set usableAsAttack to true if the power deals damage, lists damage dice, makes an attack, grants an attack, or is clearly used offensively.
+- If the power lists damage dice, include those dice in the description.
+- Do not add a separate damage field.
 - description should summarize the effect in a short usable form.
 
 Item object fields:
@@ -80,15 +80,16 @@ Item object fields:
 
 Item interpretation rules:
 - Use items for equipment, weapons, armor, gear, consumables, tools, vehicles, treasure, artifacts, cyberware, magic items, ammunition, or other inventory objects.
-- Set usableAsAttack to true if the item is used to attack, lists damage, has attack rules, grants an attack, or has obvious combat use as a weapon.
+- Set usableAsAttack to true if the item is used to attack, lists damage dice, has attack rules, grants an attack, or has obvious combat use as a weapon.
+- If the item lists damage dice, include those dice in the description.
 - If the item is armor or protective gear, do not mark usableAsAttack true unless it also has an attack.
 - description should summarize the item’s function.
-- If damage, attack bonus, range, ammo, armor value, cost, weight, quantity, or other unsupported details are present, include them briefly in description.
+- Do not add separate fields for damage, range, cost, weight, quantity, tags, notes, source, or category.
 
 Output quality rules:
 - The JSON must parse successfully.
 - Use only the supported fields listed above.
-- Do not add tags, notes, category, source, damage, saveAttribute, quantity, weight, cost, or any other extra fields.
+- Do not add tags, notes, category, source, damage, damageType, range, saveAttribute, quantity, weight, cost, attack, or any other extra fields.
 - Do not wrap the JSON in markdown.
 
 Now wait for me to provide the source material.`;

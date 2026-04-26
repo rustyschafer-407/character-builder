@@ -51,8 +51,8 @@ describe("syncCampaignDerivedAttackTemplates", () => {
       (attack) => attack.derivedFromType === "item" && attack.derivedFromId === "i1"
     );
 
-    expect(powerTemplate?.damage).toBe("1d6");
-    expect(itemTemplate?.damage).toBe("1d6");
+    expect(powerTemplate?.damage).toBe("");
+    expect(itemTemplate?.damage).toBe("");
   });
 });
 
@@ -71,7 +71,7 @@ describe("syncDerivedAttacks", () => {
 
     const attack = makeSelectedAttack(result);
     expect(attack).toBeTruthy();
-    expect(attack?.damage).toBe("1d6");
+    expect(attack?.damage).toBe("");
     expect(attack?.attribute).toBe("STR");
   });
 

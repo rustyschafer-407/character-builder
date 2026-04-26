@@ -1,5 +1,9 @@
 import { generateId } from "../lib/character";
-import { syncCampaignDerivedAttackTemplates } from "../lib/derivedAttacks";
+import {
+  extractDamageDiceFromText,
+  normalizeDerivedAttackName,
+  syncCampaignDerivedAttackTemplates,
+} from "../lib/derivedAttacks";
 import type { AttributeKey, CampaignDefinition, ItemDefinition, PowerDefinition, SkillDefinition } from "../types/gameData";
 
 export interface CampaignContentImportPayload {
@@ -13,27 +17,39 @@ export interface CampaignContentImportPayload {
 }
 
 export interface CampaignContentImportPower {
+  name?: string;
+  level?: number | string;
+  usesPerDay?: number | string;
+  powerAttribute?: string;
+  usableAsAttack?: boolean;
+  description?: string;
   [key: string]: unknown;
 }
 
 export interface CampaignContentImportSkill {
+  name?: string;
+  attribute?: string;
   [key: string]: unknown;
 }
 
 export interface CampaignContentImportItem {
+  name?: string;
   usableAsAttack?: boolean;
+  description?: string;
   [key: string]: unknown;
 }
 
 export interface ImportWarning {
   code:
     | "missing-description"
-    | "missing-category"
     | "unknown-fields"
     | "unsupported-fields"
     | "invalid-attribute"
     | "invalid-number"
-    | "invalid-boolean";
+    | "invalid-boolean"
+    | "attack-no-dice"
+    | "attack-name-exists"
+    | "attack-sync-failed";
   message: string;
 }
 
@@ -48,6 +64,11 @@ export interface ImportPreview {
     skills: number;
     items: number;
   };
+  attacksToCreate: number;
+  attacksToCreateByMode: {
+    skip: number;
+    update: number;
+  };
   warnings: ImportWarning[];
 }
 
@@ -57,6 +78,7 @@ export interface ImportResult {
     powers: number;
     skills: number;
     items: number;
+    attacks: number;
   };
   skippedDuplicates: number;
   warnings: ImportWarning[];
@@ -154,19 +176,6 @@ function stringifyMetadataValue(value: unknown): string | null {
     return String(value);
   }
   return null;
-}
-
-function appendMetadataBlock(baseText: string | undefined, label: string, metadata: Array<[string, string]>) {
-  if (metadata.length === 0) {
-    return baseText ?? "";
-  }
-
-  const metadataBlock = `${label}: ${metadata.map(([key, value]) => `${key}: ${value}`).join("; ")}`;
-  const trimmedBase = (baseText ?? "").trim();
-  if (!trimmedBase) {
-    return metadataBlock;
-  }
-  return `${trimmedBase}\n\n${metadataBlock}`;
 }
 
 function parseAttributeKey(value: unknown): AttributeKey | undefined {
@@ -281,16 +290,6 @@ function parseSkillRecord(record: RawRecord, index: number, warnings: WarningCol
     throw new Error(`Skill ${index + 1} is missing a name.`);
   }
 
-  const descriptionValue = readAliasedValue(normalizedRecord, ["description"]);
-  if (descriptionValue === undefined || `${descriptionValue}`.trim() === "") {
-    warnings.add("missing-description", "Skill entries are missing description");
-  }
-
-  const categoryValue = readAliasedValue(normalizedRecord, ["category"]);
-  if (categoryValue === undefined || `${categoryValue}`.trim() === "") {
-    warnings.add("missing-category", "Skill entries are missing category");
-  }
-
   const attributeValue = readAliasedValue(normalizedRecord, ["attribute", "skillattribute"]);
   const attribute = parseAttributeKey(attributeValue);
   if (!attribute && attributeValue !== undefined) {
@@ -300,25 +299,14 @@ function parseSkillRecord(record: RawRecord, index: number, warnings: WarningCol
   addUnknownFieldWarnings(
     `Skill \"${name}\"`,
     normalizedRecord,
-    new Set(["name", "attribute", "skillattribute", "description", "category"]),
+    new Set(["name", "attribute", "skillattribute"]),
     warnings
   );
-
-  const metadata: Array<[string, string]> = [];
-  const categoryText = stringifyMetadataValue(categoryValue);
-  if (categoryText) {
-    metadata.push(["Category", categoryText]);
-  }
 
   return {
     id: `skill-${generateId()}`,
     name,
     attribute: attribute ?? "STR",
-    description: appendMetadataBlock(
-      typeof descriptionValue === "string" ? descriptionValue.trim() : undefined,
-      "Imported metadata",
-      metadata
-    ),
     tags: [],
   };
 }
@@ -336,11 +324,6 @@ function parsePowerRecord(record: RawRecord, index: number, warnings: WarningCol
     warnings.add("missing-description", "Power entries are missing description");
   }
 
-  const categoryValue = readAliasedValue(normalizedRecord, ["category"]);
-  if (categoryValue === undefined || `${categoryValue}`.trim() === "") {
-    warnings.add("missing-category", "Power entries are missing category");
-  }
-
   const levelValue = readAliasedValue(normalizedRecord, ["level"]);
   const parsedLevel = parseNumber(levelValue);
   if (levelValue !== undefined && parsedLevel === undefined) {
@@ -353,33 +336,38 @@ function parsePowerRecord(record: RawRecord, index: number, warnings: WarningCol
     warnings.add("invalid-number", "Power entries include invalid uses per day values and they were ignored");
   }
 
-  const saveAttributeValue = readAliasedValue(normalizedRecord, ["powerattribute", "attribute", "saveattribute"]);
+  const saveAttributeValue = readAliasedValue(normalizedRecord, ["powerattribute"]);
   const saveAttribute = parseAttributeKey(saveAttributeValue);
   if (!saveAttribute && saveAttributeValue !== undefined) {
     warnings.add("invalid-attribute", "Power entries include unrecognized power attributes and they were ignored");
   }
 
+  const usableAsAttackValue = readAliasedValue(normalizedRecord, ["usableasattack"]);
+  const usableAsAttack = parseBoolean(usableAsAttackValue);
+  if (usableAsAttackValue !== undefined && usableAsAttack === undefined) {
+    warnings.add("invalid-boolean", "Power entries include invalid usable as attack values and defaulted to false");
+  }
+
+  const normalizedDescription = typeof descriptionValue === "string" ? descriptionValue.trim() : "";
+  if ((usableAsAttack ?? false) && !extractDamageDiceFromText(normalizedDescription)) {
+    warnings.add("attack-no-dice", `Power \"${name}\" is usable as attack but no damage dice were found. Attack will be created without damage.`);
+  }
+
   addUnknownFieldWarnings(
     `Power \"${name}\"`,
     normalizedRecord,
-    new Set(["name", "level", "usesperday", "powerattribute", "attribute", "saveattribute", "description", "category"]),
+    new Set(["name", "level", "usesperday", "powerattribute", "usableasattack", "description"]),
     warnings
   );
-
-  const metadata: Array<[string, string]> = [];
-  const categoryText = stringifyMetadataValue(categoryValue);
-  if (categoryText) {
-    metadata.push(["Category", categoryText]);
-  }
 
   return {
     id: `power-${generateId()}`,
     name,
     level: parsedLevel !== undefined ? Math.max(1, Math.floor(parsedLevel)) : 1,
-    description: typeof descriptionValue === "string" ? descriptionValue.trim() : "",
+    description: normalizedDescription,
     tags: [],
-    isAttack: false,
-    sourceText: appendMetadataBlock(undefined, "Imported metadata", metadata),
+    isAttack: usableAsAttack ?? false,
+    sourceText: "",
     usesPerDay: parsedUsesPerDay !== undefined ? Math.max(0, Math.floor(parsedUsesPerDay)) : undefined,
     saveAttribute,
   };
@@ -398,38 +386,28 @@ function parseItemRecord(record: RawRecord, index: number, warnings: WarningColl
     warnings.add("missing-description", "Item entries are missing description");
   }
 
-  const categoryValue = readAliasedValue(normalizedRecord, ["category"]);
-  if (categoryValue === undefined || `${categoryValue}`.trim() === "") {
-    warnings.add("missing-category", "Item entries are missing category");
-  }
-
   const isAttackValue = readAliasedValue(normalizedRecord, ["usableasattackflag", "usableasattack", "isattack"]);
   const isAttack = parseBoolean(isAttackValue);
   if (isAttackValue !== undefined && isAttack === undefined) {
     warnings.add("invalid-boolean", "Item entries include invalid usable as attack flags and defaulted to false");
   }
 
+  const normalizedDescription = typeof descriptionValue === "string" ? descriptionValue.trim() : "";
+  if ((isAttack ?? false) && !extractDamageDiceFromText(normalizedDescription)) {
+    warnings.add("attack-no-dice", `Item \"${name}\" is usable as attack but no damage dice were found. Attack will be created without damage.`);
+  }
+
   addUnknownFieldWarnings(
     `Item \"${name}\"`,
     normalizedRecord,
-    new Set(["name", "usableasattackflag", "usableasattack", "isattack", "description", "category"]),
+    new Set(["name", "usableasattackflag", "usableasattack", "isattack", "description"]),
     warnings
   );
-
-  const metadata: Array<[string, string]> = [];
-  const categoryText = stringifyMetadataValue(categoryValue);
-  if (categoryText) {
-    metadata.push(["Category", categoryText]);
-  }
 
   return {
     id: `item-${generateId()}`,
     name,
-    description: appendMetadataBlock(
-      typeof descriptionValue === "string" ? descriptionValue.trim() : undefined,
-      "Imported metadata",
-      metadata
-    ),
+    description: normalizedDescription,
     isAttack: isAttack ?? false,
     stackable: false,
     defaultQuantity: 1,
@@ -454,6 +432,88 @@ function getDuplicateCounts(campaign: CampaignDefinition, preview: Pick<ImportPr
   };
 }
 
+function estimateAttackCreationsByMode(
+  campaign: CampaignDefinition,
+  powers: PowerDefinition[],
+  items: ItemDefinition[],
+  duplicateCounts: { powers: number; items: number }
+) {
+  const existingPowerNames = new Set(campaign.powers.map((power) => normalizeImportName(power.name)));
+  const existingItemNames = new Set(campaign.items.map((item) => normalizeImportName(item.name)));
+
+  const compute = (mode: DuplicateHandlingMode) => {
+    const seenAttackNames = new Set(
+      campaign.attackTemplates.map((attack) => normalizeDerivedAttackName(attack.name))
+    );
+    let created = 0;
+
+    for (const power of powers) {
+      const powerName = normalizeImportName(power.name);
+      const isDuplicatePower = existingPowerNames.has(powerName);
+      if (mode === "skip" && isDuplicatePower) {
+        continue;
+      }
+      if (!power.isAttack) continue;
+      const attackName = normalizeDerivedAttackName(power.name);
+      if (!attackName || seenAttackNames.has(attackName)) {
+        continue;
+      }
+      seenAttackNames.add(attackName);
+      created += 1;
+    }
+
+    for (const item of items) {
+      const itemName = normalizeImportName(item.name);
+      const isDuplicateItem = existingItemNames.has(itemName);
+      if (mode === "skip" && isDuplicateItem) {
+        continue;
+      }
+      if (!item.isAttack) continue;
+      const attackName = normalizeDerivedAttackName(item.name);
+      if (!attackName || seenAttackNames.has(attackName)) {
+        continue;
+      }
+      seenAttackNames.add(attackName);
+      created += 1;
+    }
+
+    return created;
+  };
+
+  return {
+    skip: compute("skip"),
+    update: compute("update"),
+    skippedSourceDuplicates: duplicateCounts.powers + duplicateCounts.items,
+  };
+}
+
+function addAttackNameConflictWarnings(
+  campaign: CampaignDefinition,
+  powers: PowerDefinition[],
+  items: ItemDefinition[],
+  warnings: WarningCollector
+) {
+  const existingAttackNames = new Set(
+    campaign.attackTemplates.map((attack) => normalizeDerivedAttackName(attack.name))
+  );
+
+  for (const power of powers) {
+    if (!power.isAttack) continue;
+    const normalizedName = normalizeDerivedAttackName(power.name);
+    if (normalizedName && existingAttackNames.has(normalizedName)) {
+      warnings.add("attack-name-exists", `Attack \"${power.name}\" already exists and will be skipped.`);
+    }
+  }
+
+  for (const item of items) {
+    if (!item.isAttack) continue;
+    const normalizedName = normalizeDerivedAttackName(item.name);
+    if (normalizedName && existingAttackNames.has(normalizedName)) {
+      warnings.add("attack-name-exists", `Attack \"${item.name}\" already exists and will be skipped.`);
+    }
+  }
+}
+
 export function buildCampaignImportPreview(rawJson: string, campaign: CampaignDefinition): ImportPreview {
   let parsedPayload: unknown;
   try {
@@ -469,6 +529,11 @@ export function buildCampaignImportPreview(rawJson: string, campaign: CampaignDe
   const items = payload.content.items?.map((entry, index) => parseItemRecord(asRecord(entry, `Item ${index + 1}`), index, warnings)) ?? [];
 
   const duplicateCounts = getDuplicateCounts(campaign, { powers, skills, items });
+  addAttackNameConflictWarnings(campaign, powers, items, warnings);
+  const attacksToCreateByMode = estimateAttackCreationsByMode(campaign, powers, items, {
+    powers: duplicateCounts.powers,
+    items: duplicateCounts.items,
+  });
 
   return {
     payload,
@@ -477,6 +542,11 @@ export function buildCampaignImportPreview(rawJson: string, campaign: CampaignDe
     items,
     duplicateCount: duplicateCounts.total,
     duplicateCounts,
+    attacksToCreate: attacksToCreateByMode.skip,
+    attacksToCreateByMode: {
+      skip: attacksToCreateByMode.skip,
+      update: attacksToCreateByMode.update,
+    },
     warnings: warnings.toArray(),
   };
 }
@@ -496,6 +566,7 @@ function applyImportedEntries<T extends { id: string; name: string }>(input: {
   let appliedCount = 0;
   let skippedDuplicates = 0;
   const addedIds: string[] = [];
+  const appliedImportedEntries: T[] = [];
 
   for (const importedEntry of input.imported) {
     const normalizedName = normalizeImportName(importedEntry.name);
@@ -505,6 +576,7 @@ function applyImportedEntries<T extends { id: string; name: string }>(input: {
       existingByName.set(normalizedName, importedEntry);
       addedIds.push(importedEntry.id);
       appliedCount += 1;
+      appliedImportedEntries.push(importedEntry);
       continue;
     }
 
@@ -520,6 +592,7 @@ function applyImportedEntries<T extends { id: string; name: string }>(input: {
     }
     existingByName.set(normalizedName, merged);
     appliedCount += 1;
+    appliedImportedEntries.push(merged);
   }
 
   return {
@@ -527,6 +600,7 @@ function applyImportedEntries<T extends { id: string; name: string }>(input: {
     appliedCount,
     skippedDuplicates,
     addedIds,
+    appliedImportedEntries,
   };
 }
 
@@ -544,6 +618,7 @@ export function applyCampaignImport(
       name: imported.name,
       level: imported.level,
       description: imported.description,
+      isAttack: imported.isAttack,
       usesPerDay: imported.usesPerDay,
       saveAttribute: imported.saveAttribute,
       sourceText: imported.sourceText || existing.sourceText,
@@ -574,7 +649,7 @@ export function applyCampaignImport(
     }),
   });
 
-  const updatedCampaign = syncCampaignDerivedAttackTemplates({
+  const preSyncCampaign: CampaignDefinition = {
     ...campaign,
     powers: appliedPowers.entries,
     skills: appliedSkills.entries,
@@ -582,7 +657,22 @@ export function applyCampaignImport(
     availablePowerIds: mergeAvailableIds(campaign.availablePowerIds, appliedPowers.addedIds),
     availableSkillIds: mergeAvailableIds(campaign.availableSkillIds, appliedSkills.addedIds),
     availableItemIds: mergeAvailableIds(campaign.availableItemIds, appliedItems.addedIds),
-  });
+  };
+
+  const warnings = [...preview.warnings];
+  let updatedCampaign: CampaignDefinition = preSyncCampaign;
+  const beforeAttackIds = new Set(preSyncCampaign.attackTemplates.map((attack) => attack.id));
+
+  try {
+    updatedCampaign = syncCampaignDerivedAttackTemplates(preSyncCampaign);
+  } catch {
+    warnings.push({
+      code: "attack-sync-failed",
+      message: "Attack creation failed during import. Powers, skills, and items were still imported.",
+    });
+  }
+
+  const attacksCreated = updatedCampaign.attackTemplates.filter((attack) => !beforeAttackIds.has(attack.id)).length;
 
   return {
     campaign: updatedCampaign,
@@ -590,11 +680,12 @@ export function applyCampaignImport(
       powers: appliedPowers.appliedCount,
       skills: appliedSkills.appliedCount,
       items: appliedItems.appliedCount,
+      attacks: attacksCreated,
     },
     skippedDuplicates:
       appliedPowers.skippedDuplicates +
       appliedSkills.skippedDuplicates +
       appliedItems.skippedDuplicates,
-    warnings: preview.warnings,
+    warnings,
   };
 }
