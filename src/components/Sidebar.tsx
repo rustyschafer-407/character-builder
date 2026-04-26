@@ -246,10 +246,10 @@ export default function Sidebar({
                     textAlign: "center",
                     padding: "4px 8px",
                     borderRadius: 999,
-                    border: isNpc ? "1px solid rgba(255, 188, 83, 0.34)" : "1px solid rgba(73, 224, 255, 0.28)",
-                    color: isNpc ? "#e8c78c" : "#98ddec",
-                    background: isNpc ? "rgba(239, 170, 87, 0.12)" : "rgba(73, 224, 255, 0.1)",
-                    opacity: 0.82,
+                    border: isNpc ? "1px solid var(--cb-warning-soft-border)" : "1px solid var(--cb-accent)",
+                    color: isNpc ? "var(--cb-warning-text)" : "var(--cb-accent)",
+                    background: isNpc ? "var(--cb-warning-soft)" : "var(--cb-accent-soft)",
+                    opacity: 1,
                     justifySelf: "center",
                   }}
                 >
@@ -272,12 +272,12 @@ export default function Sidebar({
                   padding: 0,
                   justifySelf: "center",
                   alignSelf: "center",
-                  border: deleteHovered ? "1px solid var(--cb-button-danger-border)" : "1px solid rgba(255, 122, 157, 0.2)",
-                  background: deleteHovered ? "var(--cb-button-danger-bg)" : "rgba(255, 122, 157, 0.06)",
-                  color: deleteHovered ? "var(--cb-button-danger-text)" : "rgba(255, 214, 226, 0.64)",
-                  opacity: canDelete ? (deleteHovered ? 1 : 0.5) : 0.35,
+                  border: "1px solid var(--cb-button-danger-border)",
+                  background: "var(--cb-button-danger-bg)",
+                  color: "var(--cb-button-danger-text)",
+                  opacity: canDelete ? (deleteHovered ? 1 : 0.82) : 0.45,
                   cursor: canDelete ? "pointer" : "not-allowed",
-                  boxShadow: deleteHovered ? "0 6px 14px rgba(0, 0, 0, 0.2)" : "none",
+                  boxShadow: deleteHovered ? "0 6px 14px var(--cb-focus-shadow)" : "none",
                   transition: "all 180ms ease",
                 }}
                 disabled={!canDelete}
