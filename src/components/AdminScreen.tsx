@@ -26,6 +26,15 @@ import {
 } from "./uiStyles";
 import { generateId, sortByName } from "../lib/character";
 import { syncCampaignDerivedAttackTemplates } from "../lib/derivedAttacks";
+import {
+  applyCampaignImport,
+  buildCampaignImportPreview,
+} from "../utils/campaignImport";
+import type {
+  DuplicateHandlingMode,
+  ImportPreview,
+  ImportResult,
+} from "../utils/campaignImport";
 
 interface Props {
   gameData: GameData;
@@ -250,6 +259,12 @@ export default function AdminScreen({
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedAttackId, setSelectedAttackId] = useState<string>("");
   const [duplicateCampaignNoticeName, setDuplicateCampaignNoticeName] = useState<string | null>(null);
+  const [campaignImportOpen, setCampaignImportOpen] = useState(false);
+  const [campaignImportJson, setCampaignImportJson] = useState("");
+  const [campaignImportPreview, setCampaignImportPreview] = useState<ImportPreview | null>(null);
+  const [campaignImportMode, setCampaignImportMode] = useState<DuplicateHandlingMode>("skip");
+  const [campaignImportError, setCampaignImportError] = useState<string>("");
+  const [campaignImportResult, setCampaignImportResult] = useState<ImportResult | null>(null);
   const lastHandledSaveVersion = useRef(saveRequestVersion);
 
   const selectedCampaign =
@@ -353,6 +368,50 @@ export default function AdminScreen({
     setSelectedPowerId("");
     setSelectedItemId("");
     setSelectedAttackId("");
+  }
+
+  function resetCampaignImportState() {
+    setCampaignImportPreview(null);
+    setCampaignImportMode("skip");
+    setCampaignImportError("");
+    setCampaignImportResult(null);
+  }
+
+  function openCampaignImportModal() {
+    resetCampaignImportState();
+    setCampaignImportJson("");
+    setCampaignImportOpen(true);
+  }
+
+  function closeCampaignImportModal() {
+    setCampaignImportOpen(false);
+    resetCampaignImportState();
+  }
+
+  function validateCampaignImportDraft() {
+    if (!selectedCampaign) return;
+
+    try {
+      const preview = buildCampaignImportPreview(campaignImportJson, selectedCampaign);
+      setCampaignImportPreview(preview);
+      setCampaignImportMode("skip");
+      setCampaignImportError("");
+      setCampaignImportResult(null);
+    } catch (error) {
+      setCampaignImportPreview(null);
+      setCampaignImportResult(null);
+      setCampaignImportError(error instanceof Error ? error.message : "Import validation failed.");
+    }
+  }
+
+  function importCampaignContent() {
+    if (!selectedCampaign || !campaignImportPreview) return;
+
+    const result = applyCampaignImport(selectedCampaign, campaignImportPreview, campaignImportMode);
+    updateCampaign(result.campaign);
+    setCampaignImportResult(result);
+    setCampaignImportPreview(null);
+    setCampaignImportError("");
   }
 
   function updateClass(updatedClass: ClassDefinition) {
@@ -794,13 +853,18 @@ export default function AdminScreen({
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button type="button" className="button-control" style={buttonStyle} onClick={duplicateActiveCampaign}>
-                      Duplicate Campaign
+                  <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
+                    <button type="button" className="button-control" style={buttonStyle} onClick={openCampaignImportModal}>
+                      Import
                     </button>
-                    <button type="button" className="button-control" style={buttonStyle} onClick={deleteActiveCampaign}>
-                      Delete Campaign
-                    </button>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      <button type="button" className="button-control" style={buttonStyle} onClick={duplicateActiveCampaign}>
+                        Duplicate Campaign
+                      </button>
+                      <button type="button" className="button-control" style={buttonStyle} onClick={deleteActiveCampaign}>
+                        Delete Campaign
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -2063,6 +2127,240 @@ export default function AdminScreen({
                 OK
               </button>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {campaignImportOpen ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "var(--cb-modal-overlay)",
+            display: "grid",
+            placeItems: "center",
+            padding: 24,
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              ...panelStyle,
+              width: "min(760px, 100%)",
+              maxHeight: "min(88vh, 920px)",
+              display: "grid",
+              gap: 16,
+              overflow: "auto",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+              <div>
+                <h3 style={{ margin: 0, color: "var(--text-primary)" }}>Import Campaign Content</h3>
+                <p style={{ margin: "6px 0 0", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                  Paste a Character Builder campaign content import JSON file below. Content will be added to the current campaign after validation.
+                </p>
+              </div>
+            </div>
+
+            {campaignImportResult ? (
+              <>
+                <div style={{ ...cardStyle(), border: "1px solid var(--cb-border-strong)", display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: "0.04em" }}>
+                    IMPORT COMPLETE
+                  </div>
+                  <p style={{ margin: 0, color: "var(--text-primary)", lineHeight: 1.6 }}>
+                    Imported {campaignImportResult.importedCounts.powers} powers, {campaignImportResult.importedCounts.skills} skills, and {campaignImportResult.importedCounts.items} items. Skipped {campaignImportResult.skippedDuplicates} duplicates.
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <button
+                    type="button"
+                    className="button-control"
+                    style={buttonStyle}
+                    onClick={closeCampaignImportModal}
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : campaignImportPreview ? (
+              <>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <div style={{ ...cardStyle(), display: "grid", gap: 12 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: "0.04em" }}>
+                      IMPORT PREVIEW
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
+                      <div>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>Powers found</div>
+                        <div style={{ color: "var(--text-primary)", fontSize: 24, fontWeight: 800 }}>{campaignImportPreview.powers.length}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>Skills found</div>
+                        <div style={{ color: "var(--text-primary)", fontSize: 24, fontWeight: 800 }}>{campaignImportPreview.skills.length}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>Items found</div>
+                        <div style={{ color: "var(--text-primary)", fontSize: 24, fontWeight: 800 }}>{campaignImportPreview.items.length}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 4 }}>Duplicates found</div>
+                        <div style={{ color: "var(--text-primary)", fontSize: 24, fontWeight: 800 }}>{campaignImportPreview.duplicateCount}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ ...cardStyle(), display: "grid", gap: 10 }}>
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: "0.04em" }}>
+                      IMPORT OPTIONS
+                    </div>
+                    <label style={{ ...labelTextStyle, display: "flex", alignItems: "center", gap: 10 }}>
+                      <input
+                        type="radio"
+                        name="campaign-import-mode"
+                        checked={campaignImportMode === "skip"}
+                        onChange={() => setCampaignImportMode("skip")}
+                      />
+                      Skip duplicates by name
+                    </label>
+                    <label style={{ ...labelTextStyle, display: "flex", alignItems: "center", gap: 10 }}>
+                      <input
+                        type="radio"
+                        name="campaign-import-mode"
+                        checked={campaignImportMode === "update"}
+                        onChange={() => setCampaignImportMode("update")}
+                      />
+                      Update existing matching names
+                    </label>
+                  </div>
+
+                  <div
+                    style={{
+                      ...cardStyle(),
+                      display: "grid",
+                      gap: 10,
+                      border: "1px solid var(--cb-border-strong)",
+                      background: "linear-gradient(165deg, rgba(64, 117, 164, 0.14), var(--cb-surface))",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "var(--text-secondary)", fontWeight: 700, letterSpacing: "0.04em" }}>
+                      WARNINGS
+                    </div>
+                    {campaignImportPreview.warnings.length === 0 ? (
+                      <p style={{ margin: 0, color: "var(--text-secondary)" }}>No warnings.</p>
+                    ) : (
+                      <ul style={{ margin: 0, paddingLeft: 20, color: "var(--text-secondary)", display: "grid", gap: 6 }}>
+                        {campaignImportPreview.warnings.map((warning) => (
+                          <li key={`${warning.code}-${warning.message}`}>{warning.message}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className="button-control"
+                    style={buttonStyle}
+                    onClick={() => {
+                      setCampaignImportPreview(null);
+                      setCampaignImportResult(null);
+                      setCampaignImportError("");
+                    }}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className="button-control"
+                    style={buttonStyle}
+                    onClick={closeCampaignImportModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="button-control"
+                    style={buttonStyle}
+                    onClick={importCampaignContent}
+                  >
+                    Import Content
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <label style={labelTextStyle}>
+                  Import JSON
+                  <textarea
+                    value={campaignImportJson}
+                    onChange={(e) => {
+                      setCampaignImportJson(e.target.value);
+                      if (campaignImportError) {
+                        setCampaignImportError("");
+                      }
+                    }}
+                    spellCheck={false}
+                    placeholder='{
+  "format": "character-builder.campaign-content-import",
+  "version": 1,
+  "content": {
+    "powers": [],
+    "skills": [],
+    "items": []
+  }
+}'
+                    style={{
+                      ...inputStyle,
+                      minHeight: 300,
+                      height: 300,
+                      resize: "vertical",
+                      padding: 14,
+                      fontFamily: "SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, monospace",
+                      lineHeight: 1.55,
+                    }}
+                  />
+                </label>
+
+                {campaignImportError ? (
+                  <div
+                    style={{
+                      ...cardStyle(),
+                      padding: 14,
+                      border: "1px solid rgba(214, 120, 120, 0.45)",
+                      background: "linear-gradient(165deg, rgba(145, 67, 67, 0.18), var(--cb-surface))",
+                      color: "var(--text-primary)",
+                    }}
+                  >
+                    {campaignImportError}
+                  </div>
+                ) : null}
+
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+                  <button
+                    type="button"
+                    className="button-control"
+                    style={buttonStyle}
+                    onClick={closeCampaignImportModal}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="button-control"
+                    style={buttonStyle}
+                    onClick={validateCampaignImportDraft}
+                    disabled={!campaignImportJson.trim()}
+                  >
+                    Validate
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}
