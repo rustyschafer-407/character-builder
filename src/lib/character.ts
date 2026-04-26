@@ -160,7 +160,7 @@ function makeHp(cls: ClassDefinition, conScore: number): CharacterHp {
 
 function makeSheetDefaults(): CharacterRecord["sheet"] {
   return {
-    speed: "",
+    speed: "30",
     acBase: 10,
     acBonus: 0,
     acUseDex: true,

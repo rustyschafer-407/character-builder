@@ -433,6 +433,7 @@ export function validateCharacterReferences(
 
 export function applySafeCharacterDefaults(character: CharacterRecord): CharacterRecord {
   const level = Number.isFinite(character.level) ? Math.max(1, Math.floor(character.level)) : 1;
+  const normalizedSpeed = `${character.sheet?.speed ?? ""}`.trim() || "30";
 
   return {
     ...character,
@@ -446,7 +447,7 @@ export function applySafeCharacterDefaults(character: CharacterRecord): Characte
       notes: character.hp?.notes ?? "",
     },
     sheet: {
-      speed: character.sheet?.speed ?? "",
+      speed: normalizedSpeed,
       acBase: Number.isFinite(character.sheet?.acBase) ? Number(character.sheet.acBase) : 10,
       acBonus: Number.isFinite(character.sheet?.acBonus) ? Number(character.sheet.acBonus) : 0,
       acUseDex: typeof character.sheet?.acUseDex === "boolean" ? character.sheet.acUseDex : true,

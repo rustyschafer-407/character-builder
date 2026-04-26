@@ -6,7 +6,7 @@ import { applySafeCharacterDefaults } from "./domain"
 
 export function makeDefaultSheet(): CharacterRecord["sheet"] {
   return {
-    speed: "",
+    speed: "30",
     acBase: 10,
     acBonus: 0,
     acUseDex: true,

@@ -35,7 +35,7 @@ export function useCharacterState() {
       attributeGeneration: draft.attributeGeneration,
       hp: draft.hp,
       sheet: {
-        speed: "",
+        speed: "30",
         acBase: 10,
         acBonus: 0,
         acUseDex: true,
