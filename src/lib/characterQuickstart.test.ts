@@ -199,6 +199,23 @@ describe("characterQuickstart", () => {
     }
   });
 
+  it("assigns class and race when availability lists are empty", () => {
+    const campaign = normalizeCampaignDefinition({
+      ...fantasyCampaign,
+      availableClassIds: [],
+      availableRaceIds: [],
+    });
+
+    const result = generateQuickstartDraft(campaign, {}, makeSeededRng(33));
+    expect(result.draft).not.toBeNull();
+
+    const draft = result.draft!;
+    expect(draft.classId).not.toBe("");
+    if ((campaign.races ?? []).length > 0) {
+      expect(draft.raceId).not.toBe("");
+    }
+  });
+
   it("falls back to balanced attributes when point-buy is unusable", () => {
     const campaign = normalizeCampaignDefinition({
       ...fantasyCampaign,

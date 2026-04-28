@@ -215,14 +215,26 @@ function getCampaignAttributePool(campaign: CampaignDefinition): AttributeKey[] 
 
 function allowedRaces(campaign: CampaignDefinition) {
   const races = campaign.races ?? [];
-  const allowed = new Set(campaign.availableRaceIds ?? races.map((r) => r.id));
-  return races.filter((race) => allowed.has(race.id));
+  const availableRaceIds = campaign.availableRaceIds;
+  if (!availableRaceIds || availableRaceIds.length === 0) {
+    return races;
+  }
+
+  const allowed = new Set(availableRaceIds);
+  const filtered = races.filter((race) => allowed.has(race.id));
+  return filtered.length > 0 ? filtered : races;
 }
 
 function allowedClasses(campaign: CampaignDefinition) {
   const classes = campaign.classes ?? [];
-  const allowed = new Set(campaign.availableClassIds ?? classes.map((c) => c.id));
-  return classes.filter((cls) => allowed.has(cls.id));
+  const availableClassIds = campaign.availableClassIds;
+  if (!availableClassIds || availableClassIds.length === 0) {
+    return classes;
+  }
+
+  const allowed = new Set(availableClassIds);
+  const filtered = classes.filter((cls) => allowed.has(cls.id));
+  return filtered.length > 0 ? filtered : classes;
 }
 
 function classesForRace(
@@ -867,10 +879,33 @@ export function generateQuickstartConcepts(
   count = 3,
   rng: RandomFn = Math.random
 ): QuickstartConcept[] {
+  const availableRaces = allowedRaces(campaign);
+  const availableClasses = allowedClasses(campaign);
+  const lockedRace = locks.raceId
+    ? availableRaces.find((race) => race.id === locks.raceId) ?? null
+    : null;
+
+  const racePool: Array<RaceDefinition | null> =
+    lockedRace
+      ? [lockedRace]
+      : availableRaces.length > 0
+      ? availableRaces
+      : [null];
+
+  const estimatedDistinctRaceClassCombos = racePool.reduce((total, race) => {
+    if (availableClasses.length === 0) {
+      return total + 1;
+    }
+
+    const compatible = classesForRace(race, availableClasses);
+    return total + Math.max(1, compatible.length > 0 ? compatible.length : availableClasses.length);
+  }, 0);
+
   const concepts: QuickstartConcept[] = [];
   const seenRaceClassCombos = new Set<string>();
   const seenFullCombos = new Set<string>();
   const target = Math.max(1, count);
+  const distinctComboTarget = Math.max(1, Math.min(target, estimatedDistinctRaceClassCombos));
   let attempts = 0;
   const maxAttempts = target * 12;
 
@@ -884,7 +919,11 @@ export function generateQuickstartConcepts(
     const fullComboKey = `${raceClassKey}|${draft.identity.background ?? ""}`;
 
     // In 3-concept mode, prioritize distinct race/class options first so the choices feel meaningfully different.
-    if (seenRaceClassCombos.has(raceClassKey) && concepts.length < target - 1 && attempts < maxAttempts) {
+    if (
+      seenRaceClassCombos.has(raceClassKey) &&
+      seenRaceClassCombos.size < distinctComboTarget &&
+      attempts < maxAttempts
+    ) {
       continue;
     }
 
