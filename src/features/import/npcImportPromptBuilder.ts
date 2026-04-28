@@ -118,6 +118,13 @@ When the source material describes an NPC or monster, use your knowledge of RPGs
 - WIS: Perception, instinct, divine magic, insight. High for clerics, monks, rangers, perceptive creatures. Low for distractible beings.
 - CHA: Force of personality, persuasion, leadership. High for charismatic NPCs, bards, demons, social leaders. Low for recluses, brutes.
 
+ATTRIBUTE SCALING BY CHARACTER TYPE:
+- Normal/Average NPCs: Attributes typically 8–14 (most skills 10–12, one or two standouts at 13–14)
+- Heroic/Elite NPCs: Attributes typically 14–17 (multiple attributes 15–16, peak 17–18)
+- Superhero/Legendary characters: Attributes typically 17–20+ (most attributes 16–19, peak 20+)
+
+Apply appropriate scaling based on the source material's tone and description. If the source describes superhuman feats (flying, superhuman strength, reality-warping), use superhero scaling. If described as legendary/elite warriors or powerful mages, use heroic scaling. For common guards, minions, or ordinary NPCs, use normal scaling.
+
 Interpret all provided descriptions (size, demeanor, equipment, abilities, role in story) to estimate a reasonable set of attributes that reflect the NPC's described capabilities and nature.
 
 DAMAGE CALCULATION (for all attacks and weapons):
