@@ -868,7 +868,8 @@ export function generateQuickstartConcepts(
   rng: RandomFn = Math.random
 ): QuickstartConcept[] {
   const concepts: QuickstartConcept[] = [];
-  const seenCombos = new Set<string>();
+  const seenRaceClassCombos = new Set<string>();
+  const seenFullCombos = new Set<string>();
   const target = Math.max(1, count);
   let attempts = 0;
   const maxAttempts = target * 12;
@@ -879,11 +880,20 @@ export function generateQuickstartConcepts(
     const draft = result.draft;
     if (!draft) continue;
 
-    const comboKey = `${draft.raceId}|${draft.classId}|${draft.identity.background ?? ""}`;
-    if (seenCombos.has(comboKey) && attempts < maxAttempts) {
+    const raceClassKey = `${draft.raceId}|${draft.classId}`;
+    const fullComboKey = `${raceClassKey}|${draft.identity.background ?? ""}`;
+
+    // In 3-concept mode, prioritize distinct race/class options first so the choices feel meaningfully different.
+    if (seenRaceClassCombos.has(raceClassKey) && concepts.length < target - 1 && attempts < maxAttempts) {
       continue;
     }
-    seenCombos.add(comboKey);
+
+    if (seenFullCombos.has(fullComboKey) && attempts < maxAttempts) {
+      continue;
+    }
+
+    seenRaceClassCombos.add(raceClassKey);
+    seenFullCombos.add(fullComboKey);
 
     const race = (campaign.races ?? []).find((candidate) => candidate.id === draft.raceId) ?? null;
     const cls = (campaign.classes ?? []).find((candidate) => candidate.id === draft.classId) ?? null;

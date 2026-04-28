@@ -149,6 +149,10 @@ CLASS DESIGN RULES:
 - startingAttackNames should list any starting weapon or attack templates that every member of the class can use.
 - defaultPowerNames should include signature class abilities or spells.
 - defaultItemNames should include standard equipment for the class.
+- skillChoiceRules should define how many skills a new character of that class chooses and from which skillNames.
+- powerChoiceRules should define how many powers a new character of that class chooses and from which powerNames.
+- itemChoiceRules should define how many items a new character of that class chooses and from which itemNames.
+- Use concrete choose counts (for example 2, 3, 4), not placeholders.
 
 RACE DESIGN RULES:
 - Each race should represent a species, lineage, ancestry, or equivalent faction identity in the setting.

@@ -199,4 +199,69 @@ describe("npcImport", () => {
     expect(result.campaign.classes.some((entry) => entry.name === "Officer")).toBe(true);
     expect(result.campaign.races?.some((entry) => entry.name === "Andorian")).toBe(true);
   });
+
+  it("applies playable class and race metadata from import payload", () => {
+    const campaign = makeCampaign();
+    const preview = buildNpcImportPreview(
+      JSON.stringify({
+        format: "character-builder.npc-import",
+        version: 1,
+        content: {
+          skills: [
+            { name: "Arcana", attribute: "INT" },
+            { name: "Insight", attribute: "WIS" },
+          ],
+          powers: [
+            { name: "Fire Bolt", level: 1, isAttack: true, description: "1d8 fire" },
+            { name: "Shield Ward", level: 1, description: "Magical ward" },
+          ],
+          items: [
+            { name: "Spellbook", description: "Arcane notes" },
+            { name: "Wand", isAttack: true, description: "1d6 force" },
+          ],
+          attacks: [{ name: "Quarterstaff", attribute: "STR", damage: "1d6" }],
+          races: [
+            {
+              name: "Elf",
+              attributeBonuses: [{ attribute: "DEX", amount: 2 }],
+              defaultPowerNames: ["Shield Ward"],
+              availableClassNames: ["Mage"],
+            },
+          ],
+          classes: [
+            {
+              name: "Mage",
+              hitDie: 6,
+              hitDiceAtLevel1: 1,
+              attributeBonuses: [{ attribute: "INT", amount: 2 }],
+              defaultPowerNames: ["Fire Bolt"],
+              defaultItemNames: ["Spellbook"],
+              startingAttackNames: ["Quarterstaff"],
+              skillChoiceRules: [{ choose: 1, skillNames: ["Arcana", "Insight"] }],
+              powerChoiceRules: [{ choose: 1, powerNames: ["Fire Bolt", "Shield Ward"] }],
+              itemChoiceRules: [{ choose: 1, itemNames: ["Spellbook", "Wand"] }],
+            },
+          ],
+          characters: [{ name: "Apprentice Duelist", class: "Mage", race: "Elf" }],
+        },
+      }),
+      campaign
+    );
+
+    const result = applyNpcImport(campaign, preview);
+    const mage = result.campaign.classes.find((entry) => entry.name === "Mage");
+    const elf = result.campaign.races?.find((entry) => entry.name === "Elf");
+
+    expect(mage).toBeTruthy();
+    expect(mage?.defaultPowerIds?.length).toBe(1);
+    expect(mage?.defaultItemIds?.length).toBe(1);
+    expect(mage?.startingAttackTemplateIds?.length).toBe(1);
+    expect(mage?.skillChoiceRules?.[0]?.choose).toBe(1);
+    expect(mage?.powerChoiceRules?.[0]?.choose).toBe(1);
+    expect(mage?.itemChoiceRules?.[0]?.choose).toBe(1);
+
+    expect(elf).toBeTruthy();
+    expect(elf?.defaultPowerIds?.length).toBe(1);
+    expect(elf?.availableClassIds?.length).toBe(1);
+  });
 });

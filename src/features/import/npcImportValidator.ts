@@ -101,6 +101,253 @@ function parseAttribute(value: unknown): AttributeKey | undefined {
   return ATTRIBUTE_ALIASES[normalizeKey(value)];
 }
 
+function parseStringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function parseAttributeBonuses(
+  value: unknown,
+  label: string,
+  warnings: NpcImportWarning[]
+): Array<{ attribute: AttributeKey; amount: number }> {
+  if (!Array.isArray(value)) {
+    if (value !== undefined) {
+      warnings.push({
+        code: "invalid-field",
+        message: `${label} attributeBonuses must be an array; ignored invalid value.`,
+      });
+    }
+    return [];
+  }
+
+  const parsed: Array<{ attribute: AttributeKey; amount: number }> = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const record = entry as RecordLike;
+    const attribute = parseAttribute(record.attribute);
+    const amount = parseInteger(record.amount);
+    if (!attribute || amount === undefined) {
+      warnings.push({
+        code: "invalid-field",
+        message: `${label} includes an invalid attribute bonus entry that was skipped.`,
+      });
+      continue;
+    }
+    parsed.push({ attribute, amount });
+  }
+
+  return parsed;
+}
+
+function resolveNamedIds<T extends { id: string; name: string }>(
+  names: string[],
+  records: T[],
+  label: string,
+  warnings: NpcImportWarning[]
+) {
+  const resolvedIds: string[] = [];
+  for (const name of names) {
+    const resolved = findByName(records, name);
+    if (!resolved) {
+      warnings.push({
+        code: "invalid-reference",
+        message: `${label} references missing value "${name}".`,
+      });
+      continue;
+    }
+    resolvedIds.push(resolved.id);
+  }
+  return Array.from(new Set(resolvedIds));
+}
+
+function parseChoiceRules<T extends { id: string; name: string }>(input: {
+  rawRules: unknown;
+  chooseFieldLabel: string;
+  namesField: string;
+  sourceLabel: string;
+  records: T[];
+  warnings: NpcImportWarning[];
+}): Array<{ choose: number; ids: string[] }> {
+  const { rawRules, chooseFieldLabel, namesField, sourceLabel, records, warnings } = input;
+  if (!Array.isArray(rawRules)) {
+    if (rawRules !== undefined) {
+      warnings.push({
+        code: "invalid-field",
+        message: `${sourceLabel} must be an array; ignored invalid value.`,
+      });
+    }
+    return [];
+  }
+
+  const parsed: Array<{ choose: number; ids: string[] }> = [];
+  for (const [index, rawRule] of rawRules.entries()) {
+    if (!rawRule || typeof rawRule !== "object" || Array.isArray(rawRule)) {
+      warnings.push({
+        code: "invalid-field",
+        message: `${sourceLabel}[${index}] is invalid and was skipped.`,
+      });
+      continue;
+    }
+
+    const ruleRecord = rawRule as RecordLike;
+    const choose = parseInteger(ruleRecord.choose) ?? 0;
+    const names = parseStringList(ruleRecord[namesField]);
+    const ids = resolveNamedIds(names, records, `${sourceLabel}[${index}].${namesField}`, warnings);
+
+    if (choose <= 0) {
+      warnings.push({
+        code: "invalid-field",
+        message: `${sourceLabel}[${index}] has invalid choose value; expected a positive integer.`,
+      });
+      continue;
+    }
+
+    if (ids.length === 0) {
+      warnings.push({
+        code: "invalid-reference",
+        message: `${sourceLabel}[${index}] did not resolve any valid ${chooseFieldLabel} references.`,
+      });
+      continue;
+    }
+
+    parsed.push({ choose: Math.min(choose, ids.length), ids });
+  }
+
+  return parsed;
+}
+
+function applyPlayableClassRaceMetadataFromPayload(
+  campaign: CampaignDefinition,
+  payload: NpcImportPayload,
+  warnings: NpcImportWarning[]
+): CampaignDefinition {
+  const nextRaces = [...(campaign.races ?? [])];
+  const nextCampaign: CampaignDefinition = {
+    ...campaign,
+    classes: [...campaign.classes],
+    races: nextRaces,
+  };
+
+  const classContent = payload.content.classes ?? [];
+  const raceContent = payload.content.races ?? [];
+
+  for (const rawClass of classContent) {
+    const classRecord = asRecord(rawClass, "Class");
+    const className = typeof classRecord.name === "string" ? classRecord.name.trim() : "";
+    if (!className) continue;
+
+    const classIndex = nextCampaign.classes.findIndex(
+      (entry) => normalizeName(entry.name) === normalizeName(className)
+    );
+    if (classIndex < 0) continue;
+
+    const current = nextCampaign.classes[classIndex];
+    if (!current) continue;
+
+    const hitDie = parseInteger(classRecord.hitDie);
+    const hitDiceAtLevel1 = parseInteger(classRecord.hitDiceAtLevel1);
+
+    const defaultPowerIds = classRecord.defaultPowerNames !== undefined
+      ? resolveNamedIds(parseStringList(classRecord.defaultPowerNames), nextCampaign.powers, `Class \"${className}\" defaultPowerNames`, warnings)
+      : current.defaultPowerIds ?? [];
+    const defaultItemIds = classRecord.defaultItemNames !== undefined
+      ? resolveNamedIds(parseStringList(classRecord.defaultItemNames), nextCampaign.items, `Class \"${className}\" defaultItemNames`, warnings)
+      : current.defaultItemIds ?? [];
+    const startingAttackTemplateIds = classRecord.startingAttackNames !== undefined
+      ? resolveNamedIds(parseStringList(classRecord.startingAttackNames), nextCampaign.attackTemplates, `Class \"${className}\" startingAttackNames`, warnings)
+      : current.startingAttackTemplateIds ?? [];
+
+    const parsedSkillChoiceRules = parseChoiceRules({
+      rawRules: classRecord.skillChoiceRules,
+      chooseFieldLabel: "skill",
+      namesField: "skillNames",
+      sourceLabel: `Class \"${className}\" skillChoiceRules`,
+      records: nextCampaign.skills,
+      warnings,
+    });
+    const parsedPowerChoiceRules = parseChoiceRules({
+      rawRules: classRecord.powerChoiceRules,
+      chooseFieldLabel: "power",
+      namesField: "powerNames",
+      sourceLabel: `Class \"${className}\" powerChoiceRules`,
+      records: nextCampaign.powers,
+      warnings,
+    });
+    const parsedItemChoiceRules = parseChoiceRules({
+      rawRules: classRecord.itemChoiceRules,
+      chooseFieldLabel: "item",
+      namesField: "itemNames",
+      sourceLabel: `Class \"${className}\" itemChoiceRules`,
+      records: nextCampaign.items,
+      warnings,
+    });
+
+    nextCampaign.classes[classIndex] = {
+      ...current,
+      attributeBonuses:
+        classRecord.attributeBonuses !== undefined
+          ? parseAttributeBonuses(classRecord.attributeBonuses, `Class \"${className}\"`, warnings)
+          : current.attributeBonuses,
+      hpRule: {
+        ...current.hpRule,
+        hitDie: hitDie && hitDie > 0 ? hitDie : current.hpRule.hitDie,
+        hitDiceAtLevel1: hitDiceAtLevel1 && hitDiceAtLevel1 > 0 ? hitDiceAtLevel1 : current.hpRule.hitDiceAtLevel1,
+      },
+      defaultPowerIds,
+      defaultItemIds,
+      startingAttackTemplateIds,
+      skillChoiceRules:
+        classRecord.skillChoiceRules !== undefined
+          ? parsedSkillChoiceRules.map((rule) => ({ choose: rule.choose, skillIds: rule.ids }))
+          : current.skillChoiceRules,
+      powerChoiceRules:
+        classRecord.powerChoiceRules !== undefined
+          ? parsedPowerChoiceRules.map((rule) => ({ choose: rule.choose, powerIds: rule.ids }))
+          : current.powerChoiceRules,
+      itemChoiceRules:
+        classRecord.itemChoiceRules !== undefined
+          ? parsedItemChoiceRules.map((rule) => ({ choose: rule.choose, itemIds: rule.ids }))
+          : current.itemChoiceRules,
+    };
+  }
+
+  for (const rawRace of raceContent) {
+    const raceRecord = asRecord(rawRace, "Race");
+    const raceName = typeof raceRecord.name === "string" ? raceRecord.name.trim() : "";
+    if (!raceName) continue;
+
+    const raceIndex = nextRaces.findIndex(
+      (entry) => normalizeName(entry.name) === normalizeName(raceName)
+    );
+    if (raceIndex < 0) continue;
+
+    const current = nextRaces[raceIndex];
+    if (!current) continue;
+
+    nextRaces[raceIndex] = {
+      ...current,
+      attributeBonuses:
+        raceRecord.attributeBonuses !== undefined
+          ? parseAttributeBonuses(raceRecord.attributeBonuses, `Race \"${raceName}\"`, warnings)
+          : current.attributeBonuses,
+      defaultPowerIds:
+        raceRecord.defaultPowerNames !== undefined
+          ? resolveNamedIds(parseStringList(raceRecord.defaultPowerNames), nextCampaign.powers, `Race \"${raceName}\" defaultPowerNames`, warnings)
+          : current.defaultPowerIds,
+      availableClassIds:
+        raceRecord.availableClassNames !== undefined
+          ? resolveNamedIds(parseStringList(raceRecord.availableClassNames), nextCampaign.classes, `Race \"${raceName}\" availableClassNames`, warnings)
+          : current.availableClassIds,
+    };
+  }
+
+  return nextCampaign;
+}
+
 class WarningCollector {
   private warnings: NpcImportWarning[] = [];
 
@@ -642,7 +889,9 @@ export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportP
     availableClassIds: mergeIds(campaign.availableClassIds, preview.toCreate.classes.map((entry) => entry.id)),
   };
 
-  const syncedCampaign = syncCampaignDerivedAttackTemplates(mergedCampaign);
+  const importWarnings = [...preview.warnings];
+  const playableCampaign = applyPlayableClassRaceMetadataFromPayload(mergedCampaign, preview.payload, importWarnings);
+  const syncedCampaign = syncCampaignDerivedAttackTemplates(playableCampaign);
 
   const classByName = (name: string) => findByName(syncedCampaign.classes, name);
   const raceByName = (name: string) => findByName(syncedCampaign.races ?? [], name);
@@ -800,6 +1049,6 @@ export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportP
     campaign: syncedCampaign,
     draft: drafts[0],
     drafts,
-    warnings: preview.warnings,
+    warnings: importWarnings,
   };
 }

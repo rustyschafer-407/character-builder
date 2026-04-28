@@ -106,8 +106,22 @@ ${fieldsList}
 DATA TYPE NOTES:
 - attributeBonuses: MUST be an empty array [] (not an object {})
 - availableClassNames and defaultPowerNames: Arrays of strings (not objects)
+- class skillChoiceRules/powerChoiceRules/itemChoiceRules: Arrays of objects with choose:number and skillNames/powerNames/itemNames:string[]
 - tags: Arrays of strings
 - All other array fields (skills, powers, items, attacks, races, classes, characters): Arrays
+
+CLASS/RACE PLAYABILITY RULES:
+- If you create a new class, make it fully playable for PCs out of the box.
+- For every created class, set:
+  - defaultPowerNames (signature always-known abilities)
+  - defaultItemNames (starting equipment)
+  - startingAttackNames (baseline attack templates)
+  - skillChoiceRules with a concrete choose value and valid skillNames
+  - powerChoiceRules with a concrete choose value and valid powerNames (especially for caster/mystic classes)
+  - itemChoiceRules with a concrete choose value and valid itemNames
+- If a class is clearly magical/supernatural, include meaningful defaultPowerNames and powerChoiceRules.
+- If you create a race, include meaningful attributeBonuses and defaultPowerNames when appropriate.
+- If race/class pairings matter in the setting, populate race.availableClassNames.
 
 ATTRIBUTE ESTIMATION (from source material):
 When the source material describes an NPC or monster, use your knowledge of RPGs to infer and estimate the character's physical and mental traits. Convert these descriptions into numeric attribute values (typically 3–18 in D&D-like systems):
