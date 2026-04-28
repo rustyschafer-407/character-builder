@@ -120,6 +120,20 @@ When the source material describes an NPC or monster, use your knowledge of RPGs
 
 Interpret all provided descriptions (size, demeanor, equipment, abilities, role in story) to estimate a reasonable set of attributes that reflect the NPC's described capabilities and nature.
 
+DAMAGE CALCULATION (for all attacks and weapons):
+Always compute a damage amount for every attack, power, or item with isAttack=true. Use your knowledge of various RPG systems (D&D, Pathfinder, Starfinder, etc.) to estimate reasonable damage values:
+- Melee weapons: Use dice notation like "1d6" (dagger), "1d8" (sword), "1d10" (greatsword), "1d12" (maul). Add half the attribute bonus (e.g., +1 for STR 12-13, +2 for STR 14-15). Round down.
+- Ranged weapons: Similar to melee but may vary (shortbow "1d6", longbow "1d8", crossbow "1d8", firearms vary by era/setting).
+- Magical/special attacks: Use "1d6", "1d8", or "2d6" depending on power level. Adjust for caster level or NPC level.
+- Ammunition description: Always populate the "damage" field in powers/items/attacks with a clear dice notation (e.g., "1d8+2", "2d6", "1d4+1").
+- If the source material provides explicit damage, use that; otherwise, infer reasonable damage based on the NPC's role, level, and weapon description.
+
+Example conversions:
+- "Fiery blast" with INT 14 → "2d6" or "1d8+2"
+- "Enchanted dagger" → "1d4+1"
+- "Dragon's claw" → "1d8+3" or "2d6+2"
+- "Laser rifle" → "2d8" or "3d6"
+
 REFERENCE RULES:
 - In characters.skills/powers/items/attacks, use names.
 - In characters.race and characters.class, use names.
