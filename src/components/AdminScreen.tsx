@@ -337,6 +337,10 @@ export default function AdminScreen({
     onSave(workingData);
   }, [saveRequestVersion, onSave, workingData]);
 
+  useEffect(() => {
+    setWorkingData(gameData);
+  }, [gameData]);
+
   function updateCampaign(updatedCampaign: CampaignDefinition) {
     setWorkingData((prev) => ({
       ...prev,
