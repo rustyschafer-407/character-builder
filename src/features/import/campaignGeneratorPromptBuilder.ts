@@ -121,11 +121,26 @@ CAMPAIGN GENERATION GOALS:
 - Create skills, powers, items, attacks, classes, and races that fit the described world and tone.
 - Use your knowledge of RPG genres and games to infer what a good campaign in this style needs.
 - Create a setting that feels internally coherent rather than generic.
+- Make this a fully playable campaign package for both GMs and players, not just enough data to support the starter NPCs.
 - Classes should have appropriate attribute bonuses, hit dice, starting attacks, default powers, and default items.
 - Races should have appropriate attribute bonuses, default powers, and available class names when relevant.
 - Characters must all be NPCs. Create exactly 12 initial NPCs representing monsters, enemies, rivals, hazards, or common opponents appropriate to the campaign.
 - Ensure those NPCs reference the classes, races, attacks, powers, items, and skills from the same generated package.
 - Vary the NPC roster so it includes common foes, tougher elites, and at least one leader or signature threat.
+
+PLAYER-READY CONTENT VOLUME REQUIREMENTS:
+- Generate more skills, powers, items, classes, and races than are strictly required for the 12 NPCs.
+- Ensure there is enough breadth for immediate player character creation in multiple archetypes.
+- Target broad starter coverage unless the user prompt explicitly asks for a minimalist ruleset.
+- Preferred minimums for a normal campaign package:
+  - Skills: 12+
+  - Powers: 24+
+  - Items: 24+
+  - Classes: 6+
+  - Races: 6+
+- If the genre naturally supports larger rosters (for example high-fantasy, sci-fi, supers), expand beyond these minimums.
+- Keep content coherent and non-redundant; avoid near-duplicate entries unless intentionally variant.
+- NPCs should use a subset of this broader content pool, not consume all of it.
 
 CLASS DESIGN RULES:
 - Each class should represent a core archetype in the campaign world.

@@ -1021,6 +1021,7 @@ export default function AdminScreen({
                   onClick={openCampaignGeneratorModal}
                   style={{
                     display: "flex",
+                    marginTop: 8,
                     alignItems: "center",
                     gap: 7,
                     background: "none",
