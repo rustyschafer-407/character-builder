@@ -1,0 +1,105 @@
+{
+  "format": "character-builder.npc-import",
+  "version": 1,
+  "content": {
+    "skills": [],
+    "powers": [
+      {
+        "name": "Infravision 60 ft.",
+        "level": 1,
+        "description": "Can see in darkness out to 60 feet.",
+        "tags": ["Senses", "Android"],
+        "isAttack": false,
+        "usesPerDay": "",
+        "saveAttribute": "",
+        "sourceText": "SP infravision 60'"
+      },
+      {
+        "name": "Immune to Mind-Altering Spells",
+        "level": 1,
+        "description": "Unaffected by mind-altering spells such as hypnosis or fear.",
+        "tags": ["Immunity", "Android"],
+        "isAttack": false,
+        "usesPerDay": "",
+        "saveAttribute": "",
+        "sourceText": "immune to mind-altering spells"
+      },
+      {
+        "name": "Self-Repair",
+        "level": 1,
+        "description": "Heals 2 hp per round.",
+        "tags": ["Healing", "Android"],
+        "isAttack": false,
+        "usesPerDay": "",
+        "saveAttribute": "",
+        "sourceText": "heal 2 hp per round"
+      }
+    ],
+    "items": [
+      {
+        "name": "Razor-Sharp Sword",
+        "description": "Melee weapon used by androids.",
+        "isAttack": true,
+        "stackable": false,
+        "defaultQuantity": 1,
+        "tags": ["Weapon", "Melee", "Android"]
+      },
+      {
+        "name": "Mechanical Fire Wand",
+        "description": "Mechanical wand that fires burning missiles. Not magical and prone to disrepair without proper maintenance.",
+        "isAttack": true,
+        "stackable": false,
+        "defaultQuantity": 1,
+        "tags": ["Weapon", "Ranged", "Mechanical", "Android"]
+      }
+    ],
+    "attacks": [],
+    "races": [
+      {
+        "name": "Android",
+        "description": "A humanlike construct with rubbery skin, black soulless eyes, and mechanical-organic innards.",
+        "attributeBonuses": [],
+        "defaultPowerNames": ["Infravision 60 ft.", "Immune to Mind-Altering Spells", "Self-Repair"],
+        "availableClassNames": ["Android"]
+      }
+    ],
+    "classes": [
+      {
+        "name": "Android",
+        "description": "Artificial beings created by star-born makers and preprogrammed by the time gods.",
+        "attributeBonuses": [],
+        "hitDie": 8,
+        "hitDiceAtLevel1": 3,
+        "defaultPowerNames": [],
+        "defaultItemNames": ["Razor-Sharp Sword", "Mechanical Fire Wand"],
+        "startingAttackNames": []
+      }
+    ],
+    "characters": [
+      {
+        "name": "Android",
+        "type": "NPC",
+        "campaign": "campaign-1777228693287",
+        "race": "Android",
+        "class": "Android",
+        "level": 3,
+        "attributes": {
+          "Init": -2,
+          "AC": 18,
+          "HP": 25,
+          "MV": "30 ft.",
+          "Act": "1d20",
+          "Fort": 5,
+          "Ref": -2,
+          "Will": 6,
+          "AL": "N"
+        },
+        "skills": [],
+        "powers": ["Infravision 60 ft.", "Immune to Mind-Altering Spells", "Self-Repair"],
+        "items": ["Razor-Sharp Sword", "Mechanical Fire Wand"],
+        "attacks": [],
+        "notes": "Attacks: sword +2 melee for 1d8 damage, or wand +4 missile fire, range 60 ft., for 1d4+2 damage. Androids resemble humans but have rubbery skin, black eyes, and strange metallic clothing. They may wander deep underground or guard long-buried spaceships."
+      }
+    ]
+  }
+}

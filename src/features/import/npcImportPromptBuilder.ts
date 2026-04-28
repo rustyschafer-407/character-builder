@@ -103,6 +103,12 @@ VALID OUTPUT FORMAT:
 VALID FIELDS:
 ${fieldsList}
 
+DATA TYPE NOTES:
+- attributeBonuses: MUST be an empty array [] (not an object {})
+- availableClassNames and defaultPowerNames: Arrays of strings (not objects)
+- tags: Arrays of strings
+- All other array fields (skills, powers, items, attacks, races, classes, characters): Arrays
+
 REFERENCE RULES:
 - In characters.skills/powers/items/attacks, use names.
 - In characters.race and characters.class, use names.
