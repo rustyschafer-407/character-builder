@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import type { CharacterRecord } from "../types/character";
+import { sortBySelectionThenName } from "../lib/character";
 import type {
   AttributeBonusRule,
   AttributeKey,
@@ -235,6 +236,23 @@ export default function SelectedCharacterWorkspace({
   characterAccessErrorMessage,
   onClearCharacterAccessError,
 }: SelectedCharacterWorkspaceProps) {
+  // Sort selected items to the top, then alphabetically within each group
+  const sortedSkills = sortBySelectionThenName(
+    selectedSkills,
+    character,
+    (skill, char) => char.skills.some((s) => s.skillId === skill.id)
+  );
+  const sortedPowers = sortBySelectionThenName(
+    selectedPowers,
+    character,
+    (power, char) => char.powers.some((p) => p.powerId === power.id)
+  );
+  const sortedItems = sortBySelectionThenName(
+    selectedItems,
+    character,
+    (item, char) => char.inventory.some((i) => i.itemId === item.id)
+  );
+
   const summarizeValues = (values: string[], maxVisible = 4) => {
     const cleaned = values
       .map((value) => value.trim())
@@ -453,7 +471,7 @@ export default function SelectedCharacterWorkspace({
           >
             <SkillsSection
               character={character}
-              skills={selectedSkills}
+              skills={sortedSkills}
               label={labels.skills}
               onChange={onSkillChange}
             />
@@ -471,7 +489,7 @@ export default function SelectedCharacterWorkspace({
           >
             <PowersSection
               character={character}
-              powers={selectedPowers}
+              powers={sortedPowers}
               label={labels.powers}
               onTogglePower={onTogglePower}
               onPowerChange={onPowerChange}
@@ -490,7 +508,7 @@ export default function SelectedCharacterWorkspace({
           >
             <InventorySection
               character={character}
-              items={selectedItems}
+              items={sortedItems}
               label={labels.inventory}
               onToggleItem={onToggleItem}
               onQuantityChange={onQuantityChange}

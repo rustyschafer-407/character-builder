@@ -43,6 +43,34 @@ export function sortByName<T extends { name: string }>(items: T[]) {
   );
 }
 
+export function sortBySelectionThenName<T extends { id: string; name: string }>(
+  items: T[],
+  character: CharacterRecord,
+  isSelected: (item: T, character: CharacterRecord) => boolean
+): T[] {
+  const selected: T[] = [];
+  const unselected: T[] = [];
+
+  for (const item of items) {
+    if (isSelected(item, character)) {
+      selected.push(item);
+    } else {
+      unselected.push(item);
+    }
+  }
+
+  // Sort each group alphabetically
+  const sortedSelected = selected.sort((a, b) =>
+    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+  );
+  const sortedUnselected = unselected.sort((a, b) =>
+    a.name.trim().localeCompare(b.name.trim(), undefined, { sensitivity: "base" })
+  );
+
+  // Return selected first, then unselected
+  return [...sortedSelected, ...sortedUnselected];
+}
+
 export function getClassesForCampaign(gameData: GameData, campaignId: string) {
   const campaign = findCampaign(gameData, campaignId);
   return [...resolveCampaignAssets(campaign).classes].sort((a, b) =>
