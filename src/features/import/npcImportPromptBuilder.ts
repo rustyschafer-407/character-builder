@@ -109,6 +109,17 @@ DATA TYPE NOTES:
 - tags: Arrays of strings
 - All other array fields (skills, powers, items, attacks, races, classes, characters): Arrays
 
+ATTRIBUTE ESTIMATION (from source material):
+When the source material describes an NPC or monster, use your knowledge of RPGs to infer and estimate the character's physical and mental traits. Convert these descriptions into numeric attribute values (typically 3–18 in D&D-like systems):
+- STR: Physical strength, carrying capacity, melee damage. High for warriors, brutes, large creatures. Low for wizards, frail beings.
+- DEX: Agility, reflexes, initiative, AC. High for rogues, archers, dancers. Low for armored tanks, clumsy creatures.
+- CON: Endurance, hit points, fortitude saves. High for fighters, warlocks, tough creatures. Low for glass cannons.
+- INT: Reasoning, memory, arcane knowledge. High for wizards, scholars, intelligent spellcasters. Low for animals, mindless creatures.
+- WIS: Perception, instinct, divine magic, insight. High for clerics, monks, rangers, perceptive creatures. Low for distractible beings.
+- CHA: Force of personality, persuasion, leadership. High for charismatic NPCs, bards, demons, social leaders. Low for recluses, brutes.
+
+Interpret all provided descriptions (size, demeanor, equipment, abilities, role in story) to estimate a reasonable set of attributes that reflect the NPC's described capabilities and nature.
+
 REFERENCE RULES:
 - In characters.skills/powers/items/attacks, use names.
 - In characters.race and characters.class, use names.
