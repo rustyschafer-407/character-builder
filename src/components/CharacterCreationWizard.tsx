@@ -34,7 +34,7 @@ import {
 import { getAttributeModifier } from "../lib/character";
 import { getAttributeBonusTotals, getPointBuyBaseScore, getPointBuyCost } from "../lib/pointBuy";
 import type { QuickstartConcept, QuickstartLocks } from "../lib/characterQuickstart";
-import { buttonStyle, inputStyle, panelStyle, sectionTitleStyle, selectStyle, statCardStyle } from "./uiStyles";
+import { buttonStyle, inputStyle, panelStyle, primaryButtonStyle, sectionTitleStyle, selectStyle, statCardStyle } from "./uiStyles";
 import NpcImportPanel from "../features/import/NpcImportPanel";
 import type { NpcImportPreview } from "../features/import/npcImportTypes";
 import "./CharacterCreationWizard.css";
@@ -378,6 +378,34 @@ export default function CharacterCreationWizard({
       : quickstartMode === "guided"
       ? "Choose any locks you want, then click generate to fill the rest of the character automatically."
       : "Click generate to create a full draft instantly, then review and adjust it before saving.";
+  const quickstartPrimaryButtonStyle: React.CSSProperties = {
+    ...primaryButtonStyle,
+    minHeight: 50,
+    padding: "0 18px",
+    fontWeight: 800,
+    letterSpacing: "0.01em",
+    boxShadow: "0 10px 24px var(--cb-accent-soft)",
+  };
+  const quickstartSecondaryButtonStyle: React.CSSProperties = {
+    ...buttonStyle,
+    minHeight: 48,
+    padding: "0 16px",
+    fontWeight: 700,
+    color: "var(--text-primary)",
+    background: "linear-gradient(180deg, var(--cb-surface-raised), var(--cb-surface))",
+    border: "1px solid var(--cb-border-strong)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+  };
+  const quickstartTertiaryButtonStyle: React.CSSProperties = {
+    ...buttonStyle,
+    minHeight: 48,
+    padding: "0 16px",
+    fontWeight: 700,
+    color: "var(--text-secondary)",
+    background: "transparent",
+    border: "1px solid rgba(255,255,255,0.16)",
+    boxShadow: "none",
+  };
 
   return (
     <section
@@ -1210,12 +1238,12 @@ export default function CharacterCreationWizard({
           )}
           {quickstartActive && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={onFinish} className="button-control" style={buttonStyle}>Keep Character</button>
-              <button onClick={onQuickstartRerollEverything} className="button-control" style={buttonStyle}>Reroll Everything</button>
-              <button onClick={onQuickstartRerollName} className="button-control" style={buttonStyle}>Reroll Name</button>
-              <button onClick={onQuickstartRerollAttributes} className="button-control" style={buttonStyle}>Reroll Attributes</button>
-              <button onClick={onQuickstartRerollSkills} className="button-control" style={buttonStyle}>Reroll Skills</button>
-              <button onClick={onQuickstartEditManually} className="button-control" style={buttonStyle}>Edit Manually</button>
+              <button onClick={onFinish} className="button-control" style={quickstartPrimaryButtonStyle}>Keep Character</button>
+              <button onClick={onQuickstartRerollEverything} className="button-control" style={quickstartSecondaryButtonStyle}>Reroll Everything</button>
+              <button onClick={onQuickstartRerollName} className="button-control" style={quickstartSecondaryButtonStyle}>Reroll Name</button>
+              <button onClick={onQuickstartRerollAttributes} className="button-control" style={quickstartSecondaryButtonStyle}>Reroll Attributes</button>
+              <button onClick={onQuickstartRerollSkills} className="button-control" style={quickstartSecondaryButtonStyle}>Reroll Skills</button>
+              <button onClick={onQuickstartEditManually} className="button-control" style={quickstartTertiaryButtonStyle}>Edit Manually</button>
             </div>
           )}
         </div>
@@ -1323,14 +1351,7 @@ export default function CharacterCreationWizard({
                 <button
                   onClick={onQuickstartGenerate}
                   className="button-control"
-                  style={{
-                    ...buttonStyle,
-                    background: "linear-gradient(140deg, var(--cb-accent), var(--cb-accent-hover))",
-                    border: "1px solid var(--cb-accent)",
-                    color: "var(--cb-accent-contrast)",
-                    fontWeight: 800,
-                    boxShadow: "0 10px 24px var(--cb-accent-soft)",
-                  }}
+                  style={quickstartPrimaryButtonStyle}
                 >
                   {quickstartPrimaryActionLabel}
                 </button>
@@ -1341,9 +1362,8 @@ export default function CharacterCreationWizard({
               <button
                 onClick={() => onQuickstartModeChange("surprise")}
                 style={{
-                  ...buttonStyle,
-                  border: quickstartMode === "surprise" ? "1px solid var(--accent-primary)" : buttonStyle.border,
-                  background: quickstartMode === "surprise" ? "var(--cb-accent-soft)" : buttonStyle.background,
+                  ...(quickstartMode === "surprise" ? quickstartPrimaryButtonStyle : quickstartSecondaryButtonStyle),
+                  minHeight: 54,
                 }}
               >
                 Surprise Me
@@ -1351,9 +1371,8 @@ export default function CharacterCreationWizard({
               <button
                 onClick={() => onQuickstartModeChange("guided")}
                 style={{
-                  ...buttonStyle,
-                  border: quickstartMode === "guided" ? "1px solid var(--accent-primary)" : buttonStyle.border,
-                  background: quickstartMode === "guided" ? "var(--cb-accent-soft)" : buttonStyle.background,
+                  ...(quickstartMode === "guided" ? quickstartPrimaryButtonStyle : quickstartSecondaryButtonStyle),
+                  minHeight: 54,
                 }}
               >
                 Guided Random
@@ -1361,9 +1380,8 @@ export default function CharacterCreationWizard({
               <button
                 onClick={() => onQuickstartModeChange("concepts")}
                 style={{
-                  ...buttonStyle,
-                  border: quickstartMode === "concepts" ? "1px solid var(--accent-primary)" : buttonStyle.border,
-                  background: quickstartMode === "concepts" ? "var(--cb-accent-soft)" : buttonStyle.background,
+                  ...(quickstartMode === "concepts" ? quickstartPrimaryButtonStyle : quickstartSecondaryButtonStyle),
+                  minHeight: 54,
                 }}
               >
                 Roll 3 Concepts
@@ -1479,7 +1497,7 @@ export default function CharacterCreationWizard({
                         event.stopPropagation();
                         onQuickstartChooseConcept(index);
                       }}
-                      className="button-control" style={buttonStyle}
+                      className="button-control" style={quickstartPrimaryButtonStyle}
                     >
                       Use This Concept
                     </button>
@@ -1529,18 +1547,12 @@ export default function CharacterCreationWizard({
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {quickstartMode === "concepts" && (
-                  <button onClick={onQuickstartRerollConcepts} className="button-control" style={buttonStyle}>Reroll 3 Concepts</button>
+                  <button onClick={onQuickstartRerollConcepts} className="button-control" style={quickstartSecondaryButtonStyle}>Reroll 3 Concepts</button>
                 )}
                 <button
                   onClick={onQuickstartGenerate}
                   className="button-control"
-                  style={{
-                    ...buttonStyle,
-                    background: "linear-gradient(140deg, var(--cb-accent), var(--cb-accent-hover))",
-                    border: "1px solid var(--cb-accent)",
-                    color: "var(--cb-accent-contrast)",
-                    fontWeight: 800,
-                  }}
+                  style={quickstartPrimaryButtonStyle}
                 >
                   {quickstartPrimaryActionLabel}
                 </button>
