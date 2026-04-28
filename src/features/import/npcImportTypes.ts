@@ -142,7 +142,7 @@ export interface NpcImportPreview {
     races: RaceDefinition[];
     classes: ClassDefinition[];
   };
-  characterPlan: {
+  characterPlan?: {
     name: string;
     type: "npc";
     raceName?: string;
@@ -173,6 +173,12 @@ export interface NpcImportPreview {
 export interface NpcImportApplyResult {
   campaign: CampaignDefinition;
   draft: CharacterCreationDraft;
+  drafts: CharacterCreationDraft[];
+  warnings: NpcImportWarning[];
+}
+
+export interface NpcImportApplyPackageResult {
+  campaign: CampaignDefinition;
   drafts: CharacterCreationDraft[];
   warnings: NpcImportWarning[];
 }

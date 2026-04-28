@@ -86,7 +86,7 @@ export default function NpcImportPanel({ open, campaign, canImport, onClose, onC
     setErrorMessage("");
     try {
       await onCreateNpc(preview);
-      setSuccessMessage(`NPC "${preview.characterPlan.name}" created.`);
+      setSuccessMessage(`NPC "${preview.characterPlan?.name ?? preview.characterPlans[0]?.name ?? "Imported NPC"}" created.`);
     } catch (error) {
       setSuccessMessage("");
       setErrorMessage(error instanceof Error ? error.message : "Failed to create NPC.");
@@ -254,6 +254,7 @@ export default function NpcImportPanel({ open, campaign, canImport, onClose, onC
             <div style={{ color: "var(--text-secondary)" }}>Validate a payload to preview what will be created or reused.</div>
           ) : (
             <div style={{ display: "grid", gap: 12 }}>
+              {preview.characterPlan ? (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10 }}>
                 <div>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>NPC Name</div>
@@ -272,6 +273,9 @@ export default function NpcImportPanel({ open, campaign, canImport, onClose, onC
                   <div style={{ fontSize: 18, fontWeight: 700, color: "var(--text-primary)" }}>{preview.characterPlan.raceName || "(none)"}</div>
                 </div>
               </div>
+              ) : (
+                <div style={{ color: "var(--text-secondary)" }}>No characters detected in payload.</div>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
                 <div style={{ border: "1px solid var(--cb-border)", borderRadius: 8, padding: 10 }}>
@@ -295,21 +299,21 @@ export default function NpcImportPanel({ open, campaign, canImport, onClose, onC
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
                 <div style={{ border: "1px solid var(--cb-border)", borderRadius: 8, padding: 10 }}>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 6 }}>Skills</div>
-                  <div style={{ color: "var(--text-primary)", fontSize: 13 }}>{preview.characterPlan.skillNames.join(", ") || "None"}</div>
+                  <div style={{ color: "var(--text-primary)", fontSize: 13 }}>{preview.characterPlan?.skillNames.join(", ") || "None"}</div>
                 </div>
                 <div style={{ border: "1px solid var(--cb-border)", borderRadius: 8, padding: 10 }}>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 6 }}>Powers</div>
-                  <div style={{ color: "var(--text-primary)", fontSize: 13 }}>{preview.characterPlan.powerNames.join(", ") || "None"}</div>
+                  <div style={{ color: "var(--text-primary)", fontSize: 13 }}>{preview.characterPlan?.powerNames.join(", ") || "None"}</div>
                 </div>
                 <div style={{ border: "1px solid var(--cb-border)", borderRadius: 8, padding: 10 }}>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 6 }}>Items</div>
                   <div style={{ color: "var(--text-primary)", fontSize: 13 }}>
-                    {preview.characterPlan.itemNames.map((entry) => `${entry.name} x${entry.quantity}`).join(", ") || "None"}
+                    {preview.characterPlan?.itemNames.map((entry) => `${entry.name} x${entry.quantity}`).join(", ") || "None"}
                   </div>
                 </div>
                 <div style={{ border: "1px solid var(--cb-border)", borderRadius: 8, padding: 10 }}>
                   <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 6 }}>Attacks</div>
-                  <div style={{ color: "var(--text-primary)", fontSize: 13 }}>{preview.characterPlan.attackNames.join(", ") || "None"}</div>
+                  <div style={{ color: "var(--text-primary)", fontSize: 13 }}>{preview.characterPlan?.attackNames.join(", ") || "None"}</div>
                 </div>
               </div>
 

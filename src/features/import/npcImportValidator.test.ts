@@ -119,8 +119,8 @@ describe("npcImport", () => {
       makeCampaign()
     );
 
-    expect(preview.characterPlan.name).toBe("Goblin Runner");
-    expect(preview.characterPlan.type).toBe("npc");
+    expect(preview.characterPlan?.name).toBe("Goblin Runner");
+    expect(preview.characterPlan?.type).toBe("npc");
     expect(preview.toCreate.classes.length).toBe(1);
     expect(preview.toCreate.races.length).toBe(1);
     expect(preview.warnings.some((warning) => warning.code === "forced-character-type")).toBe(true);

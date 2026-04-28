@@ -16,6 +16,7 @@ import {
   NPC_IMPORT_FORMAT,
   NPC_IMPORT_SCHEMA_FIELDS,
   NPC_IMPORT_VERSION,
+  type NpcImportApplyPackageResult,
   type NpcImportApplyResult,
   type NpcImportPayload,
   type NpcImportPreview,
@@ -42,7 +43,7 @@ const CONTENT_KEYS = new Set(Object.keys(NPC_IMPORT_SCHEMA_FIELDS));
 type RecordLike = Record<string, unknown>;
 
 type ParsedCharacterItem = { name: string; quantity: number; notes?: string };
-type NpcCharacterPlan = NpcImportPreview["characterPlan"];
+type NpcCharacterPlan = NonNullable<NpcImportPreview["characterPlan"]>;
 
 function normalizeKey(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -445,7 +446,8 @@ function buildBlankClass(
   };
 }
 
-function parsePayload(rawJson: string): NpcImportPayload {
+function parsePayload(rawJson: string, options?: { requireCharacter?: boolean }): NpcImportPayload {
+  const requireCharacter = options?.requireCharacter ?? true;
   let parsed: unknown;
   try {
     parsed = JSON.parse(rawJson);
@@ -476,15 +478,19 @@ function parsePayload(rawJson: string): NpcImportPayload {
     },
   };
 
-  if ((payload.content.characters ?? []).length === 0) {
+  if (requireCharacter && (payload.content.characters ?? []).length === 0) {
     throw new Error("Import content must include at least one character.");
   }
 
   return payload;
 }
 
-export function buildNpcImportPreview(rawJson: string, campaign: CampaignDefinition): NpcImportPreview {
-  const payload = parsePayload(rawJson);
+export function buildNpcImportPreview(
+  rawJson: string,
+  campaign: CampaignDefinition,
+  options?: { requireCharacter?: boolean }
+): NpcImportPreview {
+  const payload = parsePayload(rawJson, options);
   const warnings = new WarningCollector();
   const skillsContent = payload.content.skills ?? [];
   const powersContent = payload.content.powers ?? [];
@@ -829,7 +835,10 @@ function findByName<T extends { id: string; name: string }>(records: T[], name: 
   return records.find((entry) => normalizeName(entry.name) === normalized);
 }
 
-export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportPreview): NpcImportApplyResult {
+export function applyNpcImportPackage(
+  campaign: CampaignDefinition,
+  preview: NpcImportPreview
+): NpcImportApplyPackageResult {
   const nextSkills = [...campaign.skills];
   const nextPowers = [...campaign.powers];
   const nextItems = [...campaign.items];
@@ -1047,8 +1056,21 @@ export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportP
 
   return {
     campaign: syncedCampaign,
-    draft: drafts[0],
     drafts,
     warnings: importWarnings,
+  };
+}
+
+export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportPreview): NpcImportApplyResult {
+  const packageResult = applyNpcImportPackage(campaign, preview);
+  if (packageResult.drafts.length === 0) {
+    throw new Error("Import must include at least one character for this action.");
+  }
+
+  return {
+    campaign: packageResult.campaign,
+    draft: packageResult.drafts[0],
+    drafts: packageResult.drafts,
+    warnings: packageResult.warnings,
   };
 }

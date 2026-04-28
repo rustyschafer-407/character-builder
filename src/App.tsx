@@ -80,8 +80,10 @@ import {
   type CbTheme,
   type DisplayPreferences,
 } from "./lib/displayPreferences";
-import { applyNpcImport } from "./features/import/npcImportValidator";
+import { applyNpcImport, applyNpcImportPackage } from "./features/import/npcImportValidator";
 import type { NpcImportPreview } from "./features/import/npcImportTypes";
+import AiGeneratorPanel from "./features/import/AiGeneratorPanel";
+import type { AiGeneratorMode } from "./features/import/aiGeneratorPromptBuilder";
 
 const rememberedEmailStorageKey = "character-builder.rememberedEmail";
 
@@ -243,6 +245,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isGm, setIsGm] = useState(false);
   const [securityOpen, setSecurityOpen] = useState(false);
+  const [aiGeneratorOpen, setAiGeneratorOpen] = useState(false);
   const [campaignRolesByCampaignId, setCampaignRolesByCampaignId] = useState<Record<string, "player" | "editor">>({});
   const [characterRolesByCharacterId, setCharacterRolesByCharacterId] = useState<Record<string, "viewer" | "editor">>({});
   const {
@@ -811,29 +814,35 @@ export default function App() {
     applyAdminSaveLocally(nextGameData);
   }
 
-  async function handleCreateGeneratedCampaignImport(input: {
-    nextGameData: GameData;
-    drafts: import("./features/import/npcImportTypes").NpcImportApplyResult["drafts"];
-    focusCampaignId: string;
-  }) {
-    const { nextGameData, drafts, focusCampaignId } = input;
-
-    const targetCampaign = nextGameData.campaigns.find((campaign) => campaign.id === focusCampaignId) ?? null;
+  async function handleApplyAiGenerator(preview: NpcImportPreview, _mode: AiGeneratorMode) {
+    const targetCampaign = gameData.campaigns.find((campaign) => campaign.id === campaignId) ?? null;
     if (!targetCampaign) {
-      throw new Error("Generated campaign target is no longer available.");
+      throw new Error("Selected campaign is no longer available.");
     }
 
-    const canEditCampaignForImport = Permissions.canEditCampaign(authState, focusCampaignId);
-    const canCreateNpc = Permissions.canCreateCharacter(authState, focusCampaignId, "npc");
-    if (!canEditCampaignForImport || !canCreateNpc) {
-      throw new Error("You are not authorized to generate campaign imports for this campaign.");
+    const canEditCampaignForImport = Permissions.canEditCampaign(authState, targetCampaign.id);
+    if (!canEditCampaignForImport) {
+      throw new Error("You are not authorized to edit this campaign.");
     }
+
+    const createsNpcs = preview.characterPlans.length > 0;
+    const canCreateNpc = Permissions.canCreateCharacter(authState, targetCampaign.id, "npc");
+    if (createsNpcs && !canCreateNpc) {
+      throw new Error("You are not authorized to create NPCs in this campaign.");
+    }
+
+    const importResult = applyNpcImportPackage(targetCampaign, preview);
+    const nextGameData: GameData = {
+      ...gameData,
+      campaigns: gameData.campaigns.map((campaign) =>
+        campaign.id === targetCampaign.id ? importResult.campaign : campaign
+      ),
+    };
 
     await persistCampaignChanges(gameData, nextGameData);
-    await refreshAccessContextState();
-    applyAdminSaveLocally(nextGameData);
+    setGameData(nextGameData);
 
-    for (const draft of drafts) {
+    for (const draft of importResult.drafts) {
       commitCreatedCharacter({
         draft,
         setCharacters,
@@ -842,8 +851,15 @@ export default function App() {
       });
     }
 
-    setCampaignId(focusCampaignId);
-    setCloudStatus(`Campaign package created with ${drafts.length} NPC${drafts.length === 1 ? "" : "s"}.`);
+    if (importResult.drafts.length > 0) {
+      setCloudStatus(
+        `AI generator applied: ${importResult.drafts.length} NPC${importResult.drafts.length === 1 ? "" : "s"} created.`
+      );
+    } else {
+      setCloudStatus("AI generator applied: campaign content updated.");
+    }
+
+    setAiGeneratorOpen(false);
   }
 
   const selectedWorkspaceCallbacks = useSelectedCharacterWorkspaceCallbacks({
@@ -2203,6 +2219,48 @@ export default function App() {
           >
             {currentCampaignContextLabel}
           </div>
+          <button
+            type="button"
+            onClick={() => setAiGeneratorOpen(true)}
+            disabled={!Permissions.canEditCampaign(authState, campaignId)}
+            style={{
+              display: "flex",
+              marginTop: 8,
+              alignItems: "center",
+              gap: 7,
+              background: "none",
+              border: "none",
+              padding: "4px 2px",
+              cursor: Permissions.canEditCampaign(authState, campaignId) ? "pointer" : "not-allowed",
+              color: "var(--text-secondary)",
+              fontSize: 12,
+              opacity: Permissions.canEditCampaign(authState, campaignId) ? 0.52 : 0.32,
+              transition: "opacity 0.15s, color 0.15s",
+              textAlign: "left",
+              width: "fit-content",
+            }}
+            onMouseEnter={(e) => {
+              if (!Permissions.canEditCampaign(authState, campaignId)) return;
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.opacity = "1";
+              el.style.color = "var(--accent-primary)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.opacity = Permissions.canEditCampaign(authState, campaignId) ? "0.65" : "0.32";
+              el.style.color = "var(--text-secondary)";
+            }}
+          >
+            <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>
+              🧠
+            </span>
+            <span>
+              <span style={{ fontWeight: 600 }}>AI Generator</span>
+              <span style={{ marginLeft: 6, opacity: 0.75 }}>
+                — generate content packs, NPC rosters, or campaign packages for this campaign
+              </span>
+            </span>
+          </button>
         </div>
 
         <label style={{ display: "block", fontWeight: 600, color: "var(--cb-muted-label)" }}>
@@ -2248,6 +2306,17 @@ export default function App() {
         />
       ) : null}
 
+      {selectedCampaign ? (
+        <AiGeneratorPanel
+          open={aiGeneratorOpen}
+          campaign={selectedCampaign}
+          canEditCampaign={Permissions.canEditCampaign(authState, selectedCampaign.id)}
+          canCreateNpc={Permissions.canCreateCharacter(authState, selectedCampaign.id, "npc")}
+          onClose={() => setAiGeneratorOpen(false)}
+          onApply={handleApplyAiGenerator}
+        />
+      ) : null}
+
       {adminOpen ? (
         <AdminScreen
           gameData={gameData}
@@ -2257,7 +2326,6 @@ export default function App() {
           saveRequestVersion={adminSaveRequestVersion}
           onCampaignContextChange={handleCampaignChange}
           onGameDataChange={handleAdminGameDataChange}
-          onCreateGeneratedCampaignImport={handleCreateGeneratedCampaignImport}
           onSave={handleAdminSave}
         />
       ) : !securityOpen ? (
@@ -2344,10 +2412,7 @@ export default function App() {
                 onQuickstartRerollAttributes={rerollAttributes}
                 onQuickstartRerollSkills={rerollSkills}
                 onQuickstartEditManually={editGeneratedCharacterManually}
-                npcImportEnabled={
-                  Permissions.shouldShowNpcControls(authState) &&
-                  Permissions.canEditCampaign(authState, creationDraft.campaignId)
-                }
+                npcImportEnabled={false}
                 onCreateNpcImport={handleCreateNpcImport}
                 canChooseCharacterType={Permissions.shouldShowNpcControls(authState)}
               />
