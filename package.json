@@ -4,10 +4,11 @@
   "version": "2.1.0",
   "type": "module",
   "scripts": {
+    "sync:roll20-sheet": "node scripts/sync-roll20-sheet.mjs",
     "dev": "vite",
     "dev:staging": "vite --mode staging",
-    "build": "tsc -b && vite build",
-    "build:staging": "tsc -b && vite build --mode staging",
+    "build": "npm run sync:roll20-sheet && tsc -b && vite build",
+    "build:staging": "npm run sync:roll20-sheet && tsc -b && vite build --mode staging",
     "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
     "user:delete": "node scripts/delete-user.mjs",
     "roles:set": "node scripts/set-user-global-roles.mjs",

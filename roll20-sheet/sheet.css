@@ -550,6 +550,25 @@
   min-width: 0;
 }
 
+.charsheet .sheet-resource-field {
+  grid-column: span 2;
+}
+
+.charsheet .sheet-resource-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.charsheet .sheet-resource-inputs input,
+.charsheet .sheet-resource-inputs select {
+  height: 42px !important;
+  min-height: 42px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+
 .charsheet .sheet-combat-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0,1fr));
@@ -872,5 +891,13 @@
 
   .charsheet .sheet-init-button {
     width: 100%;
+  }
+
+  .charsheet .sheet-resource-field {
+    grid-column: auto;
+  }
+
+  .charsheet .sheet-resource-inputs {
+    grid-template-columns: 1fr;
   }
 }
