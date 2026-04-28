@@ -372,12 +372,6 @@ export default function CharacterCreationWizard({
       : quickstartMode === "guided"
       ? "Generate Guided Character"
       : "Generate Character Now";
-  const quickstartPrimaryActionDescription =
-    quickstartMode === "concepts"
-      ? "Click generate to roll three ready-to-pick concepts, then choose the one you want to review."
-      : quickstartMode === "guided"
-      ? "Choose any locks you want, then click generate to fill the rest of the character automatically."
-      : "Click generate to create a full draft instantly, then review and adjust it before saving.";
   const quickstartPrimaryButtonStyle: React.CSSProperties = {
     ...primaryButtonStyle,
     minHeight: 50,
@@ -524,33 +518,37 @@ export default function CharacterCreationWizard({
           {/* ── Tertiary: Quickstart inline row ── */}
           <button
             onClick={onOpenQuickstart}
-            className="button-control"
             style={{
-              ...buttonStyle,
-              display: "grid",
-              gridTemplateColumns: "auto 1fr auto",
+              display: "flex",
               alignItems: "center",
-              gap: 12,
-              width: "100%",
-              padding: "14px 16px",
+              gap: 7,
+              background: "none",
+              border: "none",
+              padding: "4px 2px",
+              cursor: "pointer",
+              color: "var(--text-secondary)",
+              fontSize: 12,
+              opacity: 0.52,
+              transition: "opacity 0.15s, color 0.15s",
               textAlign: "left",
-              background: "linear-gradient(140deg, var(--cb-accent), var(--cb-accent-hover))",
-              border: "1px solid var(--cb-accent)",
-              color: "var(--cb-accent-contrast)",
-              boxShadow: "0 10px 24px var(--cb-accent-soft)",
+              width: "fit-content",
             }}
-            aria-describedby="quickstart-cta-help"
+            onMouseEnter={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.opacity = "1";
+              el.style.color = "var(--accent-primary)";
+            }}
+            onMouseLeave={(e) => {
+              const el = e.currentTarget as HTMLButtonElement;
+              el.style.opacity = "0.65";
+              el.style.color = "var(--text-secondary)";
+            }}
           >
-            <span style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>
-              ⚡
+            <span style={{ fontSize: 14, lineHeight: 1 }}>⚡</span>
+            <span>
+              <span style={{ fontWeight: 600 }}>Quickstart Character</span>
+              <span style={{ marginLeft: 6, opacity: 0.75 }}>— generate a complete character in seconds</span>
             </span>
-            <span style={{ display: "grid", gap: 2 }}>
-              <span style={{ fontWeight: 800, fontSize: 15 }}>Generate Character with Quickstart</span>
-              <span id="quickstart-cta-help" style={{ fontSize: 12, opacity: 0.92 }}>
-                Opens the generator. Pick a mode, then click the Generate button to build a full draft.
-              </span>
-            </span>
-            <span style={{ fontWeight: 800, fontSize: 12, whiteSpace: "nowrap" }}>Open Generator</span>
           </button>
 
           {npcImportEnabled ? (
@@ -1329,33 +1327,6 @@ export default function CharacterCreationWizard({
 
             <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
               Not saved yet. Quickstart only fills the draft and sends you to review.
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-                padding: 14,
-                borderRadius: 12,
-                border: "1px solid var(--accent-primary)",
-                background: "linear-gradient(180deg, var(--cb-accent-soft-strong), rgba(255,255,255,0.02))",
-              }}
-            >
-              <div style={{ color: "var(--text-primary)", fontSize: 15, fontWeight: 800 }}>
-                Step 2: Click the generate button to create your quickstart draft.
-              </div>
-              <div style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                {quickstartPrimaryActionDescription}
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-start", flexWrap: "wrap", gap: 8 }}>
-                <button
-                  onClick={onQuickstartGenerate}
-                  className="button-control"
-                  style={quickstartPrimaryButtonStyle}
-                >
-                  {quickstartPrimaryActionLabel}
-                </button>
-              </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
