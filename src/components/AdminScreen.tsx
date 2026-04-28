@@ -24,6 +24,9 @@ import {
   panelStyle,
   sectionTitleStyle,
 } from "./uiStyles";
+import GenerateCampaignPanel from "../features/import/GenerateCampaignPanel";
+import type { NpcImportApplyResult, NpcImportPreview } from "../features/import/npcImportTypes";
+import { applyNpcImport } from "../features/import/npcImportValidator";
 import { generateId, sortByName } from "../lib/character";
 import { syncCampaignDerivedAttackTemplates } from "../lib/derivedAttacks";
 import {
@@ -45,6 +48,11 @@ interface Props {
   saveRequestVersion: number;
   onCampaignContextChange: (campaignId: string) => void;
   onGameDataChange?: (gameData: GameData) => void;
+  onCreateGeneratedCampaignImport?: (input: {
+    nextGameData: GameData;
+    drafts: NpcImportApplyResult["drafts"];
+    focusCampaignId: string;
+  }) => Promise<void>;
   onSave: (gameData: GameData) => void;
 }
 
@@ -300,6 +308,7 @@ export default function AdminScreen({
   saveRequestVersion,
   onCampaignContextChange,
   onGameDataChange,
+  onCreateGeneratedCampaignImport,
   onSave,
 }: Props) {
   const [workingData, setWorkingData] = useState<GameData>(gameData);
@@ -311,6 +320,7 @@ export default function AdminScreen({
   const [selectedItemId, setSelectedItemId] = useState<string>("");
   const [selectedAttackId, setSelectedAttackId] = useState<string>("");
   const [duplicateCampaignNoticeName, setDuplicateCampaignNoticeName] = useState<string | null>(null);
+  const [campaignGeneratorOpen, setCampaignGeneratorOpen] = useState(false);
   const [campaignImportOpen, setCampaignImportOpen] = useState(false);
   const [campaignImportJson, setCampaignImportJson] = useState("");
   const [campaignImportPreview, setCampaignImportPreview] = useState<ImportPreview | null>(null);
@@ -436,6 +446,14 @@ export default function AdminScreen({
     setCampaignImportOpen(true);
   }
 
+  function openCampaignGeneratorModal() {
+    setCampaignGeneratorOpen(true);
+  }
+
+  function closeCampaignGeneratorModal() {
+    setCampaignGeneratorOpen(false);
+  }
+
   function closeCampaignImportModal() {
     setCampaignImportOpen(false);
     resetCampaignImportState();
@@ -495,6 +513,33 @@ export default function AdminScreen({
     setCampaignImportResult(result);
     setCampaignImportPreview(null);
     setCampaignImportError("");
+  }
+
+  async function handleCreateGeneratedCampaign(preview: NpcImportPreview) {
+    if (!selectedCampaign) {
+      throw new Error("Campaign editor is not ready.");
+    }
+    if (!onCreateGeneratedCampaignImport) {
+      throw new Error("Campaign generation is not available right now.");
+    }
+
+    const result = applyNpcImport(selectedCampaign, preview);
+    const nextGameData: GameData = {
+      ...workingData,
+      campaigns: workingData.campaigns.map((campaign) =>
+        campaign.id === selectedCampaign.id ? result.campaign : campaign
+      ),
+    };
+
+    await onCreateGeneratedCampaignImport({
+      nextGameData,
+      drafts: result.drafts,
+      focusCampaignId: selectedCampaign.id,
+    });
+
+    setWorkingData(nextGameData);
+    onGameDataChange?.(nextGameData);
+    setCampaignGeneratorOpen(false);
   }
 
   function updateClass(updatedClass: ClassDefinition) {
@@ -970,6 +1015,46 @@ export default function AdminScreen({
                     />
                   </label>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={openCampaignGeneratorModal}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    background: "none",
+                    border: "none",
+                    padding: "4px 2px",
+                    cursor: "pointer",
+                    color: "var(--text-secondary)",
+                    fontSize: 12,
+                    opacity: 0.52,
+                    transition: "opacity 0.15s, color 0.15s",
+                    textAlign: "left",
+                    width: "fit-content",
+                  }}
+                  onMouseEnter={(e) => {
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.opacity = "1";
+                    el.style.color = "var(--accent-primary)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.opacity = "0.65";
+                    el.style.color = "var(--text-secondary)";
+                  }}
+                >
+                  <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden>
+                    🗺️
+                  </span>
+                  <span>
+                    <span style={{ fontWeight: 600 }}>Generate Campaign</span>
+                    <span style={{ marginLeft: 6, opacity: 0.75 }}>
+                      — describe a setting and generate a campaign package with a starter NPC roster
+                    </span>
+                  </span>
+                </button>
 
                 <div
                   style={{
@@ -2596,6 +2681,16 @@ export default function AdminScreen({
             )}
           </div>
         </div>
+      ) : null}
+
+      {selectedCampaign ? (
+        <GenerateCampaignPanel
+          open={campaignGeneratorOpen}
+          campaign={selectedCampaign}
+          canImport={Boolean(onCreateGeneratedCampaignImport)}
+          onClose={closeCampaignGeneratorModal}
+          onCreateCampaign={handleCreateGeneratedCampaign}
+        />
       ) : null}
     </>
   );

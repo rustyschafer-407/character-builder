@@ -152,11 +152,25 @@ export interface NpcImportPreview {
     attackNames: string[];
     notes?: string;
   };
+  characterPlans: Array<{
+    name: string;
+    type: "npc";
+    raceName?: string;
+    className?: string;
+    level?: number;
+    attributes: Partial<Record<AttributeKey, number>>;
+    skillNames: string[];
+    powerNames: string[];
+    itemNames: Array<{ name: string; quantity: number; notes?: string }>;
+    attackNames: string[];
+    notes?: string;
+  }>;
 }
 
 export interface NpcImportApplyResult {
   campaign: CampaignDefinition;
   draft: CharacterCreationDraft;
+  drafts: CharacterCreationDraft[];
   warnings: NpcImportWarning[];
 }
 

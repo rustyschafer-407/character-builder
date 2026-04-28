@@ -159,4 +159,44 @@ describe("npcImport", () => {
     expect(result.draft.classId).toBe("class-fighter");
     expect(result.draft.skills.some((entry) => entry.proficient)).toBe(true);
   });
+
+  it("supports campaign-scale payloads with multiple NPC drafts", () => {
+    const campaign = makeCampaign();
+    const preview = buildNpcImportPreview(
+      JSON.stringify({
+        format: "character-builder.npc-import",
+        version: 1,
+        content: {
+          skills: [{ name: "Tactics", attribute: "INT" }],
+          classes: [{ name: "Officer", hitDie: 8 }],
+          races: [{ name: "Andorian" }],
+          characters: [
+            {
+              name: "Commander Thalek",
+              class: "Officer",
+              race: "Andorian",
+              skills: ["Tactics"],
+            },
+            {
+              name: "Security Drone",
+              class: "Fighter",
+              race: "Human",
+              skills: ["Perception"],
+            },
+          ],
+        },
+      }),
+      campaign
+    );
+
+    const result = applyNpcImport(campaign, preview);
+
+    expect(preview.characterPlans).toHaveLength(2);
+    expect(preview.characterPlans[0]?.name).toBe("Commander Thalek");
+    expect(result.drafts).toHaveLength(2);
+    expect(result.drafts[0]?.identity.name).toBe("Commander Thalek");
+    expect(result.drafts[1]?.identity.name).toBe("Security Drone");
+    expect(result.campaign.classes.some((entry) => entry.name === "Officer")).toBe(true);
+    expect(result.campaign.races?.some((entry) => entry.name === "Andorian")).toBe(true);
+  });
 });

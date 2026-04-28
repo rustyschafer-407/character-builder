@@ -42,6 +42,7 @@ const CONTENT_KEYS = new Set(Object.keys(NPC_IMPORT_SCHEMA_FIELDS));
 type RecordLike = Record<string, unknown>;
 
 type ParsedCharacterItem = { name: string; quantity: number; notes?: string };
+type NpcCharacterPlan = NpcImportPreview["characterPlan"];
 
 function normalizeKey(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -406,68 +407,6 @@ export function buildNpcImportPreview(rawJson: string, campaign: CampaignDefinit
   ensureNoDuplicateNames(racesToCreate, "races", warnings);
   ensureNoDuplicateNames(classesToCreate, "classes", warnings);
 
-  const characterRaw = charactersContent[0];
-  const characterRecord = asRecord(characterRaw, "Character 1");
-  warnUnknownFields(characterRecord, NPC_IMPORT_SCHEMA_FIELDS.characters as unknown as string[], "Character 1", warnings);
-
-  const characterName = typeof characterRecord.name === "string" ? characterRecord.name.trim() : "";
-  if (!characterName) {
-    throw new Error("Character 1 is missing name.");
-  }
-
-  if (typeof characterRecord.type === "string" && normalizeName(characterRecord.type) !== "npc") {
-    warnings.add({
-      code: "forced-character-type",
-      message: `Character type "${characterRecord.type}" was overridden to NPC.`,
-    });
-  }
-
-  const referencedSkillNames = asArray<string>(characterRecord.skills, "characters[0].skills").filter(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  );
-  const referencedPowerNames = asArray<string>(characterRecord.powers, "characters[0].powers").filter(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  );
-  const referencedAttackNames = asArray<string>(characterRecord.attacks, "characters[0].attacks").filter(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
-  );
-
-  const referencedItemsRaw = asArray<unknown>(characterRecord.items, "characters[0].items");
-  const referencedItemEntries: ParsedCharacterItem[] = referencedItemsRaw
-    .map((entry) => {
-      if (typeof entry === "string") {
-        return { name: entry, quantity: 1 };
-      }
-      if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
-        return null;
-      }
-      const record = entry as RecordLike;
-      const name = typeof record.name === "string" ? record.name.trim() : "";
-      if (!name) return null;
-      return {
-        name,
-        quantity: parseInteger(record.quantity) ?? 1,
-        notes: typeof record.notes === "string" ? record.notes.trim() : undefined,
-      };
-    })
-    .filter((entry): entry is ParsedCharacterItem => Boolean(entry));
-
-  const referencedRaceName = typeof characterRecord.race === "string" ? characterRecord.race.trim() : "";
-  const referencedClassName = typeof characterRecord.class === "string" ? characterRecord.class.trim() : "";
-  const referencedLevel = parseInteger(characterRecord.level);
-
-  const attributeRecord = characterRecord.attributes && typeof characterRecord.attributes === "object" && !Array.isArray(characterRecord.attributes)
-    ? (characterRecord.attributes as RecordLike)
-    : {};
-
-  const attributes: Partial<Record<AttributeKey, number>> = {};
-  for (const key of ["STR", "DEX", "CON", "INT", "WIS", "CHA"] as const) {
-    const value = parseInteger(attributeRecord[key]);
-    if (value !== undefined) {
-      attributes[key] = value;
-    }
-  }
-
   const newNames = {
     skills: new Set(skillsToCreate.map((entry) => normalizeName(entry.name))),
     powers: new Set(powersToCreate.map((entry) => normalizeName(entry.name))),
@@ -477,53 +416,148 @@ export function buildNpcImportPreview(rawJson: string, campaign: CampaignDefinit
     classes: new Set(classesToCreate.map((entry) => normalizeName(entry.name))),
   };
 
-  const referenceGroups: Array<{ label: string; names: string[]; existing: Map<string, { id: string; name: string }>; created: Set<string> }> = [
-    { label: "skills", names: referencedSkillNames, existing: existingBy.skills, created: newNames.skills },
-    { label: "powers", names: referencedPowerNames, existing: existingBy.powers, created: newNames.powers },
-    { label: "items", names: referencedItemEntries.map((entry) => entry.name), existing: existingBy.items, created: newNames.items },
-    { label: "attacks", names: referencedAttackNames, existing: existingBy.attacks, created: newNames.attacks },
-  ];
+  const allReferenced = {
+    skills: new Set<string>(),
+    powers: new Set<string>(),
+    items: new Set<string>(),
+    attacks: new Set<string>(),
+    races: new Set<string>(),
+    classes: new Set<string>(),
+  };
 
-  for (const group of referenceGroups) {
-    for (const rawName of group.names) {
-      const normalized = normalizeName(rawName);
-      if (group.existing.has(normalized) || group.created.has(normalized)) {
-        continue;
+  const characterPlans: NpcCharacterPlan[] = charactersContent.map((characterRaw, index) => {
+    const label = `Character ${index + 1}`;
+    const characterRecord = asRecord(characterRaw, label);
+    warnUnknownFields(characterRecord, NPC_IMPORT_SCHEMA_FIELDS.characters as unknown as string[], label, warnings);
+
+    const characterName = typeof characterRecord.name === "string" ? characterRecord.name.trim() : "";
+    if (!characterName) {
+      throw new Error(`${label} is missing name.`);
+    }
+
+    if (typeof characterRecord.type === "string" && normalizeName(characterRecord.type) !== "npc") {
+      warnings.add({
+        code: "forced-character-type",
+        message: `${label} type "${characterRecord.type}" was overridden to NPC.`,
+      });
+    }
+
+    const referencedSkillNames = asArray<string>(characterRecord.skills, `characters[${index}].skills`).filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0
+    );
+    const referencedPowerNames = asArray<string>(characterRecord.powers, `characters[${index}].powers`).filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0
+    );
+    const referencedAttackNames = asArray<string>(characterRecord.attacks, `characters[${index}].attacks`).filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0
+    );
+
+    const referencedItemsRaw = asArray<unknown>(characterRecord.items, `characters[${index}].items`);
+    const referencedItemEntries: ParsedCharacterItem[] = referencedItemsRaw
+      .map((entry) => {
+        if (typeof entry === "string") {
+          return { name: entry, quantity: 1 };
+        }
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          return null;
+        }
+        const record = entry as RecordLike;
+        const name = typeof record.name === "string" ? record.name.trim() : "";
+        if (!name) return null;
+        return {
+          name,
+          quantity: parseInteger(record.quantity) ?? 1,
+          notes: typeof record.notes === "string" ? record.notes.trim() : undefined,
+        };
+      })
+      .filter((entry): entry is ParsedCharacterItem => Boolean(entry));
+
+    const referencedRaceName = typeof characterRecord.race === "string" ? characterRecord.race.trim() : "";
+    const referencedClassName = typeof characterRecord.class === "string" ? characterRecord.class.trim() : "";
+    const referencedLevel = parseInteger(characterRecord.level);
+
+    const attributeRecord =
+      characterRecord.attributes && typeof characterRecord.attributes === "object" && !Array.isArray(characterRecord.attributes)
+        ? (characterRecord.attributes as RecordLike)
+        : {};
+
+    const attributes: Partial<Record<AttributeKey, number>> = {};
+    for (const key of ["STR", "DEX", "CON", "INT", "WIS", "CHA"] as const) {
+      const value = parseInteger(attributeRecord[key]);
+      if (value !== undefined) {
+        attributes[key] = value;
       }
-      warnings.add({
-        code: "invalid-reference",
-        message: `Character references missing ${group.label.slice(0, -1)} "${rawName}".`,
-      });
     }
-  }
 
-  if (referencedRaceName) {
-    const normalized = normalizeName(referencedRaceName);
-    if (!existingBy.races.has(normalized) && !newNames.races.has(normalized)) {
-      warnings.add({
-        code: "invalid-reference",
-        message: `Character references missing race "${referencedRaceName}".`,
-      });
-    }
-  }
+    const referenceGroups: Array<{ label: string; names: string[]; existing: Map<string, { id: string; name: string }>; created: Set<string> }> = [
+      { label: "skills", names: referencedSkillNames, existing: existingBy.skills, created: newNames.skills },
+      { label: "powers", names: referencedPowerNames, existing: existingBy.powers, created: newNames.powers },
+      { label: "items", names: referencedItemEntries.map((entry) => entry.name), existing: existingBy.items, created: newNames.items },
+      { label: "attacks", names: referencedAttackNames, existing: existingBy.attacks, created: newNames.attacks },
+    ];
 
-  if (referencedClassName) {
-    const normalized = normalizeName(referencedClassName);
-    if (!existingBy.classes.has(normalized) && !newNames.classes.has(normalized)) {
-      warnings.add({
-        code: "invalid-reference",
-        message: `Character references missing class "${referencedClassName}".`,
-      });
+    for (const group of referenceGroups) {
+      for (const rawName of group.names) {
+        const normalized = normalizeName(rawName);
+        if (group.existing.has(normalized) || group.created.has(normalized)) {
+          continue;
+        }
+        warnings.add({
+          code: "invalid-reference",
+          message: `${label} references missing ${group.label.slice(0, -1)} "${rawName}".`,
+        });
+      }
     }
-  }
+
+    if (referencedRaceName) {
+      const normalized = normalizeName(referencedRaceName);
+      if (!existingBy.races.has(normalized) && !newNames.races.has(normalized)) {
+        warnings.add({
+          code: "invalid-reference",
+          message: `${label} references missing race "${referencedRaceName}".`,
+        });
+      }
+    }
+
+    if (referencedClassName) {
+      const normalized = normalizeName(referencedClassName);
+      if (!existingBy.classes.has(normalized) && !newNames.classes.has(normalized)) {
+        warnings.add({
+          code: "invalid-reference",
+          message: `${label} references missing class "${referencedClassName}".`,
+        });
+      }
+    }
+
+    referencedSkillNames.forEach((name) => allReferenced.skills.add(normalizeName(name)));
+    referencedPowerNames.forEach((name) => allReferenced.powers.add(normalizeName(name)));
+    referencedAttackNames.forEach((name) => allReferenced.attacks.add(normalizeName(name)));
+    referencedItemEntries.forEach((entry) => allReferenced.items.add(normalizeName(entry.name)));
+    if (referencedRaceName) allReferenced.races.add(normalizeName(referencedRaceName));
+    if (referencedClassName) allReferenced.classes.add(normalizeName(referencedClassName));
+
+    return {
+      name: characterName,
+      type: "npc",
+      raceName: referencedRaceName || undefined,
+      className: referencedClassName || undefined,
+      level: referencedLevel !== undefined && referencedLevel > 0 ? referencedLevel : undefined,
+      attributes,
+      skillNames: referencedSkillNames,
+      powerNames: referencedPowerNames,
+      itemNames: referencedItemEntries,
+      attackNames: referencedAttackNames,
+      notes: typeof characterRecord.notes === "string" ? characterRecord.notes.trim() : "",
+    };
+  });
 
   const reuse = {
-    skills: campaign.skills.filter((entry) => referencedSkillNames.some((name) => normalizeName(name) === normalizeName(entry.name))),
-    powers: campaign.powers.filter((entry) => referencedPowerNames.some((name) => normalizeName(name) === normalizeName(entry.name))),
-    items: campaign.items.filter((entry) => referencedItemEntries.some((item) => normalizeName(item.name) === normalizeName(entry.name))),
-    attacks: campaign.attackTemplates.filter((entry) => referencedAttackNames.some((name) => normalizeName(name) === normalizeName(entry.name))),
-    races: (campaign.races ?? []).filter((entry) => referencedRaceName && normalizeName(referencedRaceName) === normalizeName(entry.name)),
-    classes: campaign.classes.filter((entry) => referencedClassName && normalizeName(referencedClassName) === normalizeName(entry.name)),
+    skills: campaign.skills.filter((entry) => allReferenced.skills.has(normalizeName(entry.name))),
+    powers: campaign.powers.filter((entry) => allReferenced.powers.has(normalizeName(entry.name))),
+    items: campaign.items.filter((entry) => allReferenced.items.has(normalizeName(entry.name))),
+    attacks: campaign.attackTemplates.filter((entry) => allReferenced.attacks.has(normalizeName(entry.name))),
+    races: (campaign.races ?? []).filter((entry) => allReferenced.races.has(normalizeName(entry.name))),
+    classes: campaign.classes.filter((entry) => allReferenced.classes.has(normalizeName(entry.name))),
   };
 
   return {
@@ -538,19 +572,8 @@ export function buildNpcImportPreview(rawJson: string, campaign: CampaignDefinit
       classes: classesToCreate,
     },
     toReuse: reuse,
-    characterPlan: {
-      name: characterName,
-      type: "npc",
-      raceName: referencedRaceName || undefined,
-      className: referencedClassName || undefined,
-      level: referencedLevel !== undefined && referencedLevel > 0 ? referencedLevel : undefined,
-      attributes,
-      skillNames: referencedSkillNames,
-      powerNames: referencedPowerNames,
-      itemNames: referencedItemEntries,
-      attackNames: referencedAttackNames,
-      notes: typeof characterRecord.notes === "string" ? characterRecord.notes.trim() : "",
-    },
+    characterPlan: characterPlans[0],
+    characterPlans,
   };
 }
 
@@ -628,154 +651,155 @@ export function applyNpcImport(campaign: CampaignDefinition, preview: NpcImportP
   const itemByName = (name: string) => findByName(syncedCampaign.items, name);
   const attackByName = (name: string) => findByName(syncedCampaign.attackTemplates, name);
 
-  const selectedClass =
-    (preview.characterPlan.className ? classByName(preview.characterPlan.className) : undefined) ??
-    syncedCampaign.classes[0];
+  const drafts = preview.characterPlans.map((characterPlan) => {
+    const selectedClass =
+      (characterPlan.className ? classByName(characterPlan.className) : undefined) ??
+      syncedCampaign.classes[0];
 
-  if (!selectedClass) {
-    throw new Error("NPC import requires at least one class in the campaign.");
-  }
+    if (!selectedClass) {
+      throw new Error("NPC import requires at least one class in the campaign.");
+    }
 
-  const selectedRace = preview.characterPlan.raceName ? raceByName(preview.characterPlan.raceName) ?? null : null;
+    const selectedRace = characterPlan.raceName ? raceByName(characterPlan.raceName) ?? null : null;
 
-  const baseCharacter = createCharacterFromCampaignAndClass(
-    syncedCampaign,
-    selectedClass,
-    preview.characterPlan.name,
-    selectedRace
-  );
+    const baseCharacter = createCharacterFromCampaignAndClass(
+      syncedCampaign,
+      selectedClass,
+      characterPlan.name,
+      selectedRace
+    );
 
-  const selectedSkillIds = new Set(
-    preview.characterPlan.skillNames
-      .map((name) => skillByName(name)?.id)
-      .filter((id): id is string => Boolean(id))
-  );
+    const selectedSkillIds = new Set(
+      characterPlan.skillNames
+        .map((name) => skillByName(name)?.id)
+        .filter((id): id is string => Boolean(id))
+    );
 
-  const nextSkillsForCharacter = baseCharacter.skills.map((skill) => {
-    const referenced = selectedSkillIds.has(skill.skillId);
+    const nextSkillsForCharacter = baseCharacter.skills.map((skill) => {
+      const referenced = selectedSkillIds.has(skill.skillId);
+      return {
+        ...skill,
+        proficient: referenced,
+        source: referenced ? "manual" : skill.source,
+      };
+    });
+
+    const nextPowersForCharacter: CharacterPowerSelection[] = characterPlan.powerNames
+      .map((name) => powerByName(name))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+      .map((entry) => ({
+        powerId: entry.id,
+        name: entry.name,
+        notes: entry.description ?? "",
+        description: entry.description,
+        usesPerDay: entry.usesPerDay,
+        saveAttribute: entry.saveAttribute,
+        source: "manual",
+      }));
+
+    const nextItemsForCharacter: CharacterItem[] = characterPlan.itemNames
+      .map((entry) => {
+        const item = itemByName(entry.name);
+        if (!item) return null;
+        return {
+          itemId: item.id,
+          name: item.name,
+          quantity: Math.max(1, entry.quantity),
+          notes: entry.notes ?? item.description,
+          source: "manual" as const,
+        };
+      })
+      .filter((entry) => Boolean(entry)) as CharacterItem[];
+
+    const manualAttacks = characterPlan.attackNames
+      .map((name) => attackByName(name))
+      .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
+      .map((entry) => ({
+        id: generateId(),
+        templateId: entry.id,
+        name: entry.name,
+        attribute: entry.attribute,
+        damage: entry.damage,
+        bonus: entry.bonus ?? 0,
+        notes: entry.notes ?? "",
+        damageBonus: 0,
+      }));
+
+    const desiredLevel = characterPlan.level && characterPlan.level > 0 ? characterPlan.level : 1;
+    const nextAttributes = {
+      ...baseCharacter.attributes,
+      ...characterPlan.attributes,
+    };
+
+    const hitDiceAtLevel1 =
+      Number.isFinite(selectedClass.hpRule.hitDiceAtLevel1) && Number(selectedClass.hpRule.hitDiceAtLevel1) > 0
+        ? Math.max(1, Math.floor(Number(selectedClass.hpRule.hitDiceAtLevel1)))
+        : 1;
+    const baseHp = selectedClass.hpRule.hitDie * hitDiceAtLevel1;
+    const hpMax = Math.max(baseHp, baseHp + getAttributeModifier(nextAttributes.CON));
+
+    const characterWithSelections = {
+      ...baseCharacter,
+      characterType: "npc" as const,
+      identity: {
+        ...baseCharacter.identity,
+        notes: characterPlan.notes ?? baseCharacter.identity.notes,
+      },
+      level: desiredLevel,
+      attributes: nextAttributes,
+      hp: {
+        ...baseCharacter.hp,
+        max: hpMax,
+        current: hpMax,
+        hitDie: selectedClass.hpRule.hitDie,
+      },
+      skills: nextSkillsForCharacter,
+      powers: nextPowersForCharacter,
+      inventory: nextItemsForCharacter,
+      attacks: manualAttacks,
+    };
+
+    const syncedAttacks = syncDerivedAttacks(
+      {
+        powers: characterWithSelections.powers,
+        inventory: characterWithSelections.inventory,
+        attacks: characterWithSelections.attacks,
+      },
+      syncedCampaign
+    );
+
+    const seenAttackNames = new Set<string>();
+    const attacks = syncedAttacks.filter((attack) => {
+      const key = attack.name.trim().toLowerCase();
+      if (seenAttackNames.has(key)) return false;
+      seenAttackNames.add(key);
+      return true;
+    });
+
     return {
-      ...skill,
-      proficient: referenced,
-      source: referenced ? "manual" : skill.source,
+      characterType: "npc" as const,
+      identity: characterWithSelections.identity,
+      campaignId: syncedCampaign.id,
+      raceId: characterWithSelections.raceId ?? "",
+      classId: characterWithSelections.classId,
+      level: characterWithSelections.level,
+      proficiencyBonus: characterWithSelections.proficiencyBonus,
+      attributes: characterWithSelections.attributes,
+      saveProf: { ...characterWithSelections.sheet.saveProf },
+      attributeGeneration: characterWithSelections.attributeGeneration,
+      hp: characterWithSelections.hp,
+      skills: characterWithSelections.skills,
+      powers: characterWithSelections.powers,
+      inventory: characterWithSelections.inventory,
+      attacks,
+      levelProgression: characterWithSelections.levelProgression,
     };
   });
 
-  const nextPowersForCharacter: CharacterPowerSelection[] = preview.characterPlan.powerNames
-    .map((name) => powerByName(name))
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-    .map((entry) => ({
-      powerId: entry.id,
-      name: entry.name,
-      notes: entry.description ?? "",
-      description: entry.description,
-      usesPerDay: entry.usesPerDay,
-      saveAttribute: entry.saveAttribute,
-      source: "manual",
-    }));
-
-  const nextItemsForCharacter: CharacterItem[] = preview.characterPlan.itemNames
-    .map((entry) => {
-      const item = itemByName(entry.name);
-      if (!item) return null;
-      return {
-        itemId: item.id,
-        name: item.name,
-        quantity: Math.max(1, entry.quantity),
-        notes: entry.notes ?? item.description,
-        source: "manual" as const,
-      };
-    })
-    .filter((entry) => Boolean(entry)) as CharacterItem[];
-
-  const manualAttacks = preview.characterPlan.attackNames
-    .map((name) => attackByName(name))
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
-    .map((entry) => ({
-      id: generateId(),
-      templateId: entry.id,
-      name: entry.name,
-      attribute: entry.attribute,
-      damage: entry.damage,
-      bonus: entry.bonus ?? 0,
-      notes: entry.notes ?? "",
-      damageBonus: 0,
-    }));
-
-  const desiredLevel = preview.characterPlan.level && preview.characterPlan.level > 0 ? preview.characterPlan.level : 1;
-  const nextAttributes = {
-    ...baseCharacter.attributes,
-    ...preview.characterPlan.attributes,
-  };
-
-  const hitDiceAtLevel1 =
-    Number.isFinite(selectedClass.hpRule.hitDiceAtLevel1) && Number(selectedClass.hpRule.hitDiceAtLevel1) > 0
-      ? Math.max(1, Math.floor(Number(selectedClass.hpRule.hitDiceAtLevel1)))
-      : 1;
-  const baseHp = selectedClass.hpRule.hitDie * hitDiceAtLevel1;
-  const hpMax = Math.max(baseHp, baseHp + getAttributeModifier(nextAttributes.CON));
-
-  const characterWithSelections = {
-    ...baseCharacter,
-    characterType: "npc" as const,
-    identity: {
-      ...baseCharacter.identity,
-      notes: preview.characterPlan.notes ?? baseCharacter.identity.notes,
-    },
-    level: desiredLevel,
-    attributes: nextAttributes,
-    hp: {
-      ...baseCharacter.hp,
-      max: hpMax,
-      current: hpMax,
-      hitDie: selectedClass.hpRule.hitDie,
-    },
-    skills: nextSkillsForCharacter,
-    powers: nextPowersForCharacter,
-    inventory: nextItemsForCharacter,
-    attacks: manualAttacks,
-  };
-
-  const syncedAttacks = syncDerivedAttacks(
-    {
-      powers: characterWithSelections.powers,
-      inventory: characterWithSelections.inventory,
-      attacks: characterWithSelections.attacks,
-    },
-    syncedCampaign
-  );
-
-  // Deduplicate by name — keep first occurrence (manual attacks are processed first
-  // by syncDerivedAttacks so they retain their full damage/bonus data).
-  const seenAttackNames = new Set<string>();
-  const attacks = syncedAttacks.filter((attack) => {
-    const key = attack.name.trim().toLowerCase();
-    if (seenAttackNames.has(key)) return false;
-    seenAttackNames.add(key);
-    return true;
-  });
-
-  const draft = {
-    characterType: "npc" as const,
-    identity: characterWithSelections.identity,
-    campaignId: syncedCampaign.id,
-    raceId: characterWithSelections.raceId ?? "",
-    classId: characterWithSelections.classId,
-    level: characterWithSelections.level,
-    proficiencyBonus: characterWithSelections.proficiencyBonus,
-    attributes: characterWithSelections.attributes,
-    saveProf: { ...characterWithSelections.sheet.saveProf },
-    attributeGeneration: characterWithSelections.attributeGeneration,
-    hp: characterWithSelections.hp,
-    skills: characterWithSelections.skills,
-    powers: characterWithSelections.powers,
-    inventory: characterWithSelections.inventory,
-    attacks,
-    levelProgression: characterWithSelections.levelProgression,
-  };
-
   return {
     campaign: syncedCampaign,
-    draft,
+    draft: drafts[0],
+    drafts,
     warnings: preview.warnings,
   };
 }

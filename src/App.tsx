@@ -811,6 +811,41 @@ export default function App() {
     applyAdminSaveLocally(nextGameData);
   }
 
+  async function handleCreateGeneratedCampaignImport(input: {
+    nextGameData: GameData;
+    drafts: import("./features/import/npcImportTypes").NpcImportApplyResult["drafts"];
+    focusCampaignId: string;
+  }) {
+    const { nextGameData, drafts, focusCampaignId } = input;
+
+    const targetCampaign = nextGameData.campaigns.find((campaign) => campaign.id === focusCampaignId) ?? null;
+    if (!targetCampaign) {
+      throw new Error("Generated campaign target is no longer available.");
+    }
+
+    const canEditCampaignForImport = Permissions.canEditCampaign(authState, focusCampaignId);
+    const canCreateNpc = Permissions.canCreateCharacter(authState, focusCampaignId, "npc");
+    if (!canEditCampaignForImport || !canCreateNpc) {
+      throw new Error("You are not authorized to generate campaign imports for this campaign.");
+    }
+
+    await persistCampaignChanges(gameData, nextGameData);
+    await refreshAccessContextState();
+    applyAdminSaveLocally(nextGameData);
+
+    for (const draft of drafts) {
+      commitCreatedCharacter({
+        draft,
+        setCharacters,
+        onPersistUpsert: persistCharacterUpsert,
+        currentUserId,
+      });
+    }
+
+    setCampaignId(focusCampaignId);
+    setCloudStatus(`Campaign package created with ${drafts.length} NPC${drafts.length === 1 ? "" : "s"}.`);
+  }
+
   const selectedWorkspaceCallbacks = useSelectedCharacterWorkspaceCallbacks({
     selected,
     updateCharacter: updateCharacterRecord,
@@ -2222,6 +2257,7 @@ export default function App() {
           saveRequestVersion={adminSaveRequestVersion}
           onCampaignContextChange={handleCampaignChange}
           onGameDataChange={handleAdminGameDataChange}
+          onCreateGeneratedCampaignImport={handleCreateGeneratedCampaignImport}
           onSave={handleAdminSave}
         />
       ) : !securityOpen ? (
