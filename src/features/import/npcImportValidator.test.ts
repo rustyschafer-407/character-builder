@@ -85,6 +85,7 @@ describe("npcImport", () => {
     expect(prompt).toContain("character-builder.npc-import");
     expect(prompt).toContain("VALID FIELDS");
     expect(prompt).toContain("EXISTING CAMPAIGN CONTEXT");
+    expect(prompt).toContain("CLASS + BACKGROUND THEMING RULE");
   });
 
   it("validates and previews a minimal payload", () => {

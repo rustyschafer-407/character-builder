@@ -123,6 +123,12 @@ CLASS/RACE PLAYABILITY RULES:
 - If you create a race, include meaningful attributeBonuses and defaultPowerNames when appropriate.
 - If race/class pairings matter in the setting, populate race.availableClassNames.
 
+CLASS + BACKGROUND THEMING RULE:
+- If the source material includes a character background (or role history), treat background as a first-class design input alongside class.
+- Choose characters[].skills, characters[].powers, and characters[].items so they are thematically coherent with the class + background combo, not class alone.
+- Prefer options that reinforce that background story while still matching class mechanics.
+- Keep choices practical and playable at level 1 for the generated NPC.
+
 ATTRIBUTE ESTIMATION (from source material):
 When the source material describes an NPC or monster, use your knowledge of RPGs to infer and estimate the character's physical and mental traits. Convert these descriptions into numeric attribute values (typically 3–18 in D&D-like systems):
 - STR: Physical strength, carrying capacity, melee damage. High for warriors, brutes, large creatures. Low for wizards, frail beings.
