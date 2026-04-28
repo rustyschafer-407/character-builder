@@ -651,6 +651,8 @@ export default function App() {
     ? gameData.campaigns.find((g) => g.id === selected.campaignId) ?? null
     : null;
 
+  const activeCampaign = gameData.campaigns.find((campaign) => campaign.id === campaignId) ?? null;
+
   const selectedRace = selected ? getRaceById(gameData, selected.raceId ?? "") ?? null : null;
 
   const selectedClass = selected ? getClassById(gameData, selected.classId) ?? null : null;
@@ -2306,12 +2308,12 @@ export default function App() {
         />
       ) : null}
 
-      {selectedCampaign ? (
+      {activeCampaign ? (
         <AiGeneratorPanel
           open={aiGeneratorOpen}
-          campaign={selectedCampaign}
-          canEditCampaign={Permissions.canEditCampaign(authState, selectedCampaign.id)}
-          canCreateNpc={Permissions.canCreateCharacter(authState, selectedCampaign.id, "npc")}
+          campaign={activeCampaign}
+          canEditCampaign={Permissions.canEditCampaign(authState, activeCampaign.id)}
+          canCreateNpc={Permissions.canCreateCharacter(authState, activeCampaign.id, "npc")}
           onClose={() => setAiGeneratorOpen(false)}
           onApply={handleApplyAiGenerator}
         />
